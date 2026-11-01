@@ -1,0 +1,19 @@
+{
+  "name": "@rep/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Search normalisation, identity matching and the Online Presence Score engine. Pure domain logic, no I/O.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contracts": "./src/contracts/types.ts"
+  },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "reputation-platform",
+  "private": true,
+  "version": "0.0.0",
+  "description": "AI-powered reputation intelligence and management platform (internal name).",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "dev": "npm run dev --workspace @rep/website",
+    "build": "npm run build --workspace @rep/website"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

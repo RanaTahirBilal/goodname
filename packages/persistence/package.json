@@ -1,0 +1,17 @@
+{
+  "name": "@rep/persistence",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Durable storage for scans, evidence, decisions and audit events. SQLite now, Postgres later behind the same repository API.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "node --test \"src/**/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "@rep/domain": "*" },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "typescript": "~6.0.3"
+  }
+}

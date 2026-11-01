@@ -1,0 +1,177 @@
+/**
+ * Builds the evidence records that justify everything a report says.
+ *
+ * Three things happen here that cannot happen per-document:
+ *   - story clustering, so syndication is not mistaken for corroboration
+ *   - correction and retraction linking, so a withdrawn story stops counting
+ *   - contradiction linking, so a disputed claim is reported as disputed
+ *
+ * Excerpts are carried verbatim from the provider. We never paraphrase a
+ * source into a claim: a summary of an allegation reads like a finding.
+ */
+import type {
+  EvidenceRecord,
+  ProfessionalIdentity,
+  Provenance,
+  SearchResult,
+} from '../contracts/types.ts';
+import { classify } from './classify.ts';
+import { matchResult } from './identity.ts';
+import { clusterStories, type Clusterable } from './dedupe.ts';
+
+const hostOf = (url: string): string => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+};
+
+/** Stable within one scan, which is all the id has to be. */
+const idFor = (index: number): string => `ev-${String(index + 1).padStart(3, '0')}`;
+
+export interface BuildEvidenceInput {
+  results: SearchResult[];
+  identity: ProfessionalIdentity;
+  provenance: Provenance;
+}
+
+export function buildEvidence(input: BuildEvidenceInput): EvidenceRecord[] {
+  // De-duplicate identical URLs first: the same page returned for three query
+  // terms is one piece of evidence, not three.
+  const seen = new Set<string>();
+  const unique = input.results.filter((r) => {
+    if (seen.has(r.url)) return false;
+    seen.add(r.url);
+    return true;
+  });
+
+  const records: EvidenceRecord[] = unique.map((result, i) => {
+    const identity = matchResult(result, input.identity);
+    const c = classify(result, input.identity);
+
+    return {
+      id: idFor(i),
+      sourceUrl: result.url,
+      sourceName: result.sourceName ?? hostOf(result.url),
+      domain: result.domain || hostOf(result.url),
+      retrievedAt: result.observedAt,
+      publishedAt: result.publishedAt,
+      title: result.title,
+      excerpt: result.snippet,
+      position: result.position,
+
+      provenance: result.isFixture ? 'fixture' : input.provenance,
+      providerName: result.provider,
+
+      identityConfidence: identity.confidence,
+      identityStatus: identity.status,
+      identitySignals: identity.signals,
+
+      sourceReliability: c.reliability,
+      authority: c.authority,
+
+      classification: c.classification,
+      classificationConfidence: c.confidence,
+      classificationRationale: c.rationale,
+
+      findingStatus: c.findingStatus,
+      severity: c.severity,
+      severityRationale: c.severityRationale,
+
+      reviewStatus: needsReview(c.findingStatus, identity.status) ? 'needs_human_review' : 'auto',
+    };
+  });
+
+  linkCorrections(records, unique);
+  linkClusters(records);
+  markDisputed(records);
+
+  return records;
+}
+
+/**
+ * Anything that could damage someone, and anything we are unsure is them,
+ * goes in front of a person before it is treated as settled.
+ */
+function needsReview(status: string | undefined, identityStatus: string): boolean {
+  if (identityStatus === 'probable' || identityStatus === 'uncertain') return true;
+  return status === 'confirmed_finding' || status === 'allegation' || status === 'disputed';
+}
+
+/** A correction or retraction points back at what it supersedes. */
+function linkCorrections(records: EvidenceRecord[], results: SearchResult[]): void {
+  results.forEach((result, i) => {
+    if (!result.correctsUrl) return;
+    const target = records.find((r) => r.sourceUrl === result.correctsUrl);
+    if (!target) return;
+
+    records[i].correctionOf = target.id;
+
+    // The superseded story stops being a live claim. Which it becomes depends
+    // on whether the source withdrew it or merely fixed it.
+    target.findingStatus = result.isRetraction ? 'retracted' : 'corrected';
+    target.reviewStatus = 'needs_human_review';
+    target.contradictedBy = [...(target.contradictedBy ?? []), records[i].id];
+  });
+}
+
+function linkClusters(records: EvidenceRecord[]): void {
+  const items: Clusterable[] = records.map((r) => ({
+    id: r.id,
+    title: r.title,
+    snippet: r.excerpt,
+    domain: r.domain,
+    publishedAt: r.publishedAt,
+  }));
+
+  for (const cluster of clusterStories(items)) {
+    for (const id of cluster.memberIds) {
+      const rec = records.find((r) => r.id === id)!;
+      rec.independentSourcesInCluster = cluster.independentSources;
+
+      if (cluster.memberIds.length === 1) continue;
+      rec.storyClusterId = cluster.id;
+
+      // Only near-identical reprints are duplicates. Two outlets writing
+      // their own accounts of one event are two pieces of coverage.
+      if (cluster.syndicatedIds.includes(id)) rec.duplicateOf = cluster.primaryId;
+    }
+  }
+}
+
+/**
+ * Within one story cluster, a claim contradicted by another member is
+ * reported as disputed rather than as a finding.
+ */
+function markDisputed(records: EvidenceRecord[]): void {
+  for (const rec of records) {
+    if (!rec.storyClusterId) continue;
+    if (rec.findingStatus !== 'confirmed_finding' && rec.findingStatus !== 'allegation') continue;
+
+    const siblings = records.filter(
+      (r) => r.storyClusterId === rec.storyClusterId && r.id !== rec.id
+    );
+
+    const contradicting = siblings.filter(
+      (s) => s.findingStatus === 'retracted' || s.findingStatus === 'corrected'
+    );
+
+    if (contradicting.length > 0) {
+      rec.findingStatus = 'disputed';
+      rec.contradictedBy = [
+        ...(rec.contradictedBy ?? []),
+        ...contradicting.map((c) => c.id),
+      ];
+      rec.reviewStatus = 'needs_human_review';
+    }
+  }
+}
+
+/** Records that inform the presence score: attributable to this person. */
+export const attributed = (records: EvidenceRecord[]): EvidenceRecord[] =>
+  records.filter((r) => r.identityStatus === 'confirmed' || r.identityStatus === 'probable');
+
+/** Records the customer should be asked about rather than silently dropped. */
+export const awaitingConfirmation = (records: EvidenceRecord[]): EvidenceRecord[] =>
+  records.filter((r) => r.identityStatus === 'uncertain' || r.identityStatus === 'probable');

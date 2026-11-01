@@ -1,0 +1,186 @@
+# Open Questions
+
+Unresolved decisions, with what each one blocks and what I have assumed in the
+meantime so work could continue.
+
+---
+
+## Needs your decision
+
+### OQ-1 — Reconcile or replace the scoring model?
+**Blocks:** finalising `SCORING_SPEC.md`; any score shown to a customer.
+
+The brief's five dimensions cannot represent harmful content, which is the
+problem this audience pays to solve. I have implemented the reconciled
+seven-dimension model (PD-002), restoring Reputational Risk and Privacy
+Exposure from the existing engine spec.
+
+**Assumed meanwhile:** reconciliation, version `2.0.0-draft`.
+
+### OQ-2 — Is the existing Expo app harvested or retired?
+**Blocks:** Phase 8 planning; whether `goodname-app` stays in this repository.
+
+35 screens exist for a consumer/SMB audience that is not the new target.
+Worth keeping: the theme tokens and contrast test, the API contracts, the
+design system. Out of scope: reviews, locations, brokers.
+
+**Assumed meanwhile:** paused, nothing deleted (PD-005).
+
+### OQ-3 — Which search data provider?
+**Blocks:** everything past fixtures.
+**Research done — see `docs/SEARCH_PROVIDERS.md`. The decision is yours.**
+
+Prices checked from the providers' own pages, 30 Oct 2026. An audit is 3
+search calls: $0.0018 at DataForSEO Standard, $0.006 at DataForSEO Live,
+$0.03 at SerpApi Production. A 17x spread.
+
+Two findings changed the picture:
+
+**Search cost is not a margin question.** At $750-$2,000 a month per customer,
+provider cost is about 0.004% of the subscription. It only bites on the free
+tier, and even the dear option is ~$30 per thousand free audits.
+
+**The cheap option cannot be synchronous.** DataForSEO Standard averages five
+minutes. That is what drove OQ-11, now resolved.
+
+**Recommendation:** trial DataForSEO on its $50 minimum, and get written
+commercial terms from both before committing. Neither published terms covering
+our use - redistributing derived analysis to a paying third party - and that
+matters more than the price difference.
+
+### OQ-4 — Who verifies that an audit is a self-lookup?
+**Blocks:** launching the free audit publicly.
+
+The product is built around people assessing themselves. Nothing currently
+stops someone entering another person's name. Options: identity verification
+before the first scan, email-domain corroboration, or rate-limit plus
+attestation. Each trades conversion against misuse.
+
+**Assumed meanwhile:** validation only. Not safe to launch publicly as is.
+
+### OQ-5 — Severity assignment: who signs off?
+**Blocks:** showing a Risk score to a paying customer.
+
+Severity drives caps, and a cap is the most consequential number in the
+report. The keyword baseline is deliberately conservative and abstains when
+unsure, but it should not be the last word on whether someone's record is
+described as a sanction.
+
+**Assumed meanwhile:** the classifier abstains (`uncertain`) on anything
+hedged, and abstentions carry no penalty.
+
+### OQ-11 — The audit runs synchronously — *resolved 2026-10-30*
+Moved into a background job. `POST /api/audit` now creates a pending scan,
+queues the work and returns a scan id in about 25ms; the client polls
+`/api/scan/[id]/status`. Retries use exponential backoff and a job that has
+sent anything outward is never retried. See `packages/persistence/src/jobs.ts`.
+
+
+### OQ-16 — The review queue has no staff login — *resolved 2026-11-01*
+Reviewers now sign in with their own address, passwordless, against their own
+staff row. `REP_REVIEWER_ID` is gone: it was one shared identity per
+deployment, which looked like per-person attribution and was not.
+
+The rule that makes it safe is the one reversed from customer sign-in:
+**verifying a code never creates a member of staff.** A code is only issued
+against a staff row that already exists and is not disabled, so there is no
+path from "can receive mail" to "can read other people's evidence". Reviewers
+are created on the server with `npm run staff -- add <email>`.
+
+Staff sessions are a separate cookie over a separate table and last 12 hours
+rather than 30 days. Disabling a reviewer revokes their live sessions in the
+same transaction, and the session lookup requires an active staff row anyway.
+
+A code request answers identically whether the address is staff, is throttled,
+or is nobody — the same rule as 16g, applied to a list (who works here) that is
+worth as much to an attacker as the customer list.
+
+See `packages/persistence/src/staffAuth.ts` and
+`apps/website/src/server/reviewer.ts`.
+
+**Still open underneath it:** OQ-14. With no mail provider, a reviewer's code
+reaches them the same way a customer's does — through the development outbox,
+which fails closed in production. Until a provider is wired in, nobody can
+sign in to a production deployment at all.
+
+### OQ-17 — Two account deletions were failing outright — *fixed 2026-11-01*
+Found while building retention, not reported by anyone.
+
+`deleteAccount` did not delete `jobs` or `review_decisions`, and both hold a
+foreign key to `accounts`. The effect was not a leftover row: the constraint
+refused, the transaction rolled back, and the customer's deletion request
+failed with **nothing removed**. The `jobs` case applied to every account that
+had ever run an audit through the site, which is all of them — and that
+table's payload holds the name, employer and city we searched for.
+
+`ACCOUNT_OWNED_TABLES` is now exported and a test holds it against the schema,
+so the next table with an `account_id` fails the suite rather than a customer.
+
+### OQ-14 — No mail provider, so no code can reach anyone
+**Blocks:** public launch.
+
+Sign-in works, but `OutboxDeliverer` writes the message to a table and returns
+`delivered: false`. A development endpoint exposes the code, guarded on both
+the build mode and the deliverer not really sending — so wiring a real
+provider closes it automatically rather than relying on someone remembering to
+delete a file.
+
+Needs a provider chosen on deliverability, not price: a sign-in code in a spam
+folder is an account nobody can reach.
+
+**Assumed meanwhile:** the interface says plainly that no email was sent and
+shows the code.
+
+### OQ-15 — The third verification tier does not exist
+**Blocks:** anyone legitimately auditing three or more names.
+
+`connected_account` is defined and unreachable, so a third distinct name is
+refused outright. That is the safe failure, but it is a wall rather than a
+step: someone who has changed their name twice has no way through.
+
+**Assumed meanwhile:** refused, with a message explaining why.
+
+---
+
+## Needs legal review
+
+### OQ-6 — Regulatory posture of the audit
+Self-lookup framing does not by itself resolve obligations. Needs review of
+FCRA exposure, state privacy law, professional advertising rules for attorneys
+and physicians, and consumer-protection rules on claims.
+
+### OQ-7 — Correction and removal workflows
+Drafting requests on a customer's behalf, and tracking responses, touches on
+unauthorised practice of law in some states. Scope needs counsel before
+Module F ships.
+
+---
+
+## Needs product input
+
+### OQ-8 — Commercial name
+Provisional internal name only. Branding is one configuration value.
+
+### OQ-9 — What exactly is "up to four content assets"?
+The Executive tier promises four assets a month. Without a definition of an
+asset, delivery cost is unbounded. Needs word counts, revision limits and an
+out-of-scope list before the price is quoted to anyone.
+
+### OQ-10 — Mobile billing
+Whether subscriptions are sold in-app at these prices, or purchased on the web
+with the app reading entitlement. Current Apple and Google policies need
+checking against the intended flow before anything is built.
+
+**Assumed meanwhile:** entitlement is read from the server, never granted on
+device.
+
+---
+
+## Resolved
+
+### OQ-R1 — Package manager — *resolved 2026-10-29*
+npm workspaces. pnpm and Turborepo are not installed and the brief conditioned
+them on environment support. See PD-001.
+
+### OQ-R2 — Can the first slice run without Supabase? — *resolved 2026-10-29*
+Yes. Domain logic is pure and persistence sits behind an interface. See PD-003.

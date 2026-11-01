@@ -1,0 +1,349 @@
+/**
+ * Design tokens and base styles.
+ *
+ * This file is the single source of truth for colour, spacing and type.
+ * `src/tokens.test.ts` parses it and asserts contrast against these literal
+ * values, so the stylesheet and the check cannot drift apart.
+ *
+ * The direction is editorial, not decorative. Depth comes from typography,
+ * spacing rhythm and hierarchy — not from blur, gradient or shadow. There is
+ * deliberately no glass surface anywhere: a frosted panel behind a regulatory
+ * finding reads as decoration getting in the way of the most consequential
+ * thing on the page, and over a light background it has to reach ~70% opacity
+ * before body text clears 4.5:1, at which point it is a grey card with a blur
+ * tax.
+ *
+ * Three rules this file exists to enforce:
+ *   - Every gap is a value from the scale. Nothing in between.
+ *   - Border, fill, radius and shadow each announce a separate object. Using
+ *     all four on every block flattens the page, so most blocks get one.
+ *   - The accent colour is a mark, never a field.
+ */
+
+:root {
+  --primary: #176B57;
+  --primary-dark: #104C40;
+  --bg: #F7F8F6;
+  --surface: #FFFFFF;
+  --surface-sunken: #F1F3F0;
+  --text: #202722;
+  --text-2: #5C675F;
+  --border: #E2E7E2;
+
+  /**
+   * WCAG 1.4.11 asks for 3:1 only where a boundary identifies a control or
+   * its state. `--border` is a decorative hairline on cards and table rows,
+   * deliberately below that; `--border-strong` is what outlines inputs and
+   * buttons, and it is checked.
+   */
+  --border-strong: #6B7A72;
+
+  --warning: #96590F;
+  --danger: #B54747;
+  --success: #237B55;
+
+  --warning-bg: #FDF4E7;
+  --danger-bg: #FBEEEE;
+  --success-bg: #EAF4EF;
+  --info-bg: #EDF1F6;
+
+  /* Spacing scale. Use these and nothing between them. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-24: 96px;
+
+  --radius: 10px;
+  --radius-lg: 14px;
+
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  --shadow-sm: 0 1px 2px rgba(32, 39, 34, 0.05);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Lining, tabular figures so columns of numbers align down the page. */
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
+/* ---------------------------------------------------------- type scale */
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+h1 { font-size: clamp(2.1rem, 1.4rem + 2.8vw, 3.25rem); }
+h2 { font-size: clamp(1.35rem, 1.15rem + 0.9vw, 1.75rem); }
+h3 { font-size: 1.0625rem; line-height: 1.3; }
+
+p { max-width: 68ch; }
+
+a { color: var(--primary); text-underline-offset: 3px; }
+a:hover { color: var(--primary-dark); }
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ------------------------------------------------------------- layout */
+
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--s-6); }
+.wrap-narrow { max-width: 640px; margin: 0 auto; padding: 0 var(--s-6); }
+
+.stack > * + * { margin-top: var(--gap, var(--s-6)); }
+.row { display: flex; align-items: center; gap: var(--s-3); }
+.grow { flex: 1 1 auto; min-width: 0; }
+
+.cols { display: grid; grid-template-columns: 1fr; gap: var(--s-6); }
+@media (min-width: 860px) {
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-score { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+
+/* ----------------------------------------------------------- surfaces */
+
+/**
+ * One container style, used sparingly. A page where every block is a card is
+ * a page with no hierarchy — most sections are separated by a rule and
+ * whitespace instead, and the card is reserved for a genuinely bounded
+ * object.
+ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--s-6);
+}
+
+.card-flush { padding: 0; overflow: hidden; }
+
+/* A section marked by a rule and space rather than a box. */
+.section {
+  padding-top: var(--s-8);
+  border-top: 1px solid var(--border);
+}
+
+.divider { border: 0; border-top: 1px solid var(--border); }
+
+/* --------------------------------------------------------- typography */
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.lede { font-size: 1.1875rem; line-height: 1.55; color: var(--text-2); max-width: 60ch; }
+.small { font-size: 0.8125rem; line-height: 1.55; color: var(--text-2); }
+.mono { font-family: var(--mono); font-size: 0.75rem; letter-spacing: -0.01em; }
+
+/* The single largest figure on a view. */
+.hero-figure {
+  font-family: var(--serif);
+  font-size: clamp(4rem, 3rem + 5vw, 6rem);
+  line-height: 0.92;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+/* -------------------------------------------------------------- pills */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.pill-neutral { background: var(--surface-sunken); color: var(--text-2); }
+.pill-success { background: var(--success-bg); color: var(--success); }
+.pill-warning { background: var(--warning-bg); color: var(--warning); }
+.pill-danger  { background: var(--danger-bg);  color: var(--danger); }
+.pill-info    { background: var(--info-bg);    color: var(--text-2); }
+
+/* ------------------------------------------------------------ controls */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 48px;
+  padding: 0 var(--s-6);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-dark); color: #fff; }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.btn-secondary:hover { background: var(--surface-sunken); }
+
+.field { display: flex; flex-direction: column; gap: var(--s-1); }
+.label { font-size: 0.875rem; font-weight: 600; }
+.hint { font-size: 0.8125rem; color: var(--text-2); }
+
+.input, .select {
+  min-height: 48px;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+}
+.input:focus, .select:focus { border-color: var(--primary); }
+
+.error { color: var(--danger); font-size: 0.8125rem; font-weight: 600; }
+
+.checkbox-row {
+  display: flex;
+  gap: var(--s-3);
+  align-items: flex-start;
+  padding: var(--s-4);
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+}
+.checkbox-row input { margin-top: 3px; width: 20px; height: 20px; flex: 0 0 auto; }
+
+/* --------------------------------------------------------------- meter
+ *
+ * A score out of 100 is a ratio against a limit, so it gets a meter rather
+ * than a radial gauge: a dial is a two-slice pie with extra steps, and it
+ * makes a 56 and a 59 look more different than they are.
+ */
+.meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.meter > span { display: block; height: 100%; border-radius: 3px; background: var(--primary); }
+
+.meter-lg { height: 10px; border-radius: 5px; }
+.meter-lg > span { border-radius: 5px; }
+
+/* --------------------------------------------------------------- table */
+
+.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table th {
+  text-align: left;
+  padding: var(--s-2) var(--s-4);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table td {
+  padding: var(--s-4);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  overflow-wrap: break-word;
+}
+.table tr:last-child td { border-bottom: none; }
+
+/**
+ * Below 760px the table becomes a list of records.
+ *
+ * A six-column table in a 390px viewport can only scroll sideways, and
+ * sideways scroll on a phone is how people miss half the evidence. Each row
+ * becomes a block, and each cell carries its own label.
+ */
+@media (max-width: 760px) {
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { display: none; }
+  .table tr {
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .table tr:last-child { border-bottom: none; }
+  .table td { border: 0; padding: var(--s-1) 0; }
+  .table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    margin-bottom: var(--s-1);
+  }
+}
+
+/* ------------------------------------------------------------- notices */
+
+.notice {
+  display: flex;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border-left: 3px solid;
+  border-radius: 0;
+  font-size: 0.9375rem;
+}
+.notice-warning { background: var(--warning-bg); border-color: var(--warning); }
+.notice-danger  { background: var(--danger-bg);  border-color: var(--danger); }
+.notice-info    { background: var(--info-bg);    border-color: var(--primary); }
+
+.notice strong { display: block; margin-bottom: var(--s-1); }
+
+/* -------------------------------------------------------------- header */
+
+/**
+ * The header's audit link is redundant on a phone: the hero's own
+ * "Check My Reputation" button sits a few hundred pixels below it, and
+ * keeping both makes a three-item header wrap into a cramped two-line block.
+ * Sign in stays, because nothing else on the page offers it.
+ */
+@media (max-width: 560px) {
+  .nav-compact { display: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pulse { animation: pulse 1.6s ease-in-out infinite; }
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}

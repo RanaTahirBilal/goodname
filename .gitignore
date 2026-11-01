@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# The local SQLite database and its WAL companions.
+# This is the one directory in the tree that holds real audit data: evidence
+# excerpts, identities, session rows. It must never be committed, on a public
+# repository least of all.
+.data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# Secrets. There are none in the tree today and this is here so there never are.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.keystore
+*.jks
+
+# Expo / React Native (goodname-app, paused — see docs/PRODUCT_DECISIONS.md PD-005)
+.expo/
+*.apk
+*.aab
+*.ipa
+goodname-app/android/.gradle/
+goodname-app/android/local.properties
+goodname-app/ios/Pods/
+
+# macOS / editors
+.DS_Store
+*.log
+.vscode/*
+!.vscode/tasks.json
+!.vscode/settings.json
+
+# The paused Expo app is its own git repository and a different audience.
+# Not published here; see docs/PRODUCT_DECISIONS.md PD-005.
+goodname-app/

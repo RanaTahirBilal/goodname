@@ -1,0 +1,407 @@
+/**
+ * The human review queue.
+ *
+ * Evidence gets flagged `needs_human_review` when it could damage someone or
+ * when we are not certain it is them. Until now nothing consumed that flag,
+ * which `docs/SAFEGUARDS.md` lists as a blocker on showing findings to paying
+ * customers. This is what consumes it.
+ *
+ * ## The access rule
+ *
+ * Reviewing is the only operation in this system that crosses the account
+ * boundary, so it is the one place the usual protection — every query scoped
+ * to an account — cannot apply. What replaces it:
+ *
+ *   - A reviewer can read **only records flagged for review**. There is no
+ *     method here that returns an account, a scan, or a customer's other
+ *     evidence. The narrowness is in the API, not in a reviewer's restraint.
+ *   - Every read is logged against the reviewer, not just every decision. A
+ *     log of decisions alone misses someone who read fifty records and
+ *     decided nothing, which is the access pattern worth noticing.
+ *   - A decision without a written rationale is refused. A judgement that
+ *     moves somebody's risk level and says nothing about why cannot be
+ *     reviewed by anyone else.
+ */
+import type { EvidenceRecord, ReviewOutcome, ReviewStatus } from '@rep/domain';
+import { type Db, newId, transaction } from './db.ts';
+import { recordEvent } from './events.ts';
+
+export type StaffRole = 'reviewer' | 'admin';
+
+export interface Staff {
+  id: string;
+  email: string;
+  role: StaffRole;
+  createdAt: string;
+}
+
+/** Proof the caller is acting as a named, active member of staff. */
+export interface ReviewerScope {
+  reviewerId: string;
+  role: StaffRole;
+}
+
+export interface QueueItem {
+  evidenceId: string;
+  scanId: string;
+  accountId: string;
+  title: string;
+  excerpt: string;
+  sourceName: string;
+  sourceUrl: string;
+  classification: string;
+  findingStatus?: string;
+  severity?: number;
+  severityRationale?: string;
+  identityConfidence: number;
+  identityStatus: string;
+  sourceReliability: string;
+  retrievedAt: string;
+  /** Why it is in the queue at all, in words. */
+  flaggedBecause: string;
+}
+
+export interface ReviewDecision {
+  id: string;
+  scanId: string;
+  evidenceId: string;
+  reviewerId: string;
+  outcome: ReviewOutcome;
+  rationale: string;
+  decidedAt: string;
+}
+
+/** The review status an outcome leaves on the record. */
+export const STATUS_FOR_OUTCOME: Record<ReviewOutcome, ReviewStatus> = {
+  uphold: 'reviewer_upheld',
+  downgrade_to_allegation: 'reviewer_downgraded',
+  reject_not_this_person: 'reviewer_rejected',
+  reject_not_harm: 'reviewer_rejected',
+};
+
+const MIN_RATIONALE = 10;
+
+export class ReviewRepository {
+  private readonly db: Db;
+
+  constructor(db: Db) {
+    this.db = db;
+  }
+
+  /* ---------------------------------------------------------- staff */
+
+  createStaff(email: string, role: StaffRole): Staff {
+    const staff: Staff = {
+      id: newId('staff'),
+      email: email.trim().toLowerCase(),
+      role,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.db
+      .prepare('INSERT INTO staff (id, email, role, created_at) VALUES (?, ?, ?, ?)')
+      .run(staff.id, staff.email, staff.role, staff.createdAt);
+
+    return staff;
+  }
+
+  /** Resolves an active member of staff. A disabled one is nobody. */
+  scopeFor(staffId: string): ReviewerScope | null {
+    const row = this.db
+      .prepare('SELECT id, role FROM staff WHERE id = ? AND disabled_at IS NULL')
+      .get(staffId) as { id: string; role: StaffRole } | undefined;
+
+    return row ? { reviewerId: row.id, role: row.role } : null;
+  }
+
+  /**
+   * Takes someone's access away.
+   *
+   * Their live sessions go with them, in the same transaction. A session
+   * outliving the decision to remove access is the same bug as not removing
+   * it — the rule already written down for account deletion (16i), applied to
+   * the one role that can read across accounts.
+   *
+   * `StaffAuthRepository.scopeForSession` also requires an active staff row,
+   * so this is the half that can be forgotten without consequence rather
+   * than the half that is load-bearing.
+   */
+  disableStaff(staffId: string): void {
+    const now = new Date().toISOString();
+
+    transaction(this.db, () => {
+      this.db.prepare('UPDATE staff SET disabled_at = ? WHERE id = ?').run(now, staffId);
+      this.db
+        .prepare(
+          'UPDATE staff_sessions SET revoked_at = ? WHERE staff_id = ? AND revoked_at IS NULL'
+        )
+        .run(now, staffId);
+    });
+  }
+
+  /* ---------------------------------------------------------- queue */
+
+  /**
+   * The records awaiting a human, oldest first.
+   *
+   * Returns flagged evidence and nothing else — no account details, no
+   * sibling results, no customer identity beyond what is already in the
+   * record being judged. A reviewer deciding whether a disbarment notice
+   * is the right Jensen Adoni does not need their billing history.
+   */
+  queue(scope: ReviewerScope, limit = 50): QueueItem[] {
+    const rows = this.db
+      .prepare(
+        `SELECT e.*, s.id AS scan_id
+           FROM evidence e
+           JOIN scans s ON s.id = e.scan_id
+          WHERE e.review_status = 'needs_human_review'
+            AND NOT EXISTS (
+              SELECT 1 FROM review_decisions d
+               WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
+            )
+          ORDER BY e.retrieved_at
+          LIMIT ?`
+      )
+      .all(limit);
+
+    const items = rows.map((raw) => {
+      const e = raw as Record<string, unknown>;
+      return {
+        evidenceId: String(e.id),
+        scanId: String(e.scan_id),
+        accountId: String(e.account_id),
+        title: String(e.title),
+        excerpt: String(e.excerpt),
+        sourceName: String(e.source_name),
+        sourceUrl: String(e.source_url),
+        classification: String(e.classification),
+        findingStatus: (e.finding_status as string) ?? undefined,
+        severity: e.severity === null ? undefined : Number(e.severity),
+        severityRationale: (e.severity_rationale as string) ?? undefined,
+        identityConfidence: Number(e.identity_confidence),
+        identityStatus: String(e.identity_status),
+        sourceReliability: String(e.source_reliability),
+        retrievedAt: String(e.retrieved_at),
+        flaggedBecause: explainFlag(
+          e.finding_status as string | null,
+          String(e.identity_status)
+        ),
+      };
+    });
+
+    for (const item of items) {
+      this.logAccess(scope, item.accountId, item.scanId, item.evidenceId, 'listed');
+    }
+
+    return items;
+  }
+
+  /** How many are waiting. Safe to show on a dashboard; names nobody. */
+  pendingCount(): number {
+    const row = this.db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM evidence e
+          WHERE e.review_status = 'needs_human_review'
+            AND NOT EXISTS (
+              SELECT 1 FROM review_decisions d
+               WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
+            )`
+      )
+      .get();
+    return Number((row as { n: number }).n);
+  }
+
+  /* ------------------------------------------------------- deciding */
+
+  /**
+   * Records a reviewer's judgement and applies it to the record.
+   *
+   * The decision row and the evidence update happen together: a decision
+   * that did not take effect, or a record changed with no decision behind
+   * it, are both states nobody could explain later.
+   */
+  decide(
+    scope: ReviewerScope,
+    scanId: string,
+    evidenceId: string,
+    outcome: ReviewOutcome,
+    rationale: string
+  ): void {
+    const reason = rationale.trim();
+    if (reason.length < MIN_RATIONALE) {
+      throw new Error(
+        'A review decision needs a written reason. It changes what a customer is told about themselves.'
+      );
+    }
+
+    const row = this.db
+      .prepare('SELECT account_id, finding_status FROM evidence WHERE scan_id = ? AND id = ?')
+      .get(scanId, evidenceId) as
+      | { account_id: string; finding_status: string | null }
+      | undefined;
+
+    if (!row) throw new Error('Evidence not found.');
+
+    transaction(this.db, () => {
+      this.db
+        .prepare(
+          `INSERT INTO review_decisions
+             (id, scan_id, account_id, evidence_id, reviewer_id, outcome, rationale, decided_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          newId('rev'),
+          scanId,
+          row.account_id,
+          evidenceId,
+          scope.reviewerId,
+          outcome,
+          reason,
+          new Date().toISOString()
+        );
+
+      this.logAccess(scope, row.account_id, scanId, evidenceId, `decided:${outcome}`);
+
+      recordEvent(this.db, {
+        accountId: row.account_id,
+        actor: `reviewer:${scope.reviewerId}`,
+        action: 'evidence.reviewed',
+        subjectType: 'evidence',
+        subjectId: evidenceId,
+        // The rationale is deliberately not copied here. It lives in
+        // review_decisions; duplicating it would put the same judgement in
+        // two places with two retention stories.
+        metadata: { scanId, outcome },
+      });
+    });
+  }
+
+  /** Decisions made on one scan, newest first. */
+  decisionsFor(scanId: string): ReviewDecision[] {
+    return this.db
+      .prepare(
+        `SELECT id, scan_id, evidence_id, reviewer_id, outcome, rationale, decided_at
+           FROM review_decisions WHERE scan_id = ?
+          ORDER BY decided_at DESC, rowid DESC`
+      )
+      .all(scanId)
+      .map((raw) => {
+        const d = raw as Record<string, string>;
+        return {
+          id: d.id,
+          scanId: d.scan_id,
+          evidenceId: d.evidence_id,
+          reviewerId: d.reviewer_id,
+          outcome: d.outcome as ReviewOutcome,
+          rationale: d.rationale,
+          decidedAt: d.decided_at,
+        };
+      });
+  }
+
+  /* ------------------------------------------------------- the log */
+
+  private logAccess(
+    scope: ReviewerScope,
+    accountId: string,
+    scanId: string,
+    evidenceId: string | null,
+    action: string
+  ): void {
+    this.db
+      .prepare(
+        `INSERT INTO review_access_log
+           (id, reviewer_id, account_id, scan_id, evidence_id, action, occurred_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        newId('acc'),
+        scope.reviewerId,
+        accountId,
+        scanId,
+        evidenceId,
+        action,
+        new Date().toISOString()
+      );
+  }
+
+  /** What a reviewer has looked at. For an access audit. */
+  accessLog(reviewerId: string, limit = 200) {
+    return this.db
+      .prepare(
+        `SELECT reviewer_id, account_id, scan_id, evidence_id, action, occurred_at
+           FROM review_access_log WHERE reviewer_id = ?
+          ORDER BY occurred_at DESC LIMIT ?`
+      )
+      .all(reviewerId, limit) as Array<{
+      reviewer_id: string;
+      account_id: string;
+      scan_id: string;
+      evidence_id: string | null;
+      action: string;
+      occurred_at: string;
+    }>;
+  }
+}
+
+/** Says, in words, why a record is in the queue. */
+function explainFlag(findingStatus: string | null, identityStatus: string): string {
+  if (identityStatus === 'uncertain' || identityStatus === 'probable') {
+    return 'We are not certain this result is about the customer.';
+  }
+  if (findingStatus === 'confirmed_finding') {
+    return 'Classified as an established finding, which is the most damaging thing we can say.';
+  }
+  if (findingStatus === 'allegation') {
+    return 'An unsettled claim. Whether it is reported as one matters.';
+  }
+  if (findingStatus === 'disputed') {
+    return 'Sources contradict each other.';
+  }
+  if (findingStatus === 'corrected' || findingStatus === 'retracted') {
+    return 'The source withdrew or corrected this.';
+  }
+  return 'Flagged for a human to look at.';
+}
+
+/** Applies review decisions to evidence, the way customer decisions are applied. */
+export function applyReviewDecisions(
+  evidence: EvidenceRecord[],
+  decisions: ReviewDecision[]
+): EvidenceRecord[] {
+  if (decisions.length === 0) return evidence;
+
+  /**
+   * Newest decision per record wins; the rest are history.
+   *
+   * The caller hands these newest-first, including a rowid tiebreaker —
+   * two decisions can land in the same millisecond, and a timestamp alone
+   * then leaves which one is current up to the query planner.
+   */
+  const latest = new Map<string, ReviewDecision>();
+  for (const d of [...decisions].reverse()) latest.set(d.evidenceId, d);
+
+  return evidence.map((e) => {
+    const d = latest.get(e.id);
+    if (!d) return e;
+
+    const base = { ...e, reviewStatus: STATUS_FOR_OUTCOME[d.outcome] };
+
+    switch (d.outcome) {
+      case 'uphold':
+        return base;
+      case 'downgrade_to_allegation':
+        return { ...base, findingStatus: 'allegation' as const };
+      case 'reject_not_this_person':
+        return { ...base, identityStatus: 'rejected' as const, identityConfidence: 0 };
+      case 'reject_not_harm':
+        return {
+          ...base,
+          classification: 'commentary' as const,
+          findingStatus: 'opinion' as const,
+          severity: undefined,
+        };
+    }
+  });
+}

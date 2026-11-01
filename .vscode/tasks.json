@@ -1,0 +1,100 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start the app (demo build)",
+      "detail": "Production build, then serve on http://localhost:4300. Use this in front of an audience.",
+      "type": "shell",
+      "command": "npm run build --workspace @rep/website && npm run start --workspace @rep/website",
+      "group": { "kind": "build", "isDefault": true },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [{ "regexp": ".", "file": 1, "location": 2, "message": 3 }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Creating an optimized production build.*",
+          "endsPattern": ".*Ready in.*|.*started server on.*"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Start the app (dev, hot reload)",
+      "detail": "Reloads as you edit. Use this while working, not while demoing.",
+      "type": "shell",
+      "command": "npm run dev --workspace @rep/website",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [{ "regexp": ".", "file": 1, "location": 2, "message": 3 }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*(starting|compiling).*",
+          "endsPattern": ".*Ready in.*"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Stop the app",
+      "detail": "Frees port 4300. next start renames itself to next-server, so pkill by name misses it.",
+      "type": "shell",
+      "command": "lsof -ti:4300 | xargs kill -9 2>/dev/null; echo 'port 4300 free'",
+      "presentation": { "reveal": "silent", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Reset the demo database",
+      "detail": "Fresh account and fresh rate limits. Run before a demo.",
+      "type": "shell",
+      "command": "find apps/website/.data -name 'rep.db*' -delete 2>/dev/null; echo 'database reset'",
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run all tests",
+      "detail": "Engine, persistence and contrast checks.",
+      "type": "shell",
+      "command": "npm test",
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Typecheck everything",
+      "type": "shell",
+      "command": "npm run typecheck",
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Audit engine demo (terminal)",
+      "detail": "Prints a full report for one fixture scenario, no browser needed.",
+      "type": "shell",
+      "command": "cd packages/domain && node src/demo.ts ${input:scenario}",
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "scenario",
+      "type": "pickString",
+      "description": "Which fixture scenario?",
+      "default": "official_finding",
+      "options": [
+        "strong",
+        "official_finding",
+        "allegation",
+        "syndicated",
+        "corroborated",
+        "retracted",
+        "employer_collision",
+        "ambiguous",
+        "sparse",
+        "empty",
+        "provider_error",
+        "rate_limited"
+      ]
+    }
+  ]
+}

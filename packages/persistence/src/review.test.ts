@@ -1,0 +1,331 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { open } from './db.ts';
+import { ScanRepository, type AccountScope } from './repository.ts';
+import { ReviewRepository, applyReviewDecisions } from './review.ts';
+import { rebuildReport } from './report.ts';
+import { listEvents } from './events.ts';
+import {
+  runAudit,
+  FixtureSearchProvider,
+  SELF_AUDIT_ATTESTATION,
+  type AuditPurpose,
+  type ProfessionalIdentity,
+} from '@rep/domain';
+
+const PURPOSE: AuditPurpose = {
+  kind: 'self_audit',
+  attestationText: SELF_AUDIT_ATTESTATION,
+  attestedAt: '2026-10-30T00:00:00.000Z',
+  verification: 'verified_email',
+};
+
+const ADONI: ProfessionalIdentity = {
+  fullName: 'Jensen Adoni',
+  profession: 'attorney',
+  employer: 'Adoni Law',
+  city: 'Chicago',
+  region: 'Illinois',
+  credentials: ['JD'],
+  websiteUrl: 'https://adoni-law.example',
+};
+
+async function setup(scenario = 'official_finding') {
+  const db = open({ location: ':memory:' });
+  const repo = new ScanRepository(db);
+  const review = new ReviewRepository(db);
+
+  const account = repo.createAccount('jensen@example.test');
+  const scope: AccountScope = { accountId: account.id, actor: 'customer' };
+
+  const report = await runAudit({
+    identity: ADONI,
+    purpose: PURPOSE,
+    provider: new FixtureSearchProvider(scenario as never),
+  });
+  if (report.status !== 'complete') throw new Error('expected a report');
+
+  const scanId = repo.saveScan(scope, {
+    identity: ADONI,
+    status: 'complete',
+    provider: 'fixture',
+    isFixture: true,
+    window: 10,
+    queries: report.scan.queries,
+    purpose: PURPOSE,
+    requesterId: 'test',
+    evidence: report.evidence,
+  });
+
+  const reviewer = review.createStaff('ops@example.test', 'reviewer');
+  const rScope = review.scopeFor(reviewer.id)!;
+
+  return { db, repo, review, scope, scanId, reviewer, rScope, report };
+}
+
+/* ------------------------------------------------------------- the queue */
+
+test('flagged records reach the queue, and unflagged ones do not', async () => {
+  const { review, rScope, report } = await setup();
+
+  const queue = review.queue(rScope);
+  assert.ok(queue.length > 0, 'the disciplinary scenario should flag something');
+
+  const flaggedIds = report.evidence
+    .filter((e) => e.reviewStatus === 'needs_human_review')
+    .map((e) => e.id)
+    .sort();
+
+  assert.deepEqual(queue.map((q) => q.evidenceId).sort(), flaggedIds);
+});
+
+test('the queue says why each record is there', async () => {
+  const { review, rScope } = await setup();
+
+  for (const item of review.queue(rScope)) {
+    assert.ok(item.flaggedBecause.length > 20, `no reason given for ${item.evidenceId}`);
+  }
+});
+
+test('the queue carries no customer details beyond the record being judged', async () => {
+  const { review, rScope } = await setup();
+  const item = review.queue(rScope)[0];
+
+  // A reviewer deciding whether a disbarment notice is the right person does
+  // not need their email, their plan or their other scans.
+  const keys = Object.keys(item);
+  for (const leaked of ['email', 'customerName', 'plan', 'subscription', 'fullName']) {
+    assert.ok(!keys.includes(leaked), `the queue item exposes ${leaked}`);
+  }
+});
+
+test('a decided record leaves the queue', async () => {
+  const { review, rScope, scanId } = await setup();
+  const before = review.queue(rScope);
+  const target = before[0];
+
+  review.decide(rScope, scanId, target.evidenceId, 'uphold', 'Checked the court record; it matches.');
+
+  const after = review.queue(rScope).map((q) => q.evidenceId);
+  assert.ok(!after.includes(target.evidenceId));
+  assert.equal(after.length, before.length - 1);
+});
+
+/* --------------------------------------------------------- the rationale */
+
+test('a decision without a written reason is refused', async () => {
+  const { review, rScope, scanId } = await setup();
+  const target = review.queue(rScope)[0];
+
+  // A judgement that moves someone's risk level and says nothing about why
+  // cannot be reviewed by anybody else.
+  assert.throws(
+    () => review.decide(rScope, scanId, target.evidenceId, 'uphold', ''),
+    /written reason/
+  );
+  assert.throws(
+    () => review.decide(rScope, scanId, target.evidenceId, 'uphold', 'ok'),
+    /written reason/
+  );
+});
+
+test('the rationale is stored and attributed', async () => {
+  const { review, rScope, scanId, reviewer } = await setup();
+  const target = review.queue(rScope)[0];
+
+  review.decide(
+    rScope,
+    scanId,
+    target.evidenceId,
+    'downgrade_to_allegation',
+    'The commission page shows a pending hearing, not a decided matter.'
+  );
+
+  const [decision] = review.decisionsFor(scanId);
+  assert.equal(decision.reviewerId, reviewer.id);
+  assert.equal(decision.outcome, 'downgrade_to_allegation');
+  assert.match(decision.rationale, /pending hearing/);
+});
+
+/* -------------------------------------------- the effect on the report */
+
+test('rejecting a finding as the wrong person changes the customer’s report', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const before = rebuildReport(repo.getScan(scope, scanId)!, { reviews: [] });
+  assert.equal(before.risk.level, 'severe');
+
+  const finding = review
+    .queue(rScope)
+    .find((q) => q.findingStatus === 'confirmed_finding')!;
+
+  review.decide(
+    rScope,
+    scanId,
+    finding.evidenceId,
+    'reject_not_this_person',
+    'Different middle initial and a different bar number. Not our customer.'
+  );
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  assert.notEqual(after.risk.level, 'severe', 'the review did not reach the report');
+  assert.equal(after.reviewCount, 1);
+});
+
+test('downgrading a finding softens the level without hiding it', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+
+  review.decide(
+    rScope,
+    scanId,
+    finding.evidenceId,
+    'downgrade_to_allegation',
+    'Reported by one outlet with no official record behind it.'
+  );
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  // Still visible, no longer stated as established.
+  const stillThere = after.risk.findings.find((f) => f.evidenceId === finding.evidenceId);
+  assert.ok(stillThere, 'a downgraded finding must not vanish');
+  assert.equal(stillThere!.status, 'allegation');
+});
+
+test('upholding a finding leaves it exactly as it was', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const before = rebuildReport(repo.getScan(scope, scanId)!, { reviews: [] });
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+
+  review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Official record, correct person.');
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  assert.equal(after.risk.level, before.risk.level);
+  const record = after.evidence.find((e) => e.id === finding.evidenceId)!;
+  assert.equal(record.reviewStatus, 'reviewer_upheld');
+});
+
+test('the customer has the last word on whether a result is them', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+
+  review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Official record, looks correct.');
+  repo.recordDecision(scope, scanId, finding.evidenceId, 'rejected');
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  // A reviewer can be confident and still be wrong about which Jensen Adoni
+  // this is. The person whose name it is gets the final say.
+  const record = after.evidence.find((e) => e.id === finding.evidenceId)!;
+  assert.equal(record.identityStatus, 'rejected');
+  assert.equal(record.reviewStatus, 'customer_rejected');
+});
+
+/* ------------------------------------------------------------- the log */
+
+test('every record a reviewer reads is logged, not just the ones decided', async () => {
+  const { review, rScope, reviewer } = await setup();
+
+  const queue = review.queue(rScope);
+  const log = review.accessLog(reviewer.id);
+
+  // A log of decisions alone misses the reviewer who read fifty records and
+  // decided nothing, which is the access pattern worth noticing.
+  assert.equal(log.filter((l) => l.action === 'listed').length, queue.length);
+});
+
+test('a decision is logged as access and as an audit event', async () => {
+  const { db, review, rScope, scope, scanId, reviewer } = await setup();
+  const target = review.queue(rScope)[0];
+
+  review.decide(rScope, scanId, target.evidenceId, 'uphold', 'Verified against the source.');
+
+  const access = review.accessLog(reviewer.id);
+  assert.ok(access.some((l) => l.action === 'decided:uphold'));
+
+  const events = listEvents(db, scope.accountId);
+  const reviewed = events.find((e) => e.action === 'evidence.reviewed')!;
+  assert.equal(reviewed.actor, `reviewer:${reviewer.id}`);
+});
+
+test('the audit event does not duplicate the rationale', async () => {
+  const { db, review, rScope, scope, scanId } = await setup();
+  const target = review.queue(rScope)[0];
+  const rationale = 'A very specific sentence about the court record.';
+
+  review.decide(rScope, scanId, target.evidenceId, 'uphold', rationale);
+
+  // It lives in review_decisions. Copying it here would put the same
+  // judgement in two places with two retention stories.
+  const blob = JSON.stringify(listEvents(db, scope.accountId));
+  assert.ok(!blob.includes(rationale));
+});
+
+/* ------------------------------------------------------------- staff */
+
+test('a disabled reviewer has no scope', async () => {
+  const { review, reviewer } = await setup();
+
+  assert.ok(review.scopeFor(reviewer.id));
+  review.disableStaff(reviewer.id);
+  assert.equal(review.scopeFor(reviewer.id), null);
+});
+
+test('an unknown staff id has no scope', async () => {
+  const { review } = await setup();
+  assert.equal(review.scopeFor('staff_made_up'), null);
+});
+
+/* -------------------------------------------------- applying decisions */
+
+test('applyReviewDecisions leaves untouched evidence alone', async () => {
+  const { report } = await setup();
+  assert.deepEqual(applyReviewDecisions(report.evidence, []), report.evidence);
+});
+
+test('the newest decision on a record wins', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+
+  review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Looked right on first pass.');
+  review.decide(
+    rScope,
+    scanId,
+    finding.evidenceId,
+    'reject_not_harm',
+    'On a second look this is a procedural note, not a sanction.'
+  );
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  const record = after.evidence.find((e) => e.id === finding.evidenceId)!;
+  assert.equal(record.classification, 'commentary');
+  assert.equal(record.severity, undefined);
+
+  // Both judgements survive, so the sequence can be reconstructed later.
+  assert.equal(review.decisionsFor(scanId).length, 2);
+});
+
+test('pending count reflects the queue', async () => {
+  const { review, rScope, scanId } = await setup();
+  const before = review.pendingCount();
+  assert.ok(before > 0);
+
+  const target = review.queue(rScope)[0];
+  review.decide(rScope, scanId, target.evidenceId, 'uphold', 'Checked and correct.');
+
+  assert.equal(review.pendingCount(), before - 1);
+});
