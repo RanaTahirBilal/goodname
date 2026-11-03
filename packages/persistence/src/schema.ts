@@ -431,4 +431,28 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_sessions_expiry ON sessions (expires_at);
     `,
   },
+  {
+    version: 7,
+    name: 'sensitivity',
+    sql: `
+      /**
+       * Which special category a result tripped, and why.
+       *
+       * Deliberately not the text that tripped it. By the time a record
+       * reaches this table its title and excerpt have already been replaced
+       * — the domain engine drops them in buildEvidence, so the original
+       * wording never arrives here to be stored. These columns hold the
+       * category names and the pattern names, both of which are safe to keep,
+       * log and show a reviewer.
+       *
+       * Nullable because every row written before this migration predates
+       * the assessment. A null means "never assessed", which is a different
+       * statement from "assessed and clean", and the report must not confuse
+       * them.
+       */
+      ALTER TABLE evidence ADD COLUMN sensitivity_categories TEXT;
+      ALTER TABLE evidence ADD COLUMN sensitivity_signals TEXT;
+      ALTER TABLE evidence ADD COLUMN sensitivity_withheld INTEGER;
+    `,
+  },
 ];

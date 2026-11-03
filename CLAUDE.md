@@ -165,6 +165,28 @@ run and be tested with no build step.
     transaction rolls back, and the deletion request fails with nothing
     removed.
 
+**Special categories**
+
+16aa. The excerpt is withheld, not the result. A result touching health,
+    faith, politics, orientation, ethnicity, union membership or immigration
+    status loses its title and excerpt before the record is built; the URL,
+    source and date stay. We decline to hold a copy. We do not hide it from
+    the person it is about, and we say in the report that we did it.
+16ab. Never store the text, and never store the matched word. `signals`
+    carries pattern names, because "HIV" in a signal field is the datum
+    itself, in the column designed to be safe to log.
+16ac. Redact after clustering. Every withheld record carries identical
+    placeholder text, so redacting first makes the clusterer read unrelated
+    results as reprints of one another — and a cluster is what promotes an
+    allegation to a finding.
+16ad. Withheld material never reaches risk and never reaches a reviewer.
+    Someone's illness is not a reputation finding, and queueing it would send
+    staff to the source to read it.
+16ae. An official record is never withheld. A disbarment that mentions a
+    health condition is still a disbarment, and suppressing it is the tool
+    failing rather than the tool being careful. See OQ-19 for the case this
+    does not settle.
+
 **Permission**
 
 16. Enforce authorization and entitlements server-side. Never trust

@@ -52,6 +52,7 @@ const SCENARIOS = [
   ['retracted', 'A story the source later withdrew'],
   ['employer_collision', 'News about the firm, not the person'],
   ['ambiguous', 'A different person with the same name'],
+  ['sensitive', 'Personal matters mixed in with professional ones'],
   ['sparse', 'Almost nothing findable'],
   ['empty', 'The search returns no results'],
   ['provider_error', 'The search provider fails'],

@@ -17,6 +17,7 @@ import type {
   PresenceScore,
   ProfessionalIdentity,
   RiskAssessment,
+  SpecialCategory,
 } from '@rep/domain';
 import { type Db, newId, toJson, fromJson, bool, transaction } from './db.ts';
 import { recordEvent } from './events.ts';
@@ -269,8 +270,9 @@ export class ScanRepository {
             identity_status, identity_signals, source_reliability, authority, classification,
             classification_conf, classification_reason, finding_status, severity,
             severity_rationale, review_status, contradicted_by, correction_of,
-            story_cluster_id, duplicate_of, independent_sources)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            story_cluster_id, duplicate_of, independent_sources,
+            sensitivity_categories, sensitivity_signals, sensitivity_withheld)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         e.id, scanId, accountId, e.sourceUrl, e.sourceName, e.domain, e.retrievedAt,
@@ -280,7 +282,19 @@ export class ScanRepository {
         e.classificationRationale, e.findingStatus ?? null, e.severity ?? null,
         e.severityRationale ?? null, e.reviewStatus,
         e.contradictedBy ? toJson(e.contradictedBy) : null, e.correctionOf ?? null,
-        e.storyClusterId ?? null, e.duplicateOf ?? null, e.independentSourcesInCluster ?? null
+        e.storyClusterId ?? null, e.duplicateOf ?? null, e.independentSourcesInCluster ?? null,
+        /**
+         * The categories and the pattern names, never the matched text.
+         *
+         * The engine has already replaced the title and excerpt of a
+         * withheld record, so there is nothing sensitive left to write —
+         * but this is the line someone would edit to "keep the original
+         * just in case", and the comment is here to say that the just-in-
+         * case copy is the whole thing we are avoiding.
+         */
+        e.sensitivity ? toJson(e.sensitivity.categories) : null,
+        e.sensitivity ? toJson(e.sensitivity.signals) : null,
+        e.sensitivity ? (e.sensitivity.withhold ? 1 : 0) : null
       );
   }
 
@@ -364,6 +378,25 @@ export class ScanRepository {
         duplicateOf: (e.duplicate_of as string) ?? undefined,
         independentSourcesInCluster:
           e.independent_sources === null ? undefined : Number(e.independent_sources),
+
+        /**
+         * Undefined means never assessed, which is not the same as clean.
+         *
+         * Rows written before migration 7 have no assessment at all. A
+         * reader that treated null as `withhold: false` would be asserting
+         * something nobody ever checked.
+         */
+        sensitivity:
+          e.sensitivity_withheld === null || e.sensitivity_withheld === undefined
+            ? undefined
+            : {
+                categories: fromJson<SpecialCategory[]>(
+                  e.sensitivity_categories as string,
+                  []
+                ),
+                signals: fromJson<string[]>(e.sensitivity_signals as string, []),
+                withhold: Number(e.sensitivity_withheld) === 1,
+              },
       };
     });
   }

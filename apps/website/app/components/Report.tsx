@@ -104,6 +104,24 @@ const IDENTITY_WORD: Record<string, string> = {
   rejected: 'Not you',
 };
 
+/**
+ * Category names in the reader's words.
+ *
+ * `racial_or_ethnic_origin` is the legal term and reads like one. Someone
+ * looking at a report about themselves is owed a sentence, not a citation.
+ */
+const CATEGORY_WORD: Record<string, string> = {
+  health: 'Health',
+  religion: 'Religion or belief',
+  political_opinion: 'Political views',
+  sexual_orientation: 'Sexual orientation',
+  racial_or_ethnic_origin: 'Race or ethnicity',
+  trade_union: 'Union membership',
+  immigration_status: 'Immigration status',
+};
+
+const categoryWord = (c: string): string => CATEGORY_WORD[c] ?? 'Personal information';
+
 /* ------------------------------------------------------------ sections */
 
 export function FixtureBanner() {
@@ -500,14 +518,40 @@ function Confidence({
 }
 
 function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
+  const withheld = evidence.filter((e) => e.sensitivity?.withhold);
+
   return (
     <section className="card card-flush">
-      <div style={{ padding: '24px 24px 16px' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: 6 }}>Evidence</h2>
+      <div style={{ padding: 'var(--s-6) var(--s-6) var(--s-4)' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--s-2)' }}>Evidence</h2>
         <p className="small">
           Everything we looked at, including what we excluded and why. Excerpts are quoted
           as the source wrote them and are never paraphrased into a claim.
         </p>
+
+        {/**
+         * Said out loud, rather than left as rows that look oddly blank.
+         *
+         * A reader who sees "Withheld" five times and no explanation
+         * reasonably concludes something is being kept from them. The
+         * opposite is true — we declined to keep a copy — and that is only
+         * reassuring if it is stated.
+         */}
+        {withheld.length > 0 && (
+          <div className="notice notice-info" style={{ marginTop: 'var(--s-4)' }}>
+            <div>
+              <strong>
+                {withheld.length === 1
+                  ? 'One result is not quoted here'
+                  : `${withheld.length} results are not quoted here`}
+              </strong>
+              They appear to touch on personal matters — things like health, faith,
+              politics or immigration — rather than professional ones. We do not store or
+              repeat that material, and none of it affects your score or your risk level.
+              Each one still links to its source, which is public and unchanged.
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="scroll-x">
@@ -543,6 +587,23 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                   )}
                 </td>
                 <td data-label="What it is" style={{ minWidth: 150 }}>
+                  {e.sensitivity?.withhold ? (
+                    <>
+                      <span className="pill pill-info">Not quoted</span>
+                      {/**
+                       * The category, not the content. "Health" says why the
+                       * excerpt is missing without restating the thing the
+                       * excerpt said.
+                       */}
+                      <div className="small" style={{ marginTop: 'var(--s-2)' }}>
+                        {e.sensitivity.categories.map(categoryWord).join(', ')}
+                      </div>
+                      <div className="small" style={{ marginTop: 'var(--s-2)' }}>
+                        Excluded from your score and your risk level.
+                      </div>
+                    </>
+                  ) : (
+                    <>
                   <span className="pill pill-neutral">{e.classification}</span>
                   {e.findingStatus && (
                     <div className="small" style={{ marginTop: 6 }}>
@@ -552,6 +613,8 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                   <div className="small" style={{ marginTop: 6 }}>
                     {e.classificationRationale}
                   </div>
+                    </>
+                  )}
                 </td>
                 <td data-label="Is it you" style={{ minWidth: 130 }}>
                   <span className="pill pill-neutral">

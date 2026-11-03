@@ -17,6 +17,37 @@
  * finding must not reach a customer.
  */
 
+/* --------------------------------------------------- special categories */
+
+/**
+ * The GDPR Article 9 categories, as they turn up in a name search.
+ *
+ * Named for the category rather than for the word that matched, because the
+ * matched word is frequently the sensitive datum itself. Criminal and
+ * regulatory findings are deliberately absent: that material is the product,
+ * and `engine/sensitive.ts` explains why suppressing it would be the tool
+ * failing rather than the tool being careful.
+ */
+export type SpecialCategory =
+  | 'health'
+  | 'religion'
+  | 'political_opinion'
+  | 'sexual_orientation'
+  | 'racial_or_ethnic_origin'
+  | 'trade_union'
+  | 'immigration_status';
+
+export interface SensitivityAssessment {
+  categories: SpecialCategory[];
+  /**
+   * Why it tripped, as pattern names — never the matched text. Safe to
+   * store, safe to log, safe to put in front of a reviewer.
+   */
+  signals: string[];
+  /** True when the title and excerpt must be dropped before storage. */
+  withhold: boolean;
+}
+
 /* ----------------------------------------------------------- the customer */
 
 export interface ProfessionalIdentity {
@@ -220,6 +251,15 @@ export interface EvidenceRecord {
    * may promote an allegation to a finding.
    */
   independentSourcesInCluster?: number;
+
+  /**
+   * Set when the result appears to carry special-category personal data.
+   *
+   * Its presence means `title` and `excerpt` have already been replaced:
+   * the original text is dropped before the record exists, so it never
+   * reaches storage, a report or a reviewer. See `engine/sensitive.ts`.
+   */
+  sensitivity?: SensitivityAssessment;
 }
 
 /* -------------------------------------------- A. Online Presence Score */

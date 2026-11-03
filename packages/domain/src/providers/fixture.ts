@@ -19,19 +19,36 @@ import type {
   SearchResult,
 } from '../contracts/types.ts';
 
-export type FixtureScenario =
-  | 'strong'
-  | 'official_finding'
-  | 'allegation'
-  | 'syndicated'
-  | 'corroborated'
-  | 'retracted'
-  | 'employer_collision'
-  | 'ambiguous'
-  | 'sparse'
-  | 'empty'
-  | 'provider_error'
-  | 'rate_limited';
+/**
+ * Every scenario, in one list, with the type derived from it.
+ *
+ * It used to be the other way round — a union here, and a hand-kept copy of
+ * the same names in the website's audit route. Adding `sensitive` to the
+ * union did nothing: the route did not recognise the name, fell back to
+ * `strong` without complaining, and served a confident report of the wrong
+ * scenario. A silent fallback hid it, so the engine and the app disagreed
+ * and neither said so.
+ *
+ * Deriving the type from the array makes the array the only place a
+ * scenario is named, and `scenarios.test.ts` holds the app to it.
+ */
+export const FIXTURE_SCENARIOS = [
+  'strong',
+  'official_finding',
+  'allegation',
+  'syndicated',
+  'corroborated',
+  'retracted',
+  'employer_collision',
+  'ambiguous',
+  'sensitive',
+  'sparse',
+  'empty',
+  'provider_error',
+  'rate_limited',
+] as const;
+
+export type FixtureScenario = (typeof FIXTURE_SCENARIOS)[number];
 
 /** Fixed so tests are deterministic rather than drifting with the clock. */
 export const FIXTURE_OBSERVED_AT = '2026-10-29T00:00:00.000Z';
@@ -277,6 +294,68 @@ const SCENARIOS: Record<
       publishedAt: '2025-05-20T00:00:00.000Z',
     },
     BROKER,
+  ],
+
+  /**
+   * A name search that wanders out of professional life.
+   *
+   * Three of these must be withheld and two must not, and the two that must
+   * not are the point: a cancer specialist's practice page and an
+   * immigration attorney's casework both read as special-category material
+   * to anything matching on topic words alone. A filter that swallowed them
+   * would quietly empty the report of exactly the professionals this product
+   * is for.
+   */
+  sensitive: [
+    {
+      url: 'https://adoni-law.example/team/jensen-adoni',
+      sourceName: 'Adoni Law',
+      title: 'Jensen Adoni — Partner, Immigration',
+      snippet:
+        'Jensen Adoni is counsel for claimants in asylum and deportation matters, ' +
+        'and represents families through the residency application process.',
+      position: 1,
+      sourceType: 'owned',
+    },
+    {
+      url: 'https://chicagoherald.example/adoni-recovery',
+      sourceName: 'Chicago Herald',
+      title: 'Chicago attorney opens up about his cancer diagnosis',
+      snippet:
+        'Jensen Adoni was diagnosed with cancer last spring and spoke about his ' +
+        'treatment at a fundraiser this week.',
+      position: 2,
+      sourceType: 'press',
+      publishedAt: '2026-04-11',
+    },
+    {
+      url: 'https://communitynews.example/adoni-faith',
+      sourceName: 'Community News',
+      title: 'Adoni on practising his faith',
+      snippet: 'The attorney, who converted to Islam in his twenties, helps run the mosque.',
+      position: 4,
+      sourceType: 'press',
+      publishedAt: '2025-11-02',
+    },
+    {
+      url: 'https://statepolitics.example/donors-2025',
+      sourceName: 'State Politics',
+      title: 'Who funded the 2025 races',
+      snippet: 'Jensen Adoni donated to the Democratic Party campaign last year.',
+      position: 6,
+      sourceType: 'press',
+      publishedAt: '2025-12-20',
+    },
+    {
+      url: 'https://chicagohealth.example/oncology-team',
+      sourceName: 'Chicago Health',
+      title: 'Dr Priya Adoni, cancer specialist',
+      snippet:
+        'A consultant at the clinic, Dr Adoni treats patients with diabetes and cancer ' +
+        'and leads research into early detection.',
+      position: 9,
+      sourceType: 'press',
+    },
   ],
 
   sparse: [

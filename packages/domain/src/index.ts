@@ -4,6 +4,7 @@ export * from './engine/identity.ts';
 export * from './engine/classify.ts';
 export * from './engine/dedupe.ts';
 export * from './engine/evidence.ts';
+export * from './engine/sensitive.ts';
 export * from './engine/score.ts';
 export * from './engine/risk.ts';
 export * from './engine/confidence.ts';

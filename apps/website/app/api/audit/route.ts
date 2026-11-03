@@ -16,6 +16,7 @@ import {
   gate,
   validateIdentity,
   FixtureSearchProvider,
+  FIXTURE_SCENARIOS,
   SELF_AUDIT_ATTESTATION,
   type AuditPurpose,
   type FixtureScenario,
@@ -28,11 +29,14 @@ import { ensureScope } from '../../../src/server/session.ts';
 
 const PROFESSIONS: Profession[] = ['attorney', 'physician', 'founder', 'executive', 'other'];
 
-const SCENARIOS: FixtureScenario[] = [
-  'strong', 'official_finding', 'allegation', 'syndicated', 'corroborated',
-  'retracted', 'employer_collision', 'ambiguous', 'sparse', 'empty',
-  'provider_error', 'rate_limited',
-];
+/**
+ * Taken from the engine, never retyped.
+ *
+ * This was a hand-kept copy, and it drifted the moment a scenario was added:
+ * the unrecognised name fell through to `strong` and the report looked
+ * perfectly normal while describing the wrong thing.
+ */
+const SCENARIOS: readonly FixtureScenario[] = FIXTURE_SCENARIOS;
 
 const str = (v: unknown): string | undefined => {
   if (typeof v !== 'string') return undefined;

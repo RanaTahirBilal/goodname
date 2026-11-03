@@ -140,6 +140,67 @@ step: someone who has changed their name twice has no way through.
 
 **Assumed meanwhile:** refused, with a message explaining why.
 
+### OQ-18 — Special-category detection is lexical, not a classifier
+**Blocks:** nothing today. Becomes urgent the day a real search provider runs.
+
+`engine/sensitive.ts` decides whether a result touches health, faith,
+politics, orientation, ethnicity, union membership or immigration status by
+matching topic words against attributive and professional-context phrases. It
+is the same shape as `classify.ts` and has the same ceiling: it cannot read
+implication, euphemism or any language it was not written for, and a miss is
+the direction that costs someone something.
+
+The handling is deliberately stronger than the detection. A tripped result
+loses its title and excerpt before storage, so a false positive costs an
+excerpt the reader can still click through to, while a false negative is the
+only way sensitive text reaches the database. That asymmetry is what makes a
+blunt detector acceptable in the meantime — not a claim that the detector is
+good.
+
+What a model classifier has to do better: attribution ("his diagnosis" versus
+"a diagnosis"), inference from context rather than vocabulary, and languages
+other than English. The interface it must satisfy is already fixed —
+`assessSensitivity(title, excerpt)` returning categories, signals and a
+withhold decision — so swapping the implementation changes one file.
+
+**Assumed meanwhile:** the filter is a floor, not a guarantee. Nothing in the
+product tells a customer that their results were checked and found clean,
+because that is a claim this cannot support.
+
+### OQ-19 — A finding and a special category in the same story
+**Blocks:** nothing yet. Needs an answer before real press results are stored.
+
+A newspaper covering a conviction that also mentions the person's illness is
+one document carrying both the thing we exist to report and the thing we
+refuse to hold. The two rules point in opposite directions, and there is no
+version that satisfies both: withholding suppresses a real finding, and not
+withholding repeats a health disclosure.
+
+Settled so far: an **official record is never withheld**. A determination is
+Article 10 material, the product's whole purpose, and in practice a court
+order rarely doubles as a health story. That carve-out is implemented and
+tested.
+
+Unsettled: the non-official mixed story. A single non-official source only
+ever produces an allegation, so withholding it suppresses an allegation
+rather than a finding — which is a smaller loss, and the current behaviour.
+But two independent outlets can corroborate an allegation into a finding, and
+at that point withholding both would hide something real.
+
+Options, none of them free:
+  - Withhold the excerpt but keep the finding, citing the source without
+    quoting it. Keeps both, at the cost of a finding the reader cannot see
+    the words behind.
+  - Withhold entirely and accept the suppression. Simple, and occasionally
+    wrong in the direction that matters to a customer.
+  - Route it to a human, which is the one case where sending a reviewer to
+    the source might be justified — and needs OQ-6's answer first.
+
+**Assumed meanwhile:** withheld, and therefore excluded from risk. The
+conservative option, chosen on the grounds that the alternative is this
+product repeating someone's medical history, and recorded here rather than
+left to be discovered.
+
 ---
 
 ## Needs legal review

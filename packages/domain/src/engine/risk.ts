@@ -175,7 +175,21 @@ export function assessRisk(input: RiskInput): RiskAssessment {
 
   // One finding per story. A syndicated copy is evidence of the same event,
   // not a second event.
-  const primaries = records.filter((r) => r.duplicateOf === undefined);
+  const primaries = records
+    .filter((r) => r.duplicateOf === undefined)
+    /**
+     * Special-category material never becomes a risk finding.
+     *
+     * Someone's illness, faith, orientation or immigration history is not a
+     * reputation risk, and reporting it as one would be this product doing
+     * the harm it claims to measure. This is rule 10 taken to its
+     * conclusion: negative is not harmful, and personal is not negative.
+     *
+     * The record still exists and still counts as a result that ranks for
+     * the name. It contributes nothing to the level, the findings or the
+     * severity, and its text was dropped before it ever got here.
+     */
+    .filter((r) => !r.sensitivity?.withhold);
 
   const negatives = primaries.filter((r) => r.classification === 'negative');
   const commentary = primaries
