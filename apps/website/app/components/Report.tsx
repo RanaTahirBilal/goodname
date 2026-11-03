@@ -124,6 +124,26 @@ const categoryWord = (c: string): string => CATEGORY_WORD[c] ?? 'Personal inform
 
 /* ------------------------------------------------------------ sections */
 
+/**
+ * Print, which in every modern browser also means save as PDF.
+ *
+ * Deliberately not labelled "Download PDF": it opens a print dialogue, and
+ * naming it after a file the reader then has to choose to create would be
+ * promising something this does not do by itself.
+ */
+function SaveButton() {
+  return (
+    <button
+      type="button"
+      className="btn btn-secondary no-print"
+      onClick={() => window.print()}
+      style={{ flex: '0 0 auto' }}
+    >
+      Print or save as PDF
+    </button>
+  );
+}
+
 export function FixtureBanner() {
   return (
     <div className="notice notice-warning" role="status">
@@ -555,7 +575,7 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
       </div>
 
       <div className="scroll-x">
-        <table className="table">
+        <table className="table table-evidence">
           <thead>
             <tr>
               <th>Result</th>
@@ -781,9 +801,33 @@ export function Report({
     <div className="stack" style={{ ['--gap' as string]: '24px' }}>
       {report.scan.isFixture && <FixtureBanner />}
 
-      <div>
-        <p className="eyebrow">Audit report</p>
-        <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.5rem)' }}>{name}</h1>
+      <div
+        className="row"
+        style={{
+          justifyContent: 'space-between',
+          alignItems: 'flex-end',
+          gap: 'var(--s-4)',
+          // `.row` does not wrap. A 48px-tall button beside a display-size
+          // name is wider than a phone, and an unwrapped row turns that into
+          // sideways scroll on the one page nobody should have to scroll.
+          flexWrap: 'wrap',
+        }}
+      >
+        <div>
+          <p className="eyebrow">Audit report</p>
+          <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.5rem)' }}>{name}</h1>
+        </div>
+
+        {/**
+         * Printing is the save button.
+         *
+         * Every browser's print dialogue offers "Save as PDF", so this is a
+         * document export without a PDF library, a server round trip or a
+         * second rendering of the report that could drift from the first.
+         * The print stylesheet does the work; `no-print` keeps the control
+         * itself off the paper.
+         */}
+        <SaveButton />
       </div>
 
       <ScanSummary scan={report.scan} />
