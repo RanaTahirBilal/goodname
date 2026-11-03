@@ -455,4 +455,30 @@ export const MIGRATIONS: Migration[] = [
       ALTER TABLE evidence ADD COLUMN sensitivity_withheld INTEGER;
     `,
   },
+  {
+    version: 8,
+    name: 'scheduled_deletion',
+    sql: `
+      /**
+       * Deletion is requested, then purged, with a grace period between.
+       *
+       * api-contract.md section 12 specifies 30 days and a cancellation
+       * window, which is also what both app stores expect. Hard deletion
+       * already existed as a primitive and was unreachable; this is what a
+       * customer actually triggers, and the purge runs on the same hourly
+       * sweep that ages out evidence.
+       *
+       * Deliberately NOT setting the existing deleted_at column. The unique
+       * email index is partial on deleted_at IS NULL, so marking the account
+       * deleted would free the address for a new account immediately — and
+       * then cancelling within the grace period would collide. A pending
+       * deletion is a live account that has asked to stop, not a dead one.
+       */
+      ALTER TABLE accounts ADD COLUMN deletion_requested_at TEXT;
+      ALTER TABLE accounts ADD COLUMN purge_at TEXT;
+      ALTER TABLE accounts ADD COLUMN deletion_reason TEXT;
+
+      CREATE INDEX idx_accounts_purge ON accounts (purge_at);
+    `,
+  },
 ];

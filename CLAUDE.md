@@ -187,6 +187,26 @@ run and be tested with no build step.
     failing rather than the tool being careful. See OQ-19 for the case this
     does not settle.
 
+**Account rights**
+
+16af. A right nobody can exercise is not a right. Export and hard deletion
+    existed in the repository, with tests, and had no caller for weeks. If
+    you implement a customer right, implement the route and the screen in
+    the same change.
+16ag. Deletion is scheduled, not immediate. 30 days, then a hard purge, per
+    `api-contract.md` section 12 and both app stores. Requesting it twice
+    does not restart the clock.
+16ah. A pending deletion never sets `deleted_at`. The unique email index is
+    partial on it, so marking the account deleted frees the address while
+    the account is still recoverable, and cancelling then collides.
+16ai. The purge is the hard deletion, not a flag. It routes through
+    `deleteAccount`, so the tests for hard deletion are also the tests for
+    what the grace period ends in.
+16aj. Anything on a clock runs because the server started, not because a
+    customer did something. The worker used to start on the first audit,
+    which meant the person who asked to be deleted and never came back was
+    the one person whose purge never ran.
+
 **Permission**
 
 16. Enforce authorization and entitlements server-side. Never trust

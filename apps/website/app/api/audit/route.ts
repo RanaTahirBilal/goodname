@@ -127,6 +127,28 @@ export async function POST(req: NextRequest) {
 
   const websiteChecks = websiteChecksFor(identity);
 
+  /**
+   * An account on its way out does not start new work.
+   *
+   * Checked before the gate, because this is not a rate limit and should
+   * not spend one of the customer's own attempts. Refusing rather than
+   * silently cancelling the deletion: quietly reinstating an account
+   * because somebody clicked the wrong button is the kind of helpfulness
+   * nobody asked for, on the one decision they were made to confirm.
+   */
+  const pendingDeletion = store().repo.deletionStatus(scope);
+  if (pendingDeletion) {
+    return NextResponse.json(
+      {
+        status: 'not_permitted',
+        reason: 'deletion_pending',
+        message:
+          'This account is scheduled for deletion. Cancel that first and the audit will run.',
+      },
+      { status: 409 }
+    );
+  }
+
   // The gate is the one piece that must run inline. It is cheap, it decides
   // whether any work happens at all, and a refusal should not leave a queued
   // job behind for a worker to discover.

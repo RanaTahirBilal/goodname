@@ -1,8 +1,15 @@
 /**
  * The in-process job worker.
  *
- * Polls the queue, runs the handler, records the result. Started lazily on
- * first use so a build or a one-off script does not spin one up.
+ * Polls the queue, runs the handler, records the result.
+ *
+ * Started by `instrumentation.ts` when the server starts, not lazily on the
+ * first audit. The lazy version meant a quiet instance never swept: evidence
+ * past its retention date sat there, and — far worse — an account whose
+ * deletion grace period had expired was never purged, because the normal
+ * thing to do after asking to be deleted is never to come back. The one
+ * person whose data most needed destroying was the one least likely to
+ * trigger the code that destroys it.
  *
  * **This is a single-process worker and it dies with the server.** That is
  * adequate while the provider is a fixture and the database is a local file,
@@ -12,7 +19,7 @@
  * wants a worker process of its own. Written down rather than discovered.
  */
 import { runAudit, FixtureSearchProvider, type AuditPurpose, type FixtureScenario, type ProfessionalIdentity } from '@rep/domain';
-import { enforceRetention, type JobRecord } from '@rep/persistence';
+import { enforceRetention, purgeDueAccounts, type JobRecord } from '@rep/persistence';
 import { store } from './db.ts';
 
 const POLL_MS = 400;
@@ -189,6 +196,22 @@ function sweep(): void {
     // A failed sweep must never take the worker down with it: the audits it
     // is running matter more than this hour's housekeeping.
     console.error('[retention] sweep failed:', (err as Error).message);
+  }
+
+  /**
+   * In its own try, because it is a different obligation.
+   *
+   * Retention ages out data we are allowed to keep. This destroys data a
+   * customer asked us to destroy, and the grace period on it has run out.
+   * A retention failure must not be the reason a deletion does not happen.
+   */
+  try {
+    const { purged, failed } = purgeDueAccounts(store().db);
+    if (purged > 0 || failed > 0) {
+      console.log(`[deletion] purged ${purged} account(s), ${failed} failed`);
+    }
+  } catch (err) {
+    console.error('[deletion] purge failed:', (err as Error).message);
   }
 }
 

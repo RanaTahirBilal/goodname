@@ -36,6 +36,21 @@ export interface Account {
 }
 
 /**
+ * How long a deletion request waits before the purge.
+ *
+ * 30 days, from `api-contract.md` section 12. Long enough that somebody who
+ * deleted in anger, or by accident, can get it back; short enough that it is
+ * a grace period rather than a way of keeping data we were asked to destroy.
+ */
+export const DELETION_GRACE_DAYS = 30;
+
+export interface DeletionStatus {
+  requestedAt: string;
+  purgeAt: string;
+  reason?: string;
+}
+
+/**
  * `pending` exists because a scan is now created before its work runs. The
  * row is the thing the customer can be given a link to while a background
  * job is still fetching results.
@@ -163,6 +178,99 @@ export class ScanRepository {
     });
 
     return account;
+  }
+
+  /* ------------------------------------------------- scheduled deletion */
+
+  /**
+   * Asks for the account to be deleted, after a grace period.
+   *
+   * Not an immediate purge. `api-contract.md` section 12 specifies 30 days
+   * and a cancellation window, which is also what both app stores require
+   * of in-app deletion. The hard purge already existed as `deleteAccount`
+   * and had no caller; this is the thing a customer triggers, and the purge
+   * runs later on the worker's sweep.
+   *
+   * Calling it twice does not extend the clock. Someone clicking again
+   * because they were not sure it worked should not push their own deletion
+   * a month further away.
+   */
+  requestDeletion(scope: AccountScope, reason?: string): DeletionStatus {
+    const existing = this.deletionStatus(scope);
+    if (existing) return existing;
+
+    const requestedAt = new Date().toISOString();
+    const purgeAt = new Date(
+      Date.parse(requestedAt) + DELETION_GRACE_DAYS * 86_400_000
+    ).toISOString();
+
+    this.db
+      .prepare(
+        `UPDATE accounts
+            SET deletion_requested_at = ?, purge_at = ?, deletion_reason = ?
+          WHERE id = ?`
+      )
+      .run(requestedAt, purgeAt, reason ?? null, scope.accountId);
+
+    recordEvent(this.db, {
+      accountId: scope.accountId,
+      actor: scope.actor,
+      action: 'account.deletion_requested',
+      subjectType: 'account',
+      subjectId: scope.accountId,
+      // The reason is the customer's own words about their own account, and
+      // rule 16e keeps payloads out of audit events. The date is the record.
+      metadata: { purgeAt },
+    });
+
+    return { requestedAt, purgeAt, reason };
+  }
+
+  /** Calls it off. Only possible while the account still exists. */
+  cancelDeletion(scope: AccountScope): boolean {
+    const changed = this.db
+      .prepare(
+        `UPDATE accounts
+            SET deletion_requested_at = NULL, purge_at = NULL, deletion_reason = NULL
+          WHERE id = ? AND purge_at IS NOT NULL`
+      )
+      .run(scope.accountId);
+
+    if (Number(changed.changes) === 0) return false;
+
+    recordEvent(this.db, {
+      accountId: scope.accountId,
+      actor: scope.actor,
+      action: 'account.deletion_cancelled',
+      subjectType: 'account',
+      subjectId: scope.accountId,
+    });
+
+    return true;
+  }
+
+  deletionStatus(scope: AccountScope): DeletionStatus | null {
+    const r = this.db
+      .prepare(
+        `SELECT deletion_requested_at, purge_at, deletion_reason
+           FROM accounts WHERE id = ?`
+      )
+      .get(scope.accountId);
+
+    if (!r) return null;
+    const a = row<{
+      deletion_requested_at: string | null;
+      purge_at: string | null;
+      deletion_reason: string | null;
+    }>(r);
+
+    if (!a.purge_at || !a.deletion_requested_at) return null;
+
+    return {
+      requestedAt: a.deletion_requested_at,
+      purgeAt: a.purge_at,
+      reason: a.deletion_reason ?? undefined,
+    };
   }
 
   /** Looks up an active account. Deleted accounts are not findable. */
@@ -777,6 +885,44 @@ export class ScanRepository {
       return counts;
     });
   }
+}
+
+/**
+ * Purges every account whose grace period has run out.
+ *
+ * Separate from `enforceRetention` on purpose, and not folded into its
+ * transaction: `deleteAccount` opens one of its own, and the helper in
+ * `db.ts` issues a plain BEGIN, which does not nest. Running them as two
+ * steps also keeps the obligations distinct — retention ages out data we are
+ * allowed to hold, this destroys data we were asked to destroy.
+ *
+ * Each account is purged in its own transaction, so one failure does not
+ * leave the rest of the queue unprocessed.
+ */
+export function purgeDueAccounts(
+  db: Db,
+  now = new Date().toISOString()
+): { purged: number; failed: number } {
+  const due = db
+    .prepare('SELECT id FROM accounts WHERE purge_at IS NOT NULL AND purge_at <= ?')
+    .all(now)
+    .map((r) => String((r as { id: string }).id));
+
+  let purged = 0;
+  let failed = 0;
+
+  for (const accountId of due) {
+    try {
+      new ScanRepository(db).deleteAccount({ accountId, actor: 'system' });
+      purged++;
+    } catch {
+      // Leave it due. A purge that throws must not be silently marked done,
+      // and the next sweep will try again rather than losing the request.
+      failed++;
+    }
+  }
+
+  return { purged, failed };
 }
 
 /**

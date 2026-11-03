@@ -23,7 +23,7 @@ reset the demo database, run the tests, or print a report in the terminal
 without a browser.
 
 ```bash
-npm test                     # 258 tests
+npm test                     # 268 tests
 npm run typecheck
 cd packages/domain && node src/demo.ts official_finding
 ```
@@ -35,7 +35,7 @@ cd packages/domain && node src/demo.ts official_finding
 | Path | What it is |
 |---|---|
 | `packages/domain` | The audit engine. Pure functions, no I/O, 104 tests. |
-| `packages/persistence` | SQLite storage, auth, review, retention. 133 tests. |
+| `packages/persistence` | SQLite storage, auth, review, retention, deletion. 143 tests. |
 | `apps/website` | The site, the audit flow and the report. |
 | `docs/` | Scoring spec, evidence model, safeguards, open questions. |
 | `DEMO.md` | Five-minute run sheet for showing this to someone. |

@@ -140,6 +140,28 @@ step: someone who has changed their name twice has no way through.
 
 **Assumed meanwhile:** refused, with a message explaining why.
 
+### OQ-20 — The web account routes deviate from the mobile contract
+**Blocks:** nothing. Recorded so the difference is a decision rather than a
+discrepancy somebody finds later.
+
+`api-contract.md` section 12 specifies `POST /me/export` returning
+`{"status":"queued","notify":"email"}`, and `DELETE /me`. The website
+implements `GET /api/account/export` as a direct download and
+`POST /api/account/delete`.
+
+The export difference is forced: a queued export notified by email cannot
+work while OQ-14 stands, and a request that silently goes nowhere is worse
+than a synchronous file. The verb and path differences are the website using
+its own route shape rather than the mobile API's.
+
+The grace period, the cancellation window and the `confirm: "DELETE"` body
+all follow the contract, because those are the parts that are product
+decisions rather than transport.
+
+**To settle when the mobile API is real:** either the website calls the same
+endpoints, or the contract gains a web section saying why it does not. Not
+worth deciding now, because there is no mobile client (PD-005).
+
 ### OQ-18 — Special-category detection is lexical, not a classifier
 **Blocks:** nothing today. Becomes urgent the day a real search provider runs.
 

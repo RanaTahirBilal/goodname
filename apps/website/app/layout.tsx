@@ -77,11 +77,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             background: 'var(--surface)',
           }}
         >
-          <div className="wrap" style={{ padding: 'var(--s-8) var(--s-6)' }}>
+          <div
+            className="wrap stack"
+            style={{ padding: 'var(--s-8) var(--s-6)', ['--gap' as string]: 'var(--s-4)' }}
+          >
             <p className="small" style={{ maxWidth: '62ch' }}>
               This product measures the professional online presence we can observe at a
               point in time. It does not measure character, honesty or competence, and it
               does not promise search rankings, content removal or score increases.
+            </p>
+
+            {/**
+             * In the footer rather than the header.
+             *
+             * Export and deletion are not things anyone needs mid-task, and
+             * putting "delete my account" next to "Check My Reputation"
+             * would be an odd pair of choices to offer at once. The footer
+             * is where people look for this, and it is on every page.
+             */}
+            <p className="small">
+              <a href="/account" style={{ fontWeight: 600 }}>
+                Your data
+              </a>{' '}
+              — download everything we hold, or have it deleted.
             </p>
           </div>
         </footer>
