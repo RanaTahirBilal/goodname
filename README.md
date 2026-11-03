@@ -5,6 +5,10 @@ what each result is based on, and how confident we are it is even them.
 
 Internal name only. Nothing here is branded or launched.
 
+**Build status:** <https://ranatahirbilal.github.io/goodname/> — what is verified,
+what is fixture data, and the one defect that would break a live demonstration.
+Corrections belong in [an issue](https://github.com/RanaTahirBilal/goodname/issues/new).
+
 ---
 
 ## Run it
