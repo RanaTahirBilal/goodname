@@ -113,6 +113,21 @@ test('below the coverage threshold we decline to score', () => {
   assert.ok(result.missingDimensions.includes('D'));
   assert.ok(result.whatWouldHelp.length > 0);
   assert.ok(!('score' in result), 'insufficient_evidence must not carry a score');
+
+  /**
+   * One entry per remedy, not one per dimension.
+   *
+   * Several dimensions fail for the same reason and map to the same
+   * sentence, which put "Confirming your employer and city usually helps"
+   * in the list twice — under a heading promising what would change the
+   * outcome, on the one screen where the report is admitting it cannot
+   * answer the question.
+   */
+  assert.deepEqual(
+    result.whatWouldHelp,
+    [...new Set(result.whatWouldHelp)],
+    'whatWouldHelp repeats itself; it is a set of actions, not a list of dimensions'
+  );
 });
 
 test('coverage of D + P + A clears the threshold; D + P alone does not', () => {

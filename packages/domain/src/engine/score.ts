@@ -250,7 +250,27 @@ export function scorePresence(input: PresenceInput): PresenceScore {
       methodologyVersion: PRESENCE_METHODOLOGY_VERSION,
       coverage,
       missingDimensions: dimensions.filter((d) => !d.applicable).map((d) => d.code),
-      whatWouldHelp: dimensions.filter((d) => !d.applicable).map((d) => helpFor(d.inapplicableReason)),
+      /**
+       * One entry per thing to do, not one per dimension.
+       *
+       * Several dimensions fail for the same reason — with no attributable
+       * results, both discoverability and source authority are
+       * unevaluable — and `helpFor` maps them to the same sentence. Listing
+       * it once per dimension produced "Confirming your employer and city
+       * usually helps" twice in a row, under a heading promising what would
+       * change the outcome. A list of actions that repeats itself reads as
+       * carelessness in the one place the report is admitting it cannot
+       * answer the question.
+       *
+       * De-duplicated here rather than in the view because the duplication
+       * is wrong in the data: this is a set of remedies, and a remedy done
+       * twice is still one remedy.
+       */
+      whatWouldHelp: [
+        ...new Set(
+          dimensions.filter((d) => !d.applicable).map((d) => helpFor(d.inapplicableReason))
+        ),
+      ],
       containsFixtureData,
       computedAt,
     };

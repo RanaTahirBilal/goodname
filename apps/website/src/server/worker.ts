@@ -139,7 +139,27 @@ async function tick(): Promise<void> {
           job.subjectId,
           {
             status: 'search_failed',
-            failure: { reason: 'provider_error', message },
+            /**
+             * What the customer reads, not what the exception said.
+             *
+             * `message` here is the thrown error — "provider_error:
+             * Simulated upstream failure." — and it was being written
+             * straight onto the scan and rendered. Somebody asking what the
+             * internet says about them got a prefixed error code and the
+             * word "Simulated".
+             *
+             * The technical detail is not lost: `queue.fail` has already
+             * stored it on the job row, which is where an operator looks.
+             * The code itself still reaches the screen as `failure.reason`,
+             * shown in monospace as a reference rather than as prose.
+             */
+            failure: {
+              reason: 'provider_error',
+              message:
+                'The search provider did not respond, and we stopped after ' +
+                `${job.attempts} attempts. Nothing was scored and nothing ` +
+                'partial was saved, so running this again starts cleanly.',
+            },
           }
         );
       } catch {

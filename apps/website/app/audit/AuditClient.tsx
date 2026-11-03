@@ -171,10 +171,15 @@ export default function AuditClient() {
           status: 'search_failed',
           provider: status.provider ?? 'unknown',
           reason: 'provider_error',
+          /**
+           * Never `job.lastError`. That is an exception string — it is in
+           * the status payload for whoever is debugging, and putting it in
+           * front of a customer tells them nothing they can act on while
+           * sounding like the product broke in a way they caused.
+           */
           message:
             status.failure?.message ??
-            status.job?.lastError ??
-            'The audit did not finish.',
+            'The search did not finish. Nothing partial was saved, so running it again starts cleanly.',
         });
         setState('error');
         return;
@@ -531,6 +536,11 @@ function Failure({ response, onBack }: { response: ApiResponse; onBack: () => vo
           {response.retryAfterSeconds
             ? ` You can try again in about ${Math.round(response.retryAfterSeconds / 60)} minutes.`
             : ''}
+        </p>
+
+        {/* Same shape as the refusal screen: the code is a reference, not prose. */}
+        <p className="small">
+          Recorded as <span className="mono">{response.reason}</span>.
         </p>
         <button type="button" className="btn btn-secondary" onClick={onBack}>
           Back
