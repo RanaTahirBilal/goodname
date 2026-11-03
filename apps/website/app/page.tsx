@@ -5,26 +5,36 @@
  * one large headline and a single accent-coloured action; the preview beside
  * it is a flat card, because the thing worth showing is the report's clarity
  * rather than a surface treatment around it.
+ *
+ * Every gap here comes from the spacing scale. The page previously carried
+ * inline 6s, 14s, 18s and 20s, which is how a layout drifts: each one looked
+ * right on its own and none of them agreed with the others.
  */
 export default function Home() {
   return (
     <>
       <section style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="wrap" style={{ padding: 'var(--s-24) var(--s-6) var(--s-16)' }}>
+          <div
+            className="cols cols-score"
+            style={{ alignItems: 'center', gap: 'var(--s-16)' }}
+          >
+            <div className="stack" style={{ ['--gap' as string]: 'var(--s-6)' }}>
+              <p className="eyebrow mark">
+                For attorneys, physicians, founders and executives
+              </p>
 
-        <div className="wrap" style={{ padding: 'var(--s-16) var(--s-6) var(--s-12)' }}>
-          <div className="cols cols-score" style={{ alignItems: 'center', gap: 'var(--s-12)' }}>
-            <div className="stack">
-              <p className="eyebrow">For attorneys, physicians, founders and executives</p>
-              <h1 style={{ maxWidth: 560 }}>
+              <h1 style={{ maxWidth: '16ch' }}>
                 Understand what people find when they search for you.
               </h1>
-              <p className="lede" style={{ maxWidth: 520 }}>
+
+              <p className="lede">
                 We search for your name, show you what actually ranks, and explain what each
                 result is based on — with the source, the date and how confident we are that
                 it is even about you.
               </p>
 
-              <div className="row" style={{ gap: 14, flexWrap: 'wrap', marginTop: 8 }}>
+              <div className="row" style={{ gap: 'var(--s-4)', flexWrap: 'wrap' }}>
                 <a href="/audit" className="btn btn-primary">
                   Check My Reputation
                 </a>
@@ -33,15 +43,26 @@ export default function Home() {
 
               <ul
                 className="small stack"
-                style={{ listStyle: 'none', marginTop: 20, ['--gap' as string]: '8px' }}
+                style={{
+                  listStyle: 'none',
+                  ['--gap' as string]: 'var(--s-2)',
+                  paddingTop: 'var(--s-2)',
+                }}
               >
                 {[
                   'Every finding links to its source and the date we saw it.',
                   'Allegations are labelled as allegations, never as findings.',
                   'We tell you when the evidence is too thin to score.',
                 ].map((line) => (
-                  <li key={line} className="row" style={{ alignItems: 'flex-start', gap: 10 }}>
-                    <span aria-hidden style={{ color: 'var(--primary)', fontWeight: 700 }}>
+                  <li
+                    key={line}
+                    className="row"
+                    style={{ alignItems: 'flex-start', gap: 'var(--s-3)' }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{ color: 'var(--primary)', fontWeight: 700, lineHeight: 1.55 }}
+                    >
                       ✓
                     </span>
                     <span>{line}</span>
@@ -55,20 +76,24 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="wrap" style={{ paddingTop: 24 }}>
-        <div className="cols cols-2" style={{ gap: 20 }}>
-          <article className="card stack" style={{ ['--gap' as string]: '10px' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>What we will tell you</h2>
-            <p className="small">
+      <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
+        <div className="cols cols-2" style={{ gap: 'var(--s-12)' }}>
+          <article className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
+            <h2 className="mark" style={{ fontSize: '1.5rem' }}>
+              What we will tell you
+            </h2>
+            <p className="small" style={{ fontSize: '0.9375rem' }}>
               How established your presence is, what negative material exists and how settled
               it is, how sure we are that any of it is you, and what is worth doing next.
               Each point carries the evidence behind it.
             </p>
           </article>
 
-          <article className="card stack" style={{ ['--gap' as string]: '10px' }}>
-            <h2 style={{ fontSize: '1.25rem' }}>What we will not</h2>
-            <p className="small">
+          <article className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
+            <h2 className="mark" style={{ fontSize: '1.5rem' }}>
+              What we will not
+            </h2>
+            <p className="small" style={{ fontSize: '0.9375rem' }}>
               We do not promise rankings, removals or a higher score. We do not treat
               criticism as damage. We do not look up other people — this is a self-audit, and
               it is limited to that on purpose.
@@ -87,27 +112,43 @@ export default function Home() {
 function HeroPreview() {
   return (
     <div className="card" aria-label="Example of an audit report">
-      <p className="eyebrow" style={{ marginBottom: 14 }}>Example report</p>
+      <div
+        className="row"
+        style={{ justifyContent: 'space-between', marginBottom: 'var(--s-6)' }}
+      >
+        <p className="eyebrow">Example report</p>
+        <span className="pill pill-neutral">Illustration</span>
+      </div>
 
-      <div className="row" style={{ alignItems: 'flex-end', gap: 14, marginBottom: 6 }}>
-        <span className="hero-figure" style={{ fontSize: '3.25rem' }}>
+      <div
+        className="row"
+        style={{ alignItems: 'baseline', gap: 'var(--s-3)', marginBottom: 'var(--s-2)' }}
+      >
+        <span className="hero-figure" style={{ fontSize: '3.75rem' }}>
           71
         </span>
-        <span className="small" style={{ paddingBottom: 8 }}>
-          online presence · 88% coverage
+        <span className="small">
+          online presence
+          <br />
+          88% coverage
         </span>
       </div>
 
-      <div className="stack" style={{ ['--gap' as string]: '10px', marginTop: 18 }}>
+      <div
+        className="stack"
+        style={{ ['--gap' as string]: 'var(--s-4)', marginTop: 'var(--s-6)' }}
+      >
         {[
           ['Discoverability & ownership', 0.74],
           ['Profile completeness', 0.63],
           ['Source authority', 0.43],
         ].map(([label, v]) => (
-          <div key={label as string}>
-            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 4 }}>
-              <span className="small" style={{ color: 'var(--text)' }}>{label}</span>
-              <span className="small">{Math.round((v as number) * 100)}</span>
+          <div key={label as string} className="meter-row">
+            <div className="row">
+              <span className="small" style={{ color: 'var(--text)' }}>
+                {label}
+              </span>
+              <span className="meter-value">{Math.round((v as number) * 100)}</span>
             </div>
             <div className="meter">
               <span style={{ width: `${(v as number) * 100}%` }} />
@@ -118,12 +159,15 @@ function HeroPreview() {
 
       <div
         style={{
-          marginTop: 20,
-          paddingTop: 18,
+          marginTop: 'var(--s-8)',
+          paddingTop: 'var(--s-6)',
           borderTop: '1px solid var(--border)',
         }}
       >
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+        <div
+          className="row"
+          style={{ justifyContent: 'space-between', marginBottom: 'var(--s-3)' }}
+        >
           <span className="eyebrow">Reputation risk</span>
           <span className="pill pill-warning">Elevated</span>
         </div>

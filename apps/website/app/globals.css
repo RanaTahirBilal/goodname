@@ -3,7 +3,7 @@
  *
  * This file is the single source of truth for colour, spacing and type.
  * `src/tokens.test.ts` parses it and asserts contrast against these literal
- * values, so the stylesheet and the check cannot drift apart.
+ * values, for both themes, so the stylesheet and the check cannot drift.
  *
  * The direction is editorial, not decorative. Depth comes from typography,
  * spacing rhythm and hierarchy — not from blur, gradient or shadow. There is
@@ -13,22 +13,32 @@
  * before body text clears 4.5:1, at which point it is a grey card with a blur
  * tax.
  *
- * Three rules this file exists to enforce:
+ * Four rules this file exists to enforce:
  *   - Every gap is a value from the scale. Nothing in between.
  *   - Border, fill, radius and shadow each announce a separate object. Using
  *     all four on every block flattens the page, so most blocks get one.
  *   - The accent colour is a mark, never a field.
+ *   - Both themes are designed. Dark is not the light palette inverted; the
+ *     accent lightens, the tints darken, and every pair is measured.
  */
 
 :root {
+  color-scheme: light;
+
+  /* Warm paper rather than cool grey. The page should read as printed. */
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --surface-sunken: #F1F0EA;
+
+  --text: #1B211D;
+  --text-2: #59635B;
+
   --primary: #176B57;
   --primary-dark: #104C40;
-  --bg: #F7F8F6;
-  --surface: #FFFFFF;
-  --surface-sunken: #F1F3F0;
-  --text: #202722;
-  --text-2: #5C675F;
-  --border: #E2E7E2;
+  /* What sits on top of a primary fill. White in light, near-black in dark. */
+  --on-primary: #FFFFFF;
+
+  --border: #E4E2DA;
 
   /**
    * WCAG 1.4.11 asks for 3:1 only where a boundary identifies a control or
@@ -38,14 +48,14 @@
    */
   --border-strong: #6B7A72;
 
-  --warning: #96590F;
-  --danger: #B54747;
-  --success: #237B55;
+  --warning: #8A5310;
+  --danger: #B04141;
+  --success: #1F7350;
 
-  --warning-bg: #FDF4E7;
-  --danger-bg: #FBEEEE;
-  --success-bg: #EAF4EF;
-  --info-bg: #EDF1F6;
+  --warning-bg: #FBF2E4;
+  --danger-bg: #FAEDED;
+  --success-bg: #E8F3EE;
+  --info-bg: #ECF0F5;
 
   /* Spacing scale. Use these and nothing between them. */
   --s-1: 4px;
@@ -61,11 +71,93 @@
   --radius: 10px;
   --radius-lg: 14px;
 
-  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
-  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  /**
+   * The pairing.
+   *
+   * `--serif` is Newsreader: an editorial face with real optical sizing, so a
+   * 64px headline and a 17px standfirst are drawn differently rather than
+   * scaled. `--sans` is Inter for anything functional. Both are loaded by
+   * `next/font` in `layout.tsx` and self-hosted, so no request leaves the
+   * page at runtime and there is no flash of a fallback.
+   *
+   * The fallbacks matter more than they look: before this pairing existed
+   * the serif was whatever Palatino the machine happened to have, which is
+   * why the same page looked considered on a Mac and ordinary on Windows.
+   */
+  --serif: var(--font-serif), 'Iowan Old Style', Palatino, Georgia, serif;
+  --sans: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 
-  --shadow-sm: 0 1px 2px rgba(32, 39, 34, 0.05);
+  --shadow-sm: 0 1px 2px rgba(27, 33, 29, 0.05);
+}
+
+/**
+ * Dark.
+ *
+ * Not an inversion. `--primary` has to lighten to stay legible on a dark
+ * ground, which also means a primary button needs dark text on it — hence
+ * `--on-primary` rather than a hard-coded white. The status tints become
+ * deep, desaturated grounds for light status text, keeping the same
+ * figure-on-tint relationship the light theme has.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --bg: #111513;
+    --surface: #181D19;
+    --surface-sunken: #212723;
+
+    --text: #E9ECE7;
+    --text-2: #A2ADA4;
+
+    --primary: #63C9A4;
+    --primary-dark: #86D9BC;
+    --on-primary: #06201A;
+
+    --border: #2A312C;
+    --border-strong: #8A978F;
+
+    --warning: #E0A860;
+    --danger: #F09191;
+    --success: #6FCB9E;
+
+    --warning-bg: #2A2013;
+    --danger-bg: #2E1A1A;
+    --success-bg: #15271F;
+    --info-bg: #1A2029;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #111513;
+  --surface: #181D19;
+  --surface-sunken: #212723;
+
+  --text: #E9ECE7;
+  --text-2: #A2ADA4;
+
+  --primary: #63C9A4;
+  --primary-dark: #86D9BC;
+  --on-primary: #06201A;
+
+  --border: #2A312C;
+  --border-strong: #8A978F;
+
+  --warning: #E0A860;
+  --danger: #F09191;
+  --success: #6FCB9E;
+
+  --warning-bg: #2A2013;
+  --danger-bg: #2E1A1A;
+  --success-bg: #15271F;
+  --info-bg: #1A2029;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -87,15 +179,24 @@ body {
 
 h1, h2, h3 {
   font-family: var(--serif);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.12;
+  font-weight: 540;
+  letter-spacing: -0.018em;
+  line-height: 1.08;
   text-wrap: balance;
 }
 
-h1 { font-size: clamp(2.1rem, 1.4rem + 2.8vw, 3.25rem); }
-h2 { font-size: clamp(1.35rem, 1.15rem + 0.9vw, 1.75rem); }
-h3 { font-size: 1.0625rem; line-height: 1.3; }
+/**
+ * Optical sizing is the reason for this face. At display sizes the cut gets
+ * finer and the spacing tighter; left to itself the browser would scale the
+ * text cut up and the headline would look inflated rather than set.
+ */
+h1 {
+  font-size: clamp(2.5rem, 1.5rem + 3.6vw, 4.25rem);
+  font-optical-sizing: auto;
+  letter-spacing: -0.026em;
+}
+h2 { font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem); }
+h3 { font-size: 1.125rem; line-height: 1.3; letter-spacing: -0.01em; }
 
 p { max-width: 68ch; }
 
@@ -108,9 +209,11 @@ a:hover { color: var(--primary-dark); }
   border-radius: 3px;
 }
 
+::selection { background: var(--primary); color: var(--on-primary); }
+
 /* ------------------------------------------------------------- layout */
 
-.wrap { max-width: 1080px; margin: 0 auto; padding: 0 var(--s-6); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--s-6); }
 .wrap-narrow { max-width: 640px; margin: 0 auto; padding: 0 var(--s-6); }
 
 .stack > * + * { margin-top: var(--gap, var(--s-6)); }
@@ -120,7 +223,7 @@ a:hover { color: var(--primary-dark); }
 .cols { display: grid; grid-template-columns: 1fr; gap: var(--s-6); }
 @media (min-width: 860px) {
   .cols-2 { grid-template-columns: 1fr 1fr; }
-  .cols-score { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .cols-score { grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr); }
 }
 
 /* ----------------------------------------------------------- surfaces */
@@ -135,7 +238,7 @@ a:hover { color: var(--primary-dark); }
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--s-6);
+  padding: var(--s-8);
 }
 
 .card-flush { padding: 0; overflow: hidden; }
@@ -148,16 +251,45 @@ a:hover { color: var(--primary-dark); }
 
 .divider { border: 0; border-top: 1px solid var(--border); }
 
+/**
+ * The editorial mark.
+ *
+ * A short accent rule above a heading, which is the only place the brand
+ * colour appears as anything other than a control or a link. It is 28px of
+ * colour on a page, which is what "a mark, never a field" means in practice.
+ */
+.mark::before {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 2px;
+  background: var(--primary);
+  margin-bottom: var(--s-4);
+}
+
 /* --------------------------------------------------------- typography */
 
 .eyebrow {
   font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 650;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--text-2);
 }
-.lede { font-size: 1.1875rem; line-height: 1.55; color: var(--text-2); max-width: 60ch; }
+
+/**
+ * The standfirst. A serif at this size, not the sans, because it belongs to
+ * the headline above it rather than to the interface.
+ */
+.lede {
+  font-family: var(--serif);
+  font-size: clamp(1.1875rem, 1.1rem + 0.35vw, 1.375rem);
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+  color: var(--text-2);
+  max-width: 38ch;
+}
+
 .small { font-size: 0.8125rem; line-height: 1.55; color: var(--text-2); }
 .mono { font-family: var(--mono); font-size: 0.75rem; letter-spacing: -0.01em; }
 
@@ -165,9 +297,11 @@ a:hover { color: var(--primary-dark); }
 .hero-figure {
   font-family: var(--serif);
   font-size: clamp(4rem, 3rem + 5vw, 6rem);
-  line-height: 0.92;
-  font-weight: 600;
-  letter-spacing: -0.03em;
+  line-height: 0.88;
+  font-weight: 540;
+  font-optical-sizing: auto;
+  letter-spacing: -0.035em;
+  font-variant-numeric: lining-nums tabular-nums;
 }
 
 /* -------------------------------------------------------------- pills */
@@ -201,11 +335,12 @@ a:hover { color: var(--primary-dark); }
   border: 1px solid transparent;
   font: inherit;
   font-weight: 600;
+  letter-spacing: -0.005em;
   cursor: pointer;
   text-decoration: none;
 }
-.btn-primary { background: var(--primary); color: #fff; }
-.btn-primary:hover { background: var(--primary-dark); color: #fff; }
+.btn-primary { background: var(--primary); color: var(--on-primary); }
+.btn-primary:hover { background: var(--primary-dark); color: var(--on-primary); }
 .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn-secondary {
   background: var(--surface);
@@ -259,15 +394,31 @@ a:hover { color: var(--primary-dark); }
 .meter-lg { height: 10px; border-radius: 5px; }
 .meter-lg > span { border-radius: 5px; }
 
+/**
+ * A labelled meter row: name on the left, figure hard right, bar beneath.
+ *
+ * The figure is in the serif and sits on the same baseline grid as the
+ * label, so a column of them lines up down the page — the tabular figures on
+ * `body` are what make that true for 7 and 71 alike.
+ */
+.meter-row { display: grid; gap: var(--s-2); }
+.meter-row > .row { justify-content: space-between; align-items: baseline; }
+.meter-row .meter-value {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 540;
+  color: var(--text);
+}
+
 /* --------------------------------------------------------------- table */
 
 .table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .table th {
   text-align: left;
-  padding: var(--s-2) var(--s-4);
+  padding: var(--s-3) var(--s-4);
   font-size: 0.6875rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 650;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--text-2);
   border-bottom: 1px solid var(--border);
@@ -301,8 +452,8 @@ a:hover { color: var(--primary-dark); }
     content: attr(data-label);
     display: block;
     font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-weight: 650;
+    letter-spacing: 0.11em;
     text-transform: uppercase;
     color: var(--text-2);
     margin-bottom: var(--s-1);
@@ -335,6 +486,16 @@ a:hover { color: var(--primary-dark); }
  */
 @media (max-width: 560px) {
   .nav-compact { display: none; }
+}
+
+/* The wordmark. Serif, tight, and the only place the brand name is set. */
+.wordmark {
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  font-weight: 560;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  text-decoration: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
