@@ -135,6 +135,34 @@ the classifier's original call rather than replacing it.
 Two things to say: the queue is off until somebody is deliberately added, and
 there is no sign-up — verifying a code never creates a reviewer.
 
+### 8. What we refuse to hold — the one for a privacy-minded room
+
+Run an audit with **"Personal matters mixed in with professional ones"**.
+
+Five results come back. Three of them render as *Withheld — see the source*,
+and the report says so in a sentence above the table: these touch on health,
+faith or politics, we do not store or repeat that material, and none of it
+affects the score or the risk level.
+
+The point to make is the one people do not expect: **we are not hiding it from
+them.** Every withheld row keeps its link, and the material is public at its
+source. We are declining to keep a copy. Nothing sensitive is in our database
+at all — there are tests that search the raw SQLite file for those words.
+
+Then point at the two results that were *not* withheld: the immigration
+attorney's own practice page, and an oncologist's clinic listing. Both are
+full of words a keyword filter would trip on. A privacy control that deleted
+a whole profession's work would be worse than none.
+
+### Printing it
+
+The report has **Print or save as PDF**. Worth showing if anyone asks what
+they walk away with: the navigation and buttons drop, the evidence table
+stays a table, every link prints the URL it points at, and the fixture
+warning prints in a black box at the top. That last one is deliberate — a
+printed report leaves the room with no way for the reader to ask whether any
+of it is real.
+
 ---
 
 ## Questions you will get

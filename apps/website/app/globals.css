@@ -365,6 +365,25 @@ a:hover { color: var(--primary-dark); }
 }
 .input:focus, .select:focus { border-color: var(--primary); }
 
+/**
+ * Native controls take the palette too.
+ *
+ * Without this, every checkbox and radio renders in the browser's default
+ * blue — including the four on the reviewer's decision form, which is the
+ * one screen in the product where a member of staff changes what a customer
+ * is told about themselves. An accent nobody chose, in the middle of a page
+ * that is otherwise deliberate, is the detail that makes a careful product
+ * look assembled from parts.
+ *
+ * `accent-color` also fixes the check mark's own contrast: the browser picks
+ * white or black against the colour given, so the dark theme's lighter
+ * green gets a dark tick rather than an invisible white one.
+ */
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: var(--primary);
+}
+
 .error { color: var(--danger); font-size: 0.8125rem; font-weight: 600; }
 
 .checkbox-row {
