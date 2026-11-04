@@ -143,3 +143,29 @@ test('the print control does not print itself', () => {
   assert.match(report, /className="btn btn-secondary no-print"/);
   assert.match(print, /\.no-print/);
 });
+
+/**
+ * A closed disclosure prints nothing at all.
+ *
+ * The audit details — provider, queries, window, the date the results were
+ * seen — are folded away on screen because they answer an auditor's
+ * question rather than a customer's. On paper nobody can click, so without
+ * this rule a saved report silently loses the only record of how it was
+ * produced, which is the half of rule 8 that survives being printed.
+ */
+test('the audit details print even though they are collapsed on screen', () => {
+  const report = readFileSync(join(here, '..', 'app', 'components', 'Report.tsx'), 'utf8');
+
+  assert.match(
+    report,
+    /<details className="card disclosure">/,
+    'the audit details are no longer a disclosure; this test guards the wrong thing'
+  );
+
+  assert.match(
+    print,
+    /details\.disclosure\s*>\s*\*:not\(summary\)\s*\{[^}]*display:\s*block\s*!important/,
+    'a collapsed <details> prints as its summary alone, so the provenance ' +
+      'would be missing from every saved PDF'
+  );
+});

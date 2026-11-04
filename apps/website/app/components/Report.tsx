@@ -157,11 +157,100 @@ export function FixtureBanner() {
   );
 }
 
-function ScanSummary({ scan }: { scan: Scan }) {
+/**
+ * Who the report is about, before what it says about them.
+ *
+ * This slot used to hold "What we looked at" — provider, window, queries,
+ * result counts — so the reader worked through *how the search ran* before
+ * reaching anything about *whether it found them*. The provenance has not
+ * been dropped: it moved into `AuditDetails` below the score, which is
+ * where somebody checking the work looks and where a customer reading
+ * their own report does not have to.
+ *
+ * It leads with counts rather than with the identity band, and that is
+ * deliberate. The band comes from `identityConfidence`, which drops
+ * rejected records from its own average and so reads "high" off a single
+ * self-claimed URL; promoting a label that is currently wrong would have
+ * made this change worse than no change at all. The counts do not go
+ * through that filter. "1 of 8 attributed" is true, and it says the same
+ * thing the band should have said.
+ */
+function IdentityHeader({
+  scan,
+  confidence,
+}: {
+  scan: Scan;
+  confidence: ConfidenceReport;
+}) {
+  const attributed = confidence.attributed;
+  const seen = scan.resultsObserved;
+
+  /**
+   * Derived, because `awaitingConfirmation` does not partition anything.
+   *
+   * It counts `uncertain` *and* `probable`, and `probable` is also counted
+   * as attributed — deliberately, since those two answer different
+   * questions: what is in the score, and what we would like you to confirm.
+   * Printing both beside a total would show three figures that sum to more
+   * than the results, which reads as an arithmetic error rather than as an
+   * overlap. So the top block states a real partition and the breakdown
+   * below keeps the overlapping view.
+   */
+  const unresolved = Math.max(0, seen - attributed - confidence.rejected);
+
   return (
     <div className="card" style={{ padding: 20 }}>
-      <p className="eyebrow" style={{ marginBottom: 12 }}>What we looked at</p>
-      <div className="cols cols-2" style={{ gap: 16 }}>
+      <p className="eyebrow" style={{ marginBottom: 12 }}>Who this report is about</p>
+
+      <p style={{ fontSize: '1.0625rem', marginBottom: 'var(--s-3)' }}>
+        <strong>
+          {attributed} of {seen} {seen === 1 ? 'result' : 'results'}
+        </strong>{' '}
+        {attributed === 1 ? 'is' : 'are'} attributed to you.
+      </p>
+
+      <dl className="small cols cols-2" style={{ gap: '4px 20px' }}>
+        <Pair label="Attributed to you" value={String(attributed)} />
+        <Pair label="Not you" value={String(confidence.rejected)} />
+        <Pair label="Still unresolved" value={String(unresolved)} />
+        <Pair label="Model coverage" value={pct(confidence.evidenceCoverage)} />
+      </dl>
+
+      {/**
+       * Stated rather than left to be inferred from a zero.
+       *
+       * A report headed with somebody's name, carrying a score, built from
+       * nothing that is about them, is the failure this product exists to
+       * avoid. When the count is zero it is said in words.
+       */}
+      {attributed === 0 && (
+        <p className="small" style={{ marginTop: 'var(--s-3)', color: 'var(--warning)' }}>
+          Nothing we found appears to be about you. Anything below describes the results
+          themselves, not your presence.
+        </p>
+      )}
+
+      <p className="small" style={{ marginTop: 'var(--s-3)' }}>
+        A result counts as yours only when the evidence says so. Everything else is kept
+        out of the score and listed separately, so you can see what we set aside.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * The provenance, kept and demoted.
+ *
+ * Closed by default because it answers an auditor's question, not a
+ * customer's. The print stylesheet forces it open: a saved PDF that omits
+ * which provider ran which queries on what date is not a record of
+ * anything.
+ */
+function AuditDetails({ scan }: { scan: Scan }) {
+  return (
+    <details className="card disclosure">
+      <summary className="eyebrow">Audit details</summary>
+      <div className="cols cols-2" style={{ gap: 16, marginTop: 'var(--s-4)' }}>
         <dl className="small stack" style={{ ['--gap' as string]: '6px' }}>
           <Pair label="Provider" value={`${scan.provider}${scan.isFixture ? ' (fixture)' : ''}`} />
           <Pair label="Observed" value={when(scan.observedAt)} />
@@ -182,7 +271,7 @@ function ScanSummary({ scan }: { scan: Scan }) {
         An audit is a snapshot of what we could see at this moment, not an inventory of
         everything on the internet about you.
       </p>
-    </div>
+    </details>
   );
 }
 
@@ -494,10 +583,10 @@ function Confidence({
                 }}
               >
                 <div className="row" style={{ gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                  <span className="pill pill-neutral">
-                    {IDENTITY_WORD[e.identityStatus]} · {e.identityConfidence.toFixed(2)}
+                  <span className="pill pill-neutral">{IDENTITY_WORD[e.identityStatus]}</span>
+                  <span className="small">
+                    Identity match {e.identityConfidence.toFixed(2)} · {e.sourceName}
                   </span>
-                  <span className="small">{e.sourceName}</span>
                 </div>
                 <p style={{ fontSize: '0.9375rem', fontWeight: 600 }}>{e.title}</p>
                 <p className="small" style={{ marginTop: 4 }}>
@@ -578,9 +667,18 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
         <table className="table table-evidence">
           <thead>
             <tr>
+              {/**
+               * Identity sits second, directly beside the result.
+               *
+               * It used to be third, behind the classification, which asked
+               * the reader to take in what a result says about somebody
+               * before learning whether that somebody is them. The order is
+               * the reader's own question order: what is this, is it me,
+               * who published it, when did we see it.
+               */}
               <th>Result</th>
-              <th>What it is</th>
               <th>Is it you</th>
+              <th>What it is</th>
               <th>Source</th>
               <th>Seen</th>
             </tr>
@@ -604,6 +702,24 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                     <div className="small" style={{ marginTop: 4, color: 'var(--text-2)' }}>
                       This corrects an earlier result.
                     </div>
+                  )}
+                </td>
+                {/**
+                 * The number says what it measures.
+                 *
+                 * It read "Confirmed · 0.98" and nothing on the page said
+                 * what 0.98 was. A reader could take it for source quality,
+                 * relevance, or this result's contribution to the score. It
+                 * is none of those: it is how sure we are the result is
+                 * about them, and that is now the words beside it.
+                 */}
+                <td data-label="Is it you" style={{ minWidth: 130 }}>
+                  <span className="pill pill-neutral">{IDENTITY_WORD[e.identityStatus]}</span>
+                  <div className="small" style={{ marginTop: 6 }}>
+                    Identity match {e.identityConfidence.toFixed(2)}
+                  </div>
+                  {e.reviewStatus === 'needs_human_review' && (
+                    <div className="small" style={{ marginTop: 6 }}>Flagged for review</div>
                   )}
                 </td>
                 <td data-label="What it is" style={{ minWidth: 150 }}>
@@ -634,14 +750,6 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                     {e.classificationRationale}
                   </div>
                     </>
-                  )}
-                </td>
-                <td data-label="Is it you" style={{ minWidth: 130 }}>
-                  <span className="pill pill-neutral">
-                    {IDENTITY_WORD[e.identityStatus]} · {e.identityConfidence.toFixed(2)}
-                  </span>
-                  {e.reviewStatus === 'needs_human_review' && (
-                    <div className="small" style={{ marginTop: 6 }}>Flagged for review</div>
                   )}
                 </td>
                 <td data-label="Source" style={{ minWidth: 130 }}>
@@ -830,12 +938,14 @@ export function Report({
         <SaveButton />
       </div>
 
-      <ScanSummary scan={report.scan} />
+      <IdentityHeader scan={report.scan} confidence={report.confidence} />
 
       <div className="cols cols-score">
         <PresenceCard presence={report.presence} />
         <RiskCard risk={report.risk} />
       </div>
+
+      <AuditDetails scan={report.scan} />
 
       <Findings risk={report.risk} evidence={report.evidence} />
       <Dimensions presence={report.presence} />

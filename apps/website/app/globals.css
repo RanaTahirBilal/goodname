@@ -243,6 +243,45 @@ a:hover { color: var(--primary-dark); }
 
 .card-flush { padding: 0; overflow: hidden; }
 
+/**
+ * A disclosure that still looks like part of the report.
+ *
+ * The default marker and the default summary cursor both read as browser
+ * chrome rather than as the page, so the marker is drawn here and the
+ * whole summary is the target: 44px of it, because a 14px triangle is not
+ * a tap target.
+ */
+.disclosure > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 44px;
+  margin: calc(var(--s-3) * -1) 0;
+}
+
+.disclosure > summary::-webkit-details-marker { display: none; }
+
+.disclosure > summary::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--text-2);
+  border-bottom: 2px solid var(--text-2);
+  transform: rotate(-45deg);
+  transition: transform 120ms ease;
+  flex: 0 0 auto;
+}
+
+.disclosure[open] > summary::before { transform: rotate(45deg); }
+
+.disclosure > summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
 /* A section marked by a rule and space rather than a box. */
 .section {
   padding-top: var(--s-8);
@@ -693,10 +732,22 @@ input[type='radio'] {
    */
   .table-evidence { table-layout: fixed; }
   .table-evidence th:nth-child(1), .table-evidence td:nth-child(1) { width: 34%; }
-  .table-evidence th:nth-child(2), .table-evidence td:nth-child(2) { width: 21%; }
-  .table-evidence th:nth-child(3), .table-evidence td:nth-child(3) { width: 14%; }
+  .table-evidence th:nth-child(2), .table-evidence td:nth-child(2) { width: 14%; }
+  .table-evidence th:nth-child(3), .table-evidence td:nth-child(3) { width: 21%; }
   .table-evidence th:nth-child(4), .table-evidence td:nth-child(4) { width: 16%; }
   .table-evidence th:nth-child(5), .table-evidence td:nth-child(5) { width: 15%; }
+
+  /**
+   * A closed disclosure prints nothing, which is the wrong answer here.
+   *
+   * The audit details hold the provider, the queries, the window and the
+   * date the results were seen. On screen they are folded away because
+   * they answer an auditor's question rather than a customer's; on paper
+   * there is nobody to click, and a saved report that cannot say which
+   * provider ran which query on what date is not a record of anything.
+   */
+  details.disclosure > *:not(summary) { display: block !important; }
+  details.disclosure > summary { list-style: none; }
 
   /* Where a link actually goes, since the reader cannot click it. */
   a[href^='http']::after {
