@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoodName — Three Design Directions</title>
+<meta name="description" content="Three materially different design directions for the GoodName report, rendered on the same data so they can be compared rather than described.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#FAF9F6;--surface:#FFFFFF;--fg:#1B211D;--fg-2:#59635B;--line:#E4E2DA;--accent:#176B57;
+  --serif:'Newsreader',Georgia,serif;--sans:'Inter',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme='light']){
+  color-scheme:dark;--bg:#111513;--surface:#181D19;--fg:#E9ECE7;--fg-2:#A2ADA4;--line:#2A312C;--accent:#63C9A4;}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.w{max-width:1000px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-family:var(--serif);font-weight:500;letter-spacing:-.02em;line-height:1.1}
+h1{font-size:clamp(2.2rem,1.6rem + 2.8vw,3.4rem);max-width:16ch}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-2)}
+.rule{width:34px;height:2px;background:var(--accent);margin-bottom:22px}
+.lede{font-family:var(--serif);font-size:clamp(1.1rem,1.05rem + .4vw,1.3rem);color:var(--fg-2);max-width:52ch;margin-top:20px}
+header.top{padding:84px 0 48px;border-bottom:1px solid var(--line)}
+p{max-width:64ch}
+.cards{display:grid;grid-template-columns:1fr;gap:28px;padding:52px 0}
+@media(min-width:880px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:26px;display:flex;flex-direction:column;gap:12px}
+.card .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent)}
+.card h2{font-size:1.5rem}
+.card p{font-size:14.5px;color:var(--fg-2);flex:1}
+.card ul{font-size:13.5px;color:var(--fg-2);padding-left:17px;display:grid;gap:5px}
+.btn{display:inline-block;background:var(--accent);color:var(--bg);font-weight:600;font-size:15px;
+  padding:12px 20px;border-radius:9px;text-decoration:none;text-align:center;margin-top:4px}
+.note{padding:36px 0 96px;border-top:1px solid var(--line)}
+.note h3{font-size:1.2rem;margin-bottom:10px}
+.note p{font-size:14.5px;color:var(--fg-2);margin-bottom:12px}
+a.plain{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="w">
+    <div class="rule"></div>
+    <p class="eyebrow">GoodName &middot; design directions &middot; 4 November 2026</p>
+    <h1 style="margin-top:18px">Three ways this product could look, rendered rather than described.</h1>
+    <p class="lede">Each one shows the same report, built from the same fixture data, so the
+    comparison is about composition rather than content. They are not three themes of one
+    layout: the information is ordered differently in each, because that is the decision
+    actually being made.</p>
+  </div>
+</header>
+
+<div class="w">
+  <div class="cards">
+
+    <article class="card">
+      <span class="tag">Direction A</span>
+      <h2>The Dossier</h2>
+      <p>The report as a prepared document. A cover page, roman-numbered sections, provenance
+      kept in the margin, and a ruled ledger instead of a chart. Reads like something a
+      professional would be handed, not something a tool generated.</p>
+      <ul>
+        <li>Serif throughout, print discipline</li>
+        <li>Evidence quoted, margin notes carry the method</li>
+        <li>Strongest when printed or sent as a PDF</li>
+      </ul>
+      <a class="btn" href="a.html">Open direction A</a>
+    </article>
+
+    <article class="card">
+      <span class="tag">Direction B</span>
+      <h2>The Console</h2>
+      <p>The report as an analyst&rsquo;s workspace. A persistent rail, a stat strip across the
+      top, dense tables and monospaced provenance. Built for someone who will run many of
+      these and compare them.</p>
+      <ul>
+        <li>Dark by default, light supported</li>
+        <li>Scannable at speed, high information density</li>
+        <li>Strongest for staff review and repeat use</li>
+      </ul>
+      <a class="btn" href="b.html">Open direction B</a>
+    </article>
+
+    <article class="card">
+      <span class="tag">Direction C</span>
+      <h2>The Briefing</h2>
+      <p>The report as a briefing. An ink cover, one number alone on the page, then findings
+      one at a time &mdash; each ending in what it means. The score stops being the product
+      and becomes the opening of an argument.</p>
+      <ul>
+        <li>Deep-green ground, one accent used once</li>
+        <li>Narrative order, ends in a plan</li>
+        <li>Strongest for a first-time reader and a sale</li>
+      </ul>
+      <a class="btn" href="c.html">Open direction C</a>
+    </article>
+
+  </div>
+</div>
+
+<div class="w note">
+  <h3>What these are, and what they are not</h3>
+  <p>Every figure, result and excerpt is fixture data describing a fictional attorney. No
+  live search provider is connected to this product, so nothing here is a real finding about
+  anybody. Each direction says so on its own page.</p>
+  <p>These are compositions, not a built product. Picking one is the decision; implementing
+  it against the real engine is the work that follows. The current shipped site is a fourth
+  thing — <a class="plain" href="../">the build-status report</a> shows what it looks like today
+  and what is still wrong with it.</p>
+  <p><a class="plain" href="https://github.com/RanaTahirBilal/goodname">Source</a> &middot;
+  <a class="plain" href="https://github.com/RanaTahirBilal/goodname/issues/new">Argue with any of this</a></p>
+</div>
+
+</body>
+</html>

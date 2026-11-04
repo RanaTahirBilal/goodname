@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction A — The Dossier</title>
+<meta name="description" content="GoodName design direction A: the report as a prepared document, with provenance in the margin.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#F6F4EE; --ink:#15180F; --ink-2:#55594A; --ink-3:#8A8F7C;
+  --rule:#D9D5C5; --rule-strong:#B4AF9B;
+  --accent:#7A1F1F; --seal:#2E4034;
+  --serif:'Newsreader',Georgia,serif; --sans:'Inter',system-ui,sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme='light']){
+    color-scheme: dark;
+    --paper:#14150F; --ink:#EDEADD; --ink-2:#A9AC99; --ink-3:#7C7F6D;
+    --rule:#2C2E24; --rule-strong:#4A4D3E;
+    --accent:#D98C8C; --seal:#8FBFA5;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;font-variant-numeric:lining-nums tabular-nums}
+.sheet{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+/* running head */
+.runhead{display:flex;justify-content:space-between;align-items:baseline;gap:20px;
+  padding:18px 0;border-bottom:1px solid var(--rule);font-family:var(--mono);
+  font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);flex-wrap:wrap}
+
+/* cover */
+.cover{padding:72px 0 44px;border-bottom:3px double var(--rule-strong)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:28px}
+.cover h1{font-size:clamp(3rem,2rem + 5vw,5.75rem);line-height:.95;font-weight:500;letter-spacing:-.03em;font-optical-sizing:auto;max-width:14ch}
+.cover .sub{margin-top:20px;font-size:clamp(1.1rem,1rem + .5vw,1.35rem);font-style:italic;color:var(--ink-2);max-width:46ch}
+.covermeta{display:flex;gap:40px;flex-wrap:wrap;margin-top:40px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.covermeta b{display:block;font-family:var(--serif);font-size:18px;letter-spacing:0;text-transform:none;color:var(--ink);font-weight:500;margin-top:5px}
+
+/* fixture seal */
+.seal{display:inline-flex;align-items:center;gap:10px;margin-top:36px;padding:9px 16px;
+  border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;
+  letter-spacing:.12em;text-transform:uppercase}
+
+/* two-column body with margin notes */
+.spread{display:grid;grid-template-columns:1fr;gap:34px;padding:52px 0;border-bottom:1px solid var(--rule)}
+@media(min-width:900px){.spread{grid-template-columns:168px minmax(0,1fr);gap:48px}}
+.margin{font-family:var(--mono);font-size:10.5px;line-height:1.75;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3)}
+.margin .num{display:block;font-family:var(--serif);font-size:30px;letter-spacing:-.02em;text-transform:none;color:var(--rule-strong);margin-bottom:10px;line-height:1}
+.body h2{font-family:var(--serif);font-size:clamp(1.6rem,1.3rem + 1.1vw,2.1rem);font-weight:500;letter-spacing:-.02em;line-height:1.12;margin-bottom:16px}
+.body p{max-width:62ch;margin-bottom:14px}
+.body p.small{font-size:14px;color:var(--ink-2)}
+
+/* the figure */
+.figure-row{display:flex;align-items:flex-end;gap:28px;flex-wrap:wrap;margin:8px 0 22px}
+.figure{font-size:clamp(5rem,4rem + 7vw,9.5rem);line-height:.8;font-weight:500;letter-spacing:-.05em;font-optical-sizing:auto}
+.figure-note{font-family:var(--mono);font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);padding-bottom:12px;line-height:1.8}
+
+/* ledger */
+.ledger{width:100%;border-collapse:collapse;margin-top:10px}
+.ledger th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:400;padding:0 14px 9px 0;border-bottom:1px solid var(--rule-strong)}
+.ledger td{padding:13px 14px 13px 0;border-bottom:1px solid var(--rule);vertical-align:baseline}
+.ledger .n{font-family:var(--serif);font-size:20px;font-weight:500;text-align:right;white-space:nowrap}
+.dots{position:relative;overflow:hidden}
+.dots span{background:var(--paper);padding-right:7px;position:relative;z-index:1}
+.dots::after{content:'';position:absolute;left:0;right:0;bottom:6px;border-bottom:1px dotted var(--rule-strong)}
+
+/* evidence entries */
+.entry{padding:22px 0;border-bottom:1px solid var(--rule);display:grid;gap:8px}
+@media(min-width:760px){.entry{grid-template-columns:minmax(0,1fr) 190px;gap:34px;align-items:start}}
+.entry h3{font-size:18px;font-weight:500;letter-spacing:-.01em;line-height:1.3}
+.entry h3 a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--rule-strong)}
+.entry blockquote{font-style:italic;color:var(--ink-2);font-size:15px;margin-top:7px;padding-left:14px;border-left:2px solid var(--rule)}
+.stamp{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;line-height:1.95;color:var(--ink-3)}
+.stamp b{color:var(--ink);font-weight:500}
+.verdict{display:inline-block;border:1px solid currentColor;padding:2px 8px;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase}
+.v-yes{color:var(--seal)} .v-maybe{color:var(--ink-2)} .v-no{color:var(--accent)}
+
+.foot{padding:40px 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;line-height:2;text-transform:uppercase;color:var(--ink-3)}
+.back{display:inline-block;margin-top:14px;font-family:var(--sans);font-size:14px;letter-spacing:0;text-transform:none;color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="runhead">
+    <span>GoodName &middot; Direction A</span>
+    <span>The Dossier</span>
+  </div>
+
+  <header class="cover">
+    <p class="kicker">Reputation assessment &middot; prepared 4 Nov 2026</p>
+    <h1>Jensen Adoni</h1>
+    <p class="sub">Partner, Adoni Law &middot; Healthcare regulatory practice &middot; Chicago, Illinois</p>
+
+    <div class="covermeta">
+      <div>Assessed<b>6 results</b></div>
+      <div>Attributed<b>5 of 6</b></div>
+      <div>Coverage<b>100%</b></div>
+      <div>Method<b>2.0.0-draft</b></div>
+    </div>
+
+    <div class="seal">Specimen &middot; fixture data &middot; not a real person</div>
+  </header>
+
+  <section class="spread">
+    <div class="margin"><span class="num">I</span>Identity<br>Who this concerns</div>
+    <div class="body">
+      <h2>Five of six results are about this person.</h2>
+      <p>One result carries the name but not enough else to attribute it. It is excluded from
+      every figure below and listed in full at the end, so the exclusion is visible rather
+      than silent.</p>
+      <p class="small">A result counts as the subject&rsquo;s only when the evidence says so.
+      Nothing here is attributed on the strength of a matching name.</p>
+    </div>
+  </section>
+
+  <section class="spread">
+    <div class="margin"><span class="num">II</span>Presence<br>What is findable</div>
+    <div class="body">
+      <div class="figure-row">
+        <span class="figure">65</span>
+        <span class="figure-note">out of one hundred<br>100% of model evaluated<br>provisional method</span>
+      </div>
+      <p>An established, professionally-sourced presence with a thin layer of independent
+      coverage. The practice is discoverable and the owned material is in order; what is
+      missing is third-party authority that did not come from the firm.</p>
+
+      <table class="ledger">
+        <thead><tr><th>Dimension</th><th style="text-align:right">Score</th></tr></thead>
+        <tbody>
+          <tr><td class="dots"><span>Discoverability &amp; ownership</span></td><td class="n">73</td></tr>
+          <tr><td class="dots"><span>Professional profile completeness</span></td><td class="n">60</td></tr>
+          <tr><td class="dots"><span>Source authority &amp; relevance</span></td><td class="n">45</td></tr>
+          <tr><td class="dots"><span>Digital asset health</span></td><td class="n">75</td></tr>
+          <tr><td class="dots"><span>Information consistency</span></td><td class="n">67</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="spread">
+    <div class="margin"><span class="num">III</span>Risk<br>Negative material</div>
+    <div class="body">
+      <h2 style="color:var(--seal)">Nothing substantiated.</h2>
+      <p>No result in this set asserts substantiated harm. That is a statement about what was
+      searched and found, not a guarantee that nothing exists.</p>
+      <p class="small">Reported separately from the figure above, and deliberately not
+      expressed as a number. An average would let one serious finding disappear into four
+      unremarkable ones.</p>
+    </div>
+  </section>
+
+  <section class="spread">
+    <div class="margin"><span class="num">IV</span>Evidence<br>Every result, quoted</div>
+    <div class="body">
+
+      <article class="entry">
+        <div>
+          <h3><a href="#">Jensen Adoni — Partner | Adoni Law</a></h3>
+          <blockquote>Jensen Adoni is a partner at Adoni Law in Chicago, practising healthcare
+          regulatory law. JD, Northwestern.</blockquote>
+        </div>
+        <div class="stamp">
+          <span class="verdict v-yes">Confirmed 0.98</span><br>
+          <b>Adoni Law</b><br>Owned domain<br>Seen 28 Oct 2026<br>Published 28 Feb 2025
+        </div>
+      </article>
+
+      <article class="entry">
+        <div>
+          <h3><a href="#">Crain&rsquo;s 40 Under 40: Jensen Adoni</a></h3>
+          <blockquote>Adoni, a partner at Adoni Law in Chicago, led the firm&rsquo;s healthcare
+          compliance practice.</blockquote>
+        </div>
+        <div class="stamp">
+          <span class="verdict v-yes">Confirmed 0.85</span><br>
+          <b>Crain&rsquo;s Chicago</b><br>Earned press<br>Seen 28 Oct 2026<br>Published 13 Jun 2024
+        </div>
+      </article>
+
+      <article class="entry">
+        <div>
+          <h3><a href="#">Jensen Adoni — Address, Phone, Relatives</a></h3>
+          <blockquote>Jensen Adoni, Chicago IL. Age, current address, phone number and
+          relatives.</blockquote>
+        </div>
+        <div class="stamp">
+          <span class="verdict v-maybe">Unresolved 0.50</span><br>
+          <b>Spokeo</b><br>Aggregator<br>Seen 28 Oct 2026<br>No date given
+        </div>
+      </article>
+
+      <p class="small" style="margin-top:20px">Excerpts are quoted as the source wrote them and
+      are never paraphrased into a claim. Three further results are omitted from this
+      specimen.</p>
+    </div>
+  </section>
+
+  <div class="foot">
+    Direction A &middot; the report as a prepared document &mdash; a cover, roman-numeralled
+    sections, provenance kept in the margin and a ledger rather than a chart.<br>
+    Specimen built on fixture data. No live search provider is connected.
+    <a class="back" href="./">&larr; All three directions</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction C — The Briefing</title>
+<meta name="description" content="GoodName design direction C: the report as a briefing, one finding at a time, each ending in a decision.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --bg:#FBFBF9; --fg:#101211; --fg-2:#5A605C; --fg-3:#8C928E;
+  --line:#E4E6E3;
+  --ink:#0E2B22;      /* deep green ground */
+  --on-ink:#F2F7F4;
+  --accent:#C4604A;   /* terracotta, used once per screen */
+  --ok:#1C6F50;
+  --display:'Fraunces',Georgia,serif; --sans:'Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme='light']){
+    color-scheme: dark;
+    --bg:#0D0F0E; --fg:#ECEFEC; --fg-2:#9BA29D; --fg-3:#6F7772;
+    --line:#212523; --ink:#09201A; --on-ink:#E8F2ED;
+    --accent:#E8907A; --ok:#5FC79B;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:17px;line-height:1.6;
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+.w{max-width:1080px;margin:0 auto;padding:0 24px}
+.narrow{max-width:660px;margin:0 auto;padding:0 24px}
+
+h1,h2,.fig{font-family:var(--display);font-weight:400;letter-spacing:-.022em;line-height:1.05;font-optical-sizing:auto}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+
+/* ink cover */
+.cover{background:var(--ink);color:var(--on-ink);padding:84px 0 72px}
+.cover .eyebrow{color:rgba(242,247,244,.55)}
+.cover h1{font-size:clamp(2.8rem,2rem + 4.4vw,5rem);margin-top:22px;max-width:13ch}
+.cover .sub{margin-top:20px;font-size:clamp(1.05rem,1rem + .4vw,1.25rem);color:rgba(242,247,244,.72);max-width:44ch}
+.warn{display:inline-block;margin-top:34px;border:1px solid rgba(242,247,244,.3);
+  padding:9px 15px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:rgba(242,247,244,.8)}
+
+/* the one number, alone */
+.headline{padding:88px 0;border-bottom:1px solid var(--line)}
+.fig{font-size:clamp(7rem,5rem + 12vw,15rem);line-height:.76;letter-spacing:-.055em;font-weight:300}
+.headline .say{margin-top:30px;font-family:var(--display);font-size:clamp(1.5rem,1.2rem + 1.5vw,2.4rem);
+  line-height:1.2;max-width:21ch}
+.headline .note{margin-top:18px;font-size:15px;color:var(--fg-2);max-width:48ch}
+
+/* findings, one at a time */
+.finding{padding:62px 0;border-bottom:1px solid var(--line)}
+.finding .eyebrow{color:var(--accent)}
+.finding h2{font-size:clamp(1.5rem,1.2rem + 1.3vw,2.1rem);margin-top:14px;max-width:20ch}
+.finding p{margin-top:16px;font-size:16.5px;color:var(--fg-2);max-width:58ch}
+.finding .so{margin-top:26px;padding:20px 24px;background:var(--bg);border:1px solid var(--line);border-radius:12px;max-width:58ch}
+.finding .so .eyebrow{color:var(--fg-3)}
+.finding .so p{margin-top:8px;color:var(--fg);font-size:16px}
+
+/* ribbon of dimensions */
+.ribbon{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:34px}
+.cell{background:var(--bg);padding:20px 18px}
+.cell .n{font-family:var(--display);font-size:38px;line-height:1;font-weight:300;letter-spacing:-.03em}
+.cell .l{margin-top:9px;font-size:13px;color:var(--fg-2);line-height:1.4}
+.cell .t{margin-top:12px;height:3px;border-radius:2px;background:var(--line)}
+.cell .t i{display:block;height:100%;border-radius:2px;background:var(--ok)}
+
+/* evidence as statements */
+.ev{padding:28px 0;border-bottom:1px solid var(--line)}
+.ev .top{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.ev .who{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-3)}
+.ev .state{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ok)}
+.ev .state.un{color:var(--fg-3)}
+.ev h3{font-family:var(--display);font-size:22px;font-weight:400;margin-top:12px;letter-spacing:-.015em;line-height:1.25}
+.ev h3 a{color:var(--fg);text-decoration:none;background-image:linear-gradient(var(--line),var(--line));
+  background-size:100% 1px;background-repeat:no-repeat;background-position:0 100%}
+.ev q{display:block;margin-top:12px;font-size:16px;color:var(--fg-2);max-width:62ch}
+.ev .when{margin-top:12px;font-size:13px;color:var(--fg-3)}
+
+.cta{background:var(--ink);color:var(--on-ink);padding:76px 0;margin-top:0}
+.cta h2{font-size:clamp(1.8rem,1.4rem + 2vw,2.9rem);max-width:17ch}
+.cta p{margin-top:18px;color:rgba(242,247,244,.72);max-width:50ch;font-size:16.5px}
+.btn{display:inline-block;margin-top:30px;background:var(--on-ink);color:var(--ink);
+  font-weight:600;font-size:16px;padding:16px 28px;border-radius:10px;text-decoration:none}
+.foot{padding:40px 0 90px;font-size:13px;color:var(--fg-3);line-height:1.9}
+.foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="cover">
+  <div class="w">
+    <p class="eyebrow">Reputation briefing &middot; 4 November 2026</p>
+    <h1>Jensen Adoni</h1>
+    <p class="sub">Partner at Adoni Law, healthcare regulatory practice, Chicago. Six results
+    assessed, five attributed.</p>
+    <span class="warn">Specimen &middot; fixture data &middot; not a real person</span>
+  </div>
+</header>
+
+<section class="headline">
+  <div class="w">
+    <p class="eyebrow">Online presence</p>
+    <div class="fig">65</div>
+    <p class="say">Findable, well-owned, and quiet on independent coverage.</p>
+    <p class="note">Out of 100, with the whole model evaluated. The number measures how
+    established the presence is &mdash; not character, honesty or competence.</p>
+
+    <div class="ribbon">
+      <div class="cell"><div class="n">73</div><div class="l">Discoverability &amp; ownership</div><div class="t"><i style="width:73%"></i></div></div>
+      <div class="cell"><div class="n">60</div><div class="l">Profile completeness</div><div class="t"><i style="width:60%"></i></div></div>
+      <div class="cell"><div class="n">45</div><div class="l">Source authority</div><div class="t"><i style="width:45%"></i></div></div>
+      <div class="cell"><div class="n">75</div><div class="l">Digital asset health</div><div class="t"><i style="width:75%"></i></div></div>
+      <div class="cell"><div class="n">67</div><div class="l">Information consistency</div><div class="t"><i style="width:67%"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="finding">
+  <div class="w">
+    <p class="eyebrow">Finding 01</p>
+    <h2>Almost everything findable about you, you published.</h2>
+    <p>Of the five results attributed to you, three are pages you or the firm control. The
+    independent coverage is a single award listing from 2024. That is why source authority
+    sits at 45 while the rest of the model is comfortable.</p>
+    <div class="so">
+      <p class="eyebrow">What that means</p>
+      <p>A presence built mostly on owned pages reads as managed rather than established. It
+      is also fragile: it moves the moment the firm&rsquo;s site does.</p>
+    </div>
+  </div>
+</section>
+
+<section class="finding">
+  <div class="w">
+    <p class="eyebrow">Finding 02</p>
+    <h2>No negative material was substantiated.</h2>
+    <p>Nothing in the results we searched asserts substantiated harm. Reported on its own,
+    never folded into the number above, because an average would let one serious finding
+    disappear into four unremarkable ones.</p>
+    <div class="so">
+      <p class="eyebrow">What that means</p>
+      <p>A statement about what was searched and found on 28 October, not a guarantee that
+      nothing exists.</p>
+    </div>
+  </div>
+</section>
+
+<section class="finding">
+  <div class="w">
+    <p class="eyebrow">Finding 03</p>
+    <h2>One result carries your name and may not be you.</h2>
+    <p>A data-broker listing matches on name and city and on nothing else. It is excluded
+    from every figure in this briefing and is waiting on your answer.</p>
+    <div class="so">
+      <p class="eyebrow">What that means</p>
+      <p>A name match is not an identity match. We would rather ask than assume, and the
+      figure above is calculated as though the result is not yours.</p>
+    </div>
+  </div>
+</section>
+
+<section class="w" style="padding-top:62px">
+  <p class="eyebrow">The evidence, in full</p>
+
+  <article class="ev">
+    <div class="top"><span class="who">Adoni Law &middot; owned</span><span class="state">Confirmed 0.98</span></div>
+    <h3><a href="#">Jensen Adoni — Partner | Adoni Law</a></h3>
+    <q>Jensen Adoni is a partner at Adoni Law in Chicago, practising healthcare regulatory
+    law. JD, Northwestern.</q>
+    <p class="when">Published 28 February 2025 &middot; seen 28 October 2026</p>
+  </article>
+
+  <article class="ev">
+    <div class="top"><span class="who">Crain&rsquo;s Chicago &middot; press</span><span class="state">Confirmed 0.85</span></div>
+    <h3><a href="#">Crain&rsquo;s 40 Under 40: Jensen Adoni</a></h3>
+    <q>Adoni, a partner at Adoni Law in Chicago, led the firm&rsquo;s healthcare compliance
+    practice.</q>
+    <p class="when">Published 13 June 2024 &middot; seen 28 October 2026</p>
+  </article>
+
+  <article class="ev">
+    <div class="top"><span class="who">Spokeo &middot; aggregator</span><span class="state un">Unresolved 0.50</span></div>
+    <h3><a href="#">Jensen Adoni — Address, Phone, Relatives</a></h3>
+    <q>Jensen Adoni, Chicago IL. Age, current address, phone number and relatives.</q>
+    <p class="when">No publication date &middot; seen 28 October 2026</p>
+  </article>
+
+  <p class="foot" style="padding-bottom:0">Excerpts are quoted as the source wrote them and are
+  never paraphrased into a claim. Three further results are omitted from this specimen.</p>
+</section>
+
+<section class="cta">
+  <div class="w">
+    <h2>Two things would move this number.</h2>
+    <p>Independent coverage that did not come from the firm, and the two professional
+    profiles that are missing. Both are listed, in order, with the evidence each one answers.</p>
+    <a class="btn" href="#">See the plan</a>
+  </div>
+</section>
+
+<div class="w foot">
+  Direction C &middot; the report as a briefing: an ink cover, one number alone, then findings
+  one at a time, each ending in what it means.<br>
+  Specimen built on fixture data. No live search provider is connected.
+  <a href="./">&larr; All three directions</a>
+</div>
+
+</body>
+</html>

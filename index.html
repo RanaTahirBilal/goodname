@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reputation MVP — Build Status</title>
+<meta name="description" content="What is built, what is not, and the one defect that would break the demo. A status report on the reputation-audit MVP, 3 November 2026.">
+<meta property="og:title" content="Reputation MVP — Build Status">
+<meta property="og:description" content="What is built, what is not, and the one defect that would break the demo.">
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #FAF9F6;
+  --surface: #FFFFFF;
+  --surface-sunken: #F1F0EA;
+  --text: #1B211D;
+  --text-2: #59635B;
+  --primary: #176B57;
+  --on-primary: #FFFFFF;
+  --border: #E4E2DA;
+  --border-strong: #6B7A72;
+  --warning: #8A5310;
+  --danger: #B04141;
+  --success: #1F7350;
+  --warning-bg: #FBF2E4;
+  --danger-bg: #FAEDED;
+  --success-bg: #E8F3EE;
+  --s-1: 4px;  --s-2: 8px;   --s-3: 12px; --s-4: 16px;
+  --s-6: 24px; --s-8: 32px;  --s-12: 48px;
+  --s-16: 64px; --s-24: 96px;
+  --radius: 10px;
+  --serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #111513;
+    --surface: #181D19;
+    --surface-sunken: #212723;
+    --text: #E9ECE7;
+    --text-2: #A2ADA4;
+    --primary: #63C9A4;
+    --on-primary: #06201A;
+    --border: #2A312C;
+    --border-strong: #8A978F;
+    --warning: #E0A860;
+    --danger: #F09191;
+    --success: #6FCB9E;
+    --warning-bg: #2A2013;
+    --danger-bg: #2E1A1A;
+    --success-bg: #15271F;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111513;
+  --surface: #181D19;
+  --surface-sunken: #212723;
+  --text: #E9ECE7;
+  --text-2: #A2ADA4;
+  --primary: #63C9A4;
+  --on-primary: #06201A;
+  --border: #2A312C;
+  --border-strong: #8A978F;
+  --warning: #E0A860;
+  --danger: #F09191;
+  --success: #6FCB9E;
+  --warning-bg: #2A2013;
+  --danger-bg: #2E1A1A;
+  --success-bg: #15271F;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 17px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-left: var(--s-4);
+  padding-right: var(--s-4);
+}
+
+h1, h2, h3 {
+  font-family: var(--serif);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2.1rem, 1.4rem + 3.2vw, 3.5rem);
+  line-height: 1.08;
+  max-width: 17ch;
+}
+
+h2 {
+  font-size: clamp(1.5rem, 1.25rem + 1vw, 1.95rem);
+  line-height: 1.2;
+  margin-top: var(--s-16);
+  margin-bottom: var(--s-4);
+  padding-top: var(--s-6);
+  border-top: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 1.2rem;
+  margin-top: var(--s-8);
+  margin-bottom: var(--s-2);
+}
+
+p { margin: 0 0 var(--s-4); max-width: 68ch; }
+
+a { color: var(--primary); text-underline-offset: 3px; }
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0 0 var(--s-4);
+}
+
+.rule {
+  width: 40px;
+  height: 2px;
+  background: var(--primary);
+  margin-bottom: var(--s-6);
+}
+
+.lede {
+  font-family: var(--serif);
+  font-size: clamp(1.15rem, 1.05rem + 0.5vw, 1.3rem);
+  line-height: 1.55;
+  color: var(--text-2);
+  max-width: 54ch;
+}
+
+header.masthead {
+  border-bottom: 1px solid var(--border);
+  padding: var(--s-4) 0;
+  font-size: 0.9375rem;
+}
+
+header.masthead .wrap {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+}
+
+.wordmark { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
+
+.hero { padding: var(--s-16) 0 var(--s-12); }
+
+.btn {
+  display: inline-block;
+  background: var(--primary);
+  color: var(--on-primary);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 14px 26px;
+  border-radius: var(--radius);
+  text-decoration: none;
+  min-height: 44px;
+}
+
+.btn:hover { filter: brightness(1.08); }
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-6);
+  font-size: 0.9375rem;
+  color: var(--text-2);
+  margin-top: var(--s-8);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+
+.note {
+  border-left: 3px solid var(--warning);
+  background: var(--warning-bg);
+  color: var(--text);
+  padding: var(--s-4) var(--s-6);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  margin: var(--s-6) 0;
+}
+
+.note.bad { border-left-color: var(--danger); background: var(--danger-bg); }
+.note.good { border-left-color: var(--success); background: var(--success-bg); }
+.note p:last-child { margin-bottom: 0; }
+.note strong { display: block; margin-bottom: var(--s-1); }
+
+pre {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--s-4);
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: var(--s-4) 0;
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--surface-sunken);
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  margin: var(--s-6) 0;
+}
+
+th, td {
+  text-align: left;
+  padding: var(--s-3) var(--s-3) var(--s-3) 0;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+th {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+td:last-child, th:last-child { padding-right: 0; }
+
+.tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.tag-ok { background: var(--success-bg); color: var(--success); }
+.tag-part { background: var(--warning-bg); color: var(--warning); }
+.tag-no { background: var(--danger-bg); color: var(--danger); }
+
+figure {
+  margin: var(--s-8) 0;
+}
+
+figure img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+figcaption {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  margin-top: var(--s-3);
+  max-width: 62ch;
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--s-6);
+  margin: var(--s-8) 0;
+}
+
+.shots figure { margin: 0; }
+
+ul, ol { max-width: 68ch; padding-left: 1.25em; margin: 0 0 var(--s-4); }
+li { margin-bottom: var(--s-2); }
+
+.priority {
+  display: flex;
+  gap: var(--s-4);
+  align-items: flex-start;
+  padding: var(--s-6) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.priority .num {
+  font-family: var(--serif);
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--primary);
+  min-width: 40px;
+}
+
+.priority h3 { margin-top: 0; }
+.priority p:last-child { margin-bottom: 0; }
+
+footer {
+  border-top: 1px solid var(--border);
+  margin-top: var(--s-24);
+  padding: var(--s-12) 0 var(--s-16);
+  font-size: 0.9375rem;
+  color: var(--text-2);
+}
+
+footer p { max-width: 62ch; }
+
+@media (max-width: 600px) {
+  body { font-size: 16px; }
+  table { font-size: 0.875rem; }
+}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <span class="wordmark">Reputation Platform</span>
+    <span style="color: var(--text-2)">Build status &middot; updated 4 November 2026</span>
+  </div>
+</header>
+
+<main>
+<article class="wrap">
+
+  <section class="hero">
+    <div class="rule"></div>
+    <p class="eyebrow">Status report, not a launch</p>
+    <h1>What is built, what is not, and the one thing that would break the demo.</h1>
+    <p class="lede" style="margin-top: var(--s-6)">
+      The core reputation-check journey runs end to end. No live search provider is
+      connected, so every result on this page comes from fixture data. One defect
+      would embarrass the product in front of an audience, and it is named below.
+    </p>
+    <p style="margin-top: var(--s-8)">
+      <a class="btn" href="https://github.com/RanaTahirBilal/goodname/issues/new">Leave feedback</a>
+    </p>
+    <div class="meta">
+      <span>269 tests passing</span>
+      <span>Typecheck clean</span>
+      <span>Commit <code>7ad4d03</code></span>
+      <span><a href="https://github.com/RanaTahirBilal/goodname">Source on GitHub</a></span>
+    </div>
+  </section>
+
+  <section>
+    <h2>How this was checked</h2>
+    <p>
+      Every claim here was produced by running the application, not by reading it.
+      The commands and their real output:
+    </p>
+<pre><code>npm test          →  269 pass, 0 fail
+                     domain 104 · persistence 143 · website 22
+npm run typecheck →  clean
+npm run dev       →  :4300, journey exercised in a browser</code></pre>
+    <p>
+      The Expo app was built separately with <code>npx expo export --platform web</code>,
+      which exited 0, and <code>tsc --noEmit</code>, which was clean.
+    </p>
+  </section>
+
+  <section>
+    <h2>Feature status</h2>
+    <p>
+      Four states, kept apart on purpose: verified means it was exercised just now,
+      not that the code exists.
+    </p>
+    <table>
+      <thead>
+        <tr><th scope="col">Feature</th><th scope="col">Status</th><th scope="col">Note</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Home screen</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
+        <tr><td>Reputation-check action</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
+        <tr><td>Name input form</td><td><span class="tag tag-ok">Verified</span></td><td>Seven fields, validation, attestation</td></tr>
+        <tr><td>Audit execution</td><td><span class="tag tag-ok">Verified</span></td><td>Queued job, polled; about 2s on fixtures</td></tr>
+        <tr><td>Online Presence Score</td><td><span class="tag tag-ok">Verified</span></td><td>Six weighted dimensions</td></tr>
+        <tr><td>Reputation risk</td><td><span class="tag tag-ok">Verified</span></td><td>Reported separately, no aggregate number</td></tr>
+        <tr><td>Evidence and source links</td><td><span class="tag tag-ok">Verified</span></td><td>URL, source, reliability, date, position</td></tr>
+        <tr><td>Recommendations</td><td><span class="tag tag-ok">Verified</span></td><td>Ordered; each names its evidence</td></tr>
+        <tr><td>Results screen</td><td><span class="tag tag-ok">Verified</span></td><td>Including print and PDF</td></tr>
+        <tr><td>Loading states</td><td><span class="tag tag-ok">Verified</span></td><td>Queries shown live, retry counter</td></tr>
+        <tr><td>Error states</td><td><span class="tag tag-ok">Verified</span></td><td>A failure now offers Try again and Edit details</td></tr>
+        <tr><td>Insufficient evidence</td><td><span class="tag tag-ok">Verified</span></td><td>Reads as a finished check, not a blank</td></tr>
+        <tr><td>Anonymous flow</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
+        <tr><td>Sign-in and account claiming</td><td><span class="tag tag-ok">Verified</span></td><td>An earlier audit follows you into the account</td></tr>
+        <tr><td>Identity confidence</td><td><span class="tag tag-part">Partial</span></td><td>Works, but mis-bands. See the defect</td></tr>
+        <tr><td>Search provider</td><td><span class="tag tag-no">Fixture only</span></td><td>No credentials exist</td></tr>
+        <tr><td>Email delivery</td><td><span class="tag tag-no">Not built</span></td><td>Codes appear on screen in development</td></tr>
+        <tr><td>iOS / Android execution</td><td><span class="tag tag-no">Not this product</span></td><td>See below</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Live search is not configured</h2>
+    <div class="note">
+      <strong>Entering a name triggers no internet search of any kind.</strong>
+      <p>
+        A fixture provider returns hard-coded rows. There are no provider credentials
+        in the repository and no code path that would use them. The provider has not
+        been chosen yet.
+      </p>
+    </div>
+    <p>
+      The application says so in three places rather than one: a banner above every
+      report, an <code>isFixture: true</code> flag on each stored record, and a
+      selector labelled <em>Demonstration scenario</em>. The flag lives in the data
+      rather than only in the interface, because a banner is lost the moment someone
+      screenshots a report.
+    </p>
+  </section>
+
+  <section>
+    <h2>The journey, as it runs</h2>
+    <p>
+      Home, then the name form, then a report. Captured from the running application.
+      Every score shown is computed from fixture data about a fictional attorney.
+    </p>
+
+    <div class="shots">
+      <figure>
+        <img src="img/1-home.jpg" alt="The landing page: a large serif headline reading &lsquo;Understand what people find when they search for you&rsquo;, with a Check My Reputation button and an example report card.">
+        <figcaption>1. Home. One headline, one action.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/2-name-form.jpg" alt="The audit form showing fields for full name, profession, employer, city, state, credentials and website.">
+        <figcaption>2. The name form. The more it knows, the better it can tell you apart from others.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/3-report-score.jpg" alt="A report headed Jensen Adoni showing an online presence score of 65 out of 100, with a fixture-data warning banner above it and a reputation risk panel reading None found.">
+        <figcaption>3. The report. Score, coverage, and the fixture warning above everything.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/4-evidence.jpg" alt="An evidence table listing each result with what it is, whether it is attributed to the subject, its source and reliability, and the date it was seen.">
+        <figcaption>4. Evidence. Each row carries its source, its date and whether it is you.</figcaption>
+      </figure>
+    </div>
+
+    <h3>The honest failure states work</h3>
+    <p>
+      These matter more than the happy path, because they are what stops the product
+      inventing a number when it does not have one.
+    </p>
+
+    <div class="shots">
+      <figure>
+        <img src="img/5-insufficient-evidence.jpg" alt="A report reading Not enough evidence to score, explaining that coverage fell below the required 55 percent and listing what would change that.">
+        <figcaption>5. Below 55% coverage the product refuses to score and says what would change that.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/6-provider-failed.jpg" alt="An error screen reading The search did not complete, explaining that the provider did not respond after three attempts and that nothing was scored or partially saved.">
+        <figcaption>6. A failed search never renders as an empty report. &ldquo;An empty report would suggest we looked and found nothing about you, which is a very different thing from not having looked.&rdquo;</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>The defect</h2>
+
+    <div class="note bad">
+      <strong>A name the fixtures do not cover still gets a confident score.</strong>
+      <p>
+        Entering a different name returned a report headed with that name, an
+        Online Presence score of 59 out of 100, 88% model coverage, and an identity
+        confidence band of <em>high</em> &mdash; above the words &ldquo;the results
+        are confidently attributable to you&rdquo;. Every one of the eight results
+        was about somebody else.
+      </p>
+    </div>
+
+    <figure>
+      <img src="img/7-defect-score.jpg" alt="A report headed Marcus Webb showing an online presence score of 59 out of 100 and 88 percent coverage, with eight results seen and one attributed to the subject.">
+      <figcaption>
+        7. The report that should not exist. Eight results seen, one attributed, and
+        only because the form still claimed a website the subject does not own.
+      </figcaption>
+    </figure>
+
+    <figure>
+      <img src="img/7b-defect-confidence.jpg" alt="A panel headed How confident we are, tagged Identity high, reading &lsquo;The results are confidently attributable to you&rsquo;, above counts of one attributed and five marked not you.">
+      <figcaption>
+        8. The same report, further down. One attributed, five explicitly
+        <em>not you</em>, and the band still reads <em>high</em>.
+      </figcaption>
+    </figure>
+
+    <p>The cause is a single filter in the confidence engine:</p>
+
+<pre><code>const named = records.filter((r) =&gt; r.identityConfidence &gt; 0);</code></pre>
+
+    <p>
+      The comment four lines above it says the average is taken over every result
+      bearing the person&rsquo;s name, <em>including the ones we rejected</em>,
+      because the rejections are exactly what should make the answer uncertain. It
+      is not: <code>&gt; 0</code> drops the rejected results, which score zero. One
+      self-claimed URL at 0.98 therefore averages to 0.98, and the band reads
+      <em>high</em>.
+    </p>
+    <p>
+      The filter cannot tell <em>no name here</em> from <em>a name, and it is not
+      yours</em>. The project&rsquo;s own rule 11 &mdash; a name match is not an
+      identity match &mdash; is the rule this breaks.
+    </p>
+
+    <h3>The fix is not to make the fixture follow the name</h3>
+    <p>
+      The tempting repair is to substitute whatever name is typed into the fixture
+      rows, so a demonstration always looks good. That would manufacture findings,
+      sources and credentials about a real person, which is the one thing the
+      product forbids outright. The correct repair is the opposite: when the subject
+      does not match what the evidence is about, decline to produce a score and say
+      why.
+    </p>
+  </section>
+
+  <section>
+    <h2>The mobile app is a different product</h2>
+    <p>
+      An Expo app exists and builds. It is not a client for this engine, and
+      demonstrating on it would show invented numbers from an earlier product aimed
+      at a different audience.
+    </p>
+    <ul>
+      <li>It runs entirely on a local mock module. It has never called the audit engine.</li>
+      <li>Its API base points at a host that does not exist.</li>
+      <li>It produces a single aggregate &ldquo;Reputation Health Score&rdquo;. This product deliberately reports three separate outputs with no aggregate.</li>
+      <li>Its screens &mdash; brokers, disputes, removals, paywall &mdash; belong to the consumer product, which is paused.</li>
+    </ul>
+
+    <figure style="max-width: 320px">
+      <img src="img/8-expo-app-mock-score.jpg" alt="The Expo app showing a circular gauge with the number 68 labelled Fair, under a banner reading Sample data, not a real person.">
+      <figcaption>9. The Expo app&rsquo;s 68 is invented by a mock module. It is labelled, and it is not this product.</figcaption>
+    </figure>
+
+    <p>
+      To its credit, it says so on every screen that shows a number. That labelling
+      is why it is honest and still not demonstrable.
+    </p>
+  </section>
+
+  <section>
+    <h2>What to do next</h2>
+    <p>
+      In order. None of these is a refactor, and nothing else on the MVP list is
+      outstanding.
+    </p>
+
+    <div class="priority">
+      <span class="num">1</span>
+      <div>
+        <h3>Stop scoring a subject the evidence is not about</h3>
+        <p>
+          Fix the confidence filter so rejected results count against the band, and
+          refuse to render a score when a fixture run&rsquo;s subject does not match
+          the fixture subject. One filter and one branch.
+        </p>
+      </div>
+    </div>
+
+    <div class="priority">
+      <span class="num">2</span>
+      <div>
+        <h3>Make the demonstration path deliberate</h3>
+        <p>
+          The form currently pre-fills a fictional attorney as a default. Present
+          that subject as the demonstration subject instead, so the boundary of the
+          fixture data is visible rather than something a viewer discovers by typing
+          their own name.
+        </p>
+      </div>
+    </div>
+
+    <div class="priority">
+      <span class="num">3</span>
+      <div>
+        <h3>Clear the second-name block for a demonstration</h3>
+        <p>
+          A second distinct name is refused until an email address is verified. That
+          is correct behaviour &mdash; it is what stops the product being a
+          people-search engine &mdash; but with no mail provider connected it stops a
+          live walkthrough. Pre-verify the session, or raise the limit for the demo
+          only.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What changed since this was written</h2>
+    <p>
+      The page is dated, so it has to say what is no longer true of it. Screenshots 1 to 7b
+      were retaken on 4 November against commit <code>7ad4d03</code>.
+    </p>
+
+    <div class="note good">
+      <strong>Fixed</strong>
+      <p>
+        The report now opens with who it is about rather than how the search was run; the
+        provenance moved into a collapsed <em>Audit details</em> that still prints. The
+        evidence table leads with identity and the bare <code>0.98</code> is labelled as an
+        identity match. A failed search offers <em>Try again</em> and <em>Edit details</em>
+        instead of a dead end. The insufficient-evidence state reads as a completed check
+        with a limited conclusion. The home page gained three steps and a closing ask.
+      </p>
+    </div>
+
+    <div class="note bad">
+      <strong>Still broken</strong>
+      <p>
+        The identity-confidence defect below is unchanged. The band still reads
+        <em>high</em> off a single self-claimed result, and a subject the fixtures do not
+        cover is still scored. The report no longer hides the contradiction &mdash; screenshot 7
+        shows &ldquo;1 of 6 results is attributed to you&rdquo; directly above a 59 &mdash; but
+        showing a problem is not fixing it.
+      </p>
+    </div>
+
+    <p>
+      Three alternative design directions for the report are rendered on the same data at
+      <a href="directions/">/directions</a>, for comparison rather than description. They are
+      compositions, not a built product.
+    </p>
+  </section>
+
+  <section>
+    <h2>Feedback</h2>
+    <p>
+      Corrections are more useful than agreement. If something here reads as
+      overstated, or a status is wrong, say so.
+    </p>
+    <p style="margin-top: var(--s-6)">
+      <a class="btn" href="https://github.com/RanaTahirBilal/goodname/issues/new">Open an issue</a>
+    </p>
+  </section>
+
+</article>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      A status report on an unreleased product, first written 3 November 2026, updated 4 November against
+      commit <code>7ad4d03</code>. Every score and every result shown on this page is
+      fixture data describing a fictional person. Nothing here is a real reputation
+      finding about anybody.
+    </p>
+    <p>
+      The product measures observable online presence. It does not measure character,
+      honesty or competence, and it promises no rankings, no removals and no score
+      increase.
+    </p>
+    <p><a href="https://github.com/RanaTahirBilal/goodname">Source</a> &middot; <a href="https://github.com/RanaTahirBilal/goodname/issues">Issues</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
