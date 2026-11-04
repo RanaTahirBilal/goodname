@@ -98,6 +98,19 @@ export default function AuditClient() {
    */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    await run();
+  }
+
+  /**
+   * The audit itself, separated from the form's submit.
+   *
+   * The failure screen needs to start one too. It used to offer only
+   * "Back", which returns to the form the customer has already filled in
+   * correctly and asks them to press the same button again — a provider
+   * that did not answer is not their mistake to correct, and making them
+   * retrace the step reads as though it were.
+   */
+  async function run() {
     setState('running');
     setIssues([]);
     setResponse(null);
@@ -263,12 +276,18 @@ export default function AuditClient() {
         />
       )}
 
-      {state === 'error' && response && <Failure response={response} onBack={() => setState('idle')} />}
+      {state === 'error' && response && (
+        <Failure
+          response={response}
+          onBack={() => setState('idle')}
+          onRetry={() => void run()}
+        />
+      )}
 
       {state === 'idle' && (
         <form className="stack" style={{ ['--gap' as string]: '24px' }} onSubmit={submit}>
           <div>
-            <p className="eyebrow">Free audit</p>
+            <p className="eyebrow mark">Free audit</p>
             <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem)' }}>
               Audit your own presence
             </h1>
@@ -474,7 +493,15 @@ function Running({
   );
 }
 
-function Failure({ response, onBack }: { response: ApiResponse; onBack: () => void }) {
+function Failure({
+  response,
+  onBack,
+  onRetry,
+}: {
+  response: ApiResponse;
+  onBack: () => void;
+  onRetry: () => void;
+}) {
   if (response.status === 'not_permitted') {
     const enumeration = response.reason === 'enumeration_suspected';
 
@@ -522,29 +549,62 @@ function Failure({ response, onBack }: { response: ApiResponse; onBack: () => vo
   }
 
   if (response.status === 'search_failed') {
+    const waiting = response.retryAfterSeconds
+      ? Math.round(response.retryAfterSeconds / 60)
+      : 0;
+
+    /**
+     * An interruption, not a verdict.
+     *
+     * This screen used to open "The search did not complete", spend its
+     * next sentence on how many attempts were made, and end at a lone
+     * "Back" button. Everything on it was true and the whole of it read as
+     * a broken product: a technical account of a failure, with no way
+     * forward. The customer did nothing wrong and has nothing to correct,
+     * so the first thing on the page is now the action that fixes it.
+     *
+     * The distinction the copy underneath protects is the one that
+     * matters: a failed search must never look like a search that found
+     * nothing.
+     */
     return (
-      <div className="stack" style={{ ['--gap' as string]: '20px' }}>
-        <div className="notice notice-danger">
-          <div>
-            <strong>The search did not complete</strong>
-            {response.message}
-          </div>
+      <div className="stack" style={{ ['--gap' as string]: 'var(--s-6)' }}>
+        <div>
+          <p className="eyebrow mark">Not finished</p>
+          <h1 style={{ fontSize: 'clamp(1.6rem, 1.3rem + 1.2vw, 2.1rem)' }}>
+            We could not complete your check
+          </h1>
+          <p className="lede" style={{ marginTop: 'var(--s-3)' }}>
+            {waiting
+              ? `The search provider is not answering. Worth trying again in about ${waiting} minutes.`
+              : 'The search provider did not answer. Nothing was scored, so running it again starts cleanly.'}
+          </p>
         </div>
+
+        <div className="row" style={{ gap: 'var(--s-3)', flexWrap: 'wrap' }}>
+          <button type="button" className="btn btn-primary" onClick={onRetry}>
+            Try again
+          </button>
+          <button type="button" className="btn btn-secondary" onClick={onBack}>
+            Edit details
+          </button>
+        </div>
+
         <p className="small">
-          No report is shown. An empty report would suggest we looked and found nothing about
-          you, which is a very different thing from not having looked.
-          {response.retryAfterSeconds
-            ? ` You can try again in about ${Math.round(response.retryAfterSeconds / 60)} minutes.`
-            : ''}
+          We are not showing you a report. An empty one would suggest we looked and found
+          nothing about you, which is a very different thing from not having looked.
         </p>
 
-        {/* Same shape as the refusal screen: the code is a reference, not prose. */}
-        <p className="small">
-          Recorded as <span className="mono">{response.reason}</span>.
-        </p>
-        <button type="button" className="btn btn-secondary" onClick={onBack}>
-          Back
-        </button>
+        {/* The diagnostic, kept and demoted: an operator's detail, not the reader's. */}
+        <details className="card disclosure">
+          <summary className="eyebrow">What went wrong</summary>
+          <p className="small" style={{ marginTop: 'var(--s-4)' }}>
+            {response.message}
+          </p>
+          <p className="small" style={{ marginTop: 'var(--s-3)' }}>
+            Recorded as <span className="mono">{response.reason}</span>.
+          </p>
+        </details>
       </div>
     );
   }

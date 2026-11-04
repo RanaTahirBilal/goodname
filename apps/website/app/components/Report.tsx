@@ -20,6 +20,7 @@ import type {
   RiskFinding,
   RiskLevel,
 } from '@rep/domain';
+import { DIMENSION_LABELS } from '@rep/domain';
 
 type Scan = {
   provider: string;
@@ -200,13 +201,25 @@ function IdentityHeader({
 
   return (
     <div className="card" style={{ padding: 20 }}>
-      <p className="eyebrow" style={{ marginBottom: 12 }}>Who this report is about</p>
+      <p className="eyebrow mark">Who this report is about</p>
 
+      {/**
+       * "0 of 0 results are attributed to you" is arithmetic, not an
+       * answer. A search that returned nothing is a different fact from a
+       * search that returned results belonging to somebody else, and the
+       * sentence has to say which one happened.
+       */}
       <p style={{ fontSize: '1.0625rem', marginBottom: 'var(--s-3)' }}>
-        <strong>
-          {attributed} of {seen} {seen === 1 ? 'result' : 'results'}
-        </strong>{' '}
-        {attributed === 1 ? 'is' : 'are'} attributed to you.
+        {seen === 0 ? (
+          <strong>The search returned nothing for this name.</strong>
+        ) : (
+          <>
+            <strong>
+              {attributed} of {seen} {seen === 1 ? 'result' : 'results'}
+            </strong>{' '}
+            {attributed === 1 ? 'is' : 'are'} attributed to you.
+          </>
+        )}
       </p>
 
       <dl className="small cols cols-2" style={{ gap: '4px 20px' }}>
@@ -223,10 +236,17 @@ function IdentityHeader({
        * nothing that is about them, is the failure this product exists to
        * avoid. When the count is zero it is said in words.
        */}
-      {attributed === 0 && (
+      {attributed === 0 && seen > 0 && (
         <p className="small" style={{ marginTop: 'var(--s-3)', color: 'var(--warning)' }}>
           Nothing we found appears to be about you. Anything below describes the results
           themselves, not your presence.
+        </p>
+      )}
+
+      {seen === 0 && (
+        <p className="small" style={{ marginTop: 'var(--s-3)' }}>
+          That is a result in itself, and not the same as a search that failed — we looked
+          and the queries came back empty.
         </p>
       )}
 
@@ -286,30 +306,90 @@ function Pair({ label, value }: { label: string; value: string }) {
 
 /** The one glass surface in the report. */
 function PresenceCard({ presence }: { presence: PresenceScore }) {
+  /**
+   * A finished check with a limited conclusion, not a blank where a score
+   * should be.
+   *
+   * This read "Not enough evidence to score" in the slot the number
+   * normally fills, which made a deliberate refusal look like a report
+   * that had failed to load. The decision is the product working: below
+   * 55% coverage a number would be invented. So the state says plainly
+   * that the check completed, how far it got, what it could not reach,
+   * and the one thing that would change that.
+   */
   if (presence.status === 'insufficient_evidence') {
     return (
-      <div className="card stack" style={{ ['--gap' as string]: '12px' }}>
-        <p className="eyebrow">Online presence</p>
-        <h2 style={{ fontSize: '1.4rem' }}>Not enough evidence to score</h2>
-        <p className="small">
-          We could evaluate {pct(presence.coverage)} of the model, below the 55% we require.
-          Rather than publish a number built on too little, here is what would change that:
+      <div className="card stack" style={{ ['--gap' as string]: 'var(--s-4)' }}>
+        <p className="eyebrow mark">Online presence</p>
+
+        <h2 style={{ fontSize: '1.4rem' }}>
+          We finished the check and did not score it
+        </h2>
+
+        <p className="small" style={{ fontSize: '0.9375rem' }}>
+          We could evaluate <strong style={{ color: 'var(--text)' }}>{pct(presence.coverage)}</strong>{' '}
+          of the model, and we do not publish a score below 55%. A number built on this
+          little evidence would move on its own as more of it arrives, which is worse than
+          no number at all.
         </p>
-        <ul className="small stack" style={{ ['--gap' as string]: '6px', paddingLeft: 18 }}>
-          {presence.whatWouldHelp.map((h) => (
-            <li key={h}>{h}</li>
-          ))}
-        </ul>
+
+        {presence.missingDimensions.length > 0 && (
+          <div>
+            <p className="eyebrow" style={{ marginBottom: 'var(--s-2)' }}>
+              What we could not assess
+            </p>
+            <ul
+              className="small stack"
+              style={{ ['--gap' as string]: 'var(--s-1)', paddingLeft: 18 }}
+            >
+              {presence.missingDimensions.map((code) => (
+                <li key={code}>{DIMENSION_LABELS[code]}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div style={{ paddingTop: 'var(--s-4)', borderTop: '1px solid var(--border)' }}>
+          <p className="eyebrow" style={{ marginBottom: 'var(--s-2)' }}>
+            What would change it
+          </p>
+          <ul
+            className="small stack"
+            style={{ ['--gap' as string]: 'var(--s-2)', paddingLeft: 18 }}
+          >
+            {presence.whatWouldHelp.map((h) => (
+              <li key={h}>{h}</li>
+            ))}
+          </ul>
+        </div>
+
+        <p className="small">
+          Everything below is still yours to read: the evidence we did find, where it came
+          from and when we saw it.
+        </p>
       </div>
     );
   }
 
+  /**
+   * A card, matching the risk panel beside it.
+   *
+   * These two sit in one grid row and used to be drawn differently — risk
+   * bounded, presence loose on the page — which read as an oversight
+   * rather than as emphasis. They are the report's two headline answers
+   * and they are now a matched pair; the score keeps its primacy from
+   * being the largest figure on the page, which is where emphasis should
+   * come from.
+   */
   return (
-    <div>
-      <p className="eyebrow" style={{ marginBottom: 'var(--s-3)' }}>Online presence</p>
+    <div className="card">
+      <p className="eyebrow mark">Online presence</p>
 
       {/* The one big thing on the page. Everything else is medium or small. */}
-      <div className="row" style={{ alignItems: 'baseline', gap: 'var(--s-3)' }}>
+      <div
+        className="row"
+        style={{ alignItems: 'baseline', gap: 'var(--s-3)', marginTop: 'var(--s-2)' }}
+      >
         <span className="hero-figure">{presence.score}</span>
         <span className="small">out of 100</span>
       </div>
@@ -333,7 +413,7 @@ function PresenceCard({ presence }: { presence: PresenceScore }) {
 function RiskCard({ risk }: { risk: RiskAssessment }) {
   return (
     <div className="card stack" style={{ ['--gap' as string]: 'var(--s-4)' }}>
-      <p className="eyebrow">Reputation risk</p>
+      <p className="eyebrow mark">Reputation risk</p>
 
       {/*
         The level is set in words at display size rather than tucked into a
@@ -922,7 +1002,7 @@ export function Report({
         }}
       >
         <div>
-          <p className="eyebrow">Audit report</p>
+          <p className="eyebrow mark">Audit report</p>
           <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.5rem)' }}>{name}</h1>
         </div>
 

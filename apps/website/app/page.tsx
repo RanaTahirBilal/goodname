@@ -9,6 +9,13 @@
  * Every gap here comes from the spacing scale. The page previously carried
  * inline 6s, 14s, 18s and 20s, which is how a layout drifts: each one looked
  * right on its own and none of them agreed with the others.
+ *
+ * The headline used to be "Understand what people find when they search for
+ * you", which is true of a search-results preview tool as well as of this.
+ * What separates this from one is below it, in the standfirst: the source,
+ * the date, whether it is even about you, and a refusal to score when the
+ * evidence is too thin. A headline promises the thing; the line under it
+ * says why this one is different.
  */
 export default function Home() {
   return (
@@ -24,14 +31,14 @@ export default function Home() {
                 For attorneys, physicians, founders and executives
               </p>
 
-              <h1 style={{ maxWidth: '16ch' }}>
-                Understand what people find when they search for you.
+              <h1 style={{ maxWidth: '15ch' }}>
+                See what they find when they search your name.
               </h1>
 
               <p className="lede">
-                We search for your name, show you what actually ranks, and explain what each
-                result is based on — with the source, the date and how confident we are that
-                it is even about you.
+                Every result, with its source, its date, and how sure we are it is even
+                about you. When the evidence is too thin to judge, we say so instead of
+                scoring it anyway.
               </p>
 
               <div className="row" style={{ gap: 'var(--s-4)', flexWrap: 'wrap' }}>
@@ -76,6 +83,8 @@ export default function Home() {
         </div>
       </section>
 
+      <Steps />
+
       <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
         <div className="cols cols-2" style={{ gap: 'var(--s-12)' }}>
           <article className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
@@ -101,7 +110,100 @@ export default function Home() {
           </article>
         </div>
       </section>
+
+      <Closing />
     </>
+  );
+}
+
+/**
+ * Three steps, because the objection this page has to answer is "what
+ * actually happens if I type my name in".
+ *
+ * Numbered in the serif at display size so the sequence is legible before
+ * any of the words are, and separated by whitespace rather than by three
+ * more cards — a row of boxes would make these look like features to
+ * compare instead of an order to read.
+ */
+function Steps() {
+  const steps = [
+    {
+      n: '01',
+      title: 'Tell us who you are',
+      body:
+        'Name, profession, and whatever else distinguishes you — employer, city, credentials, your own site. Every detail is one more way to tell you apart from someone who shares your name.',
+    },
+    {
+      n: '02',
+      title: 'We search and read the results',
+      body:
+        'We run the searches a person would, then work through what comes back: what each result is, who published it, whether it is settled or merely alleged, and whether it is about you at all.',
+    },
+    {
+      n: '03',
+      title: 'You get the evidence, not just a number',
+      body:
+        'A presence score, a separate read on negative material, and how confident we are in the identity match — each one traceable to the results it came from, which are listed in full.',
+    },
+  ];
+
+  return (
+    <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
+      <h2 className="mark" style={{ fontSize: '1.5rem', marginBottom: 'var(--s-8)' }}>
+        What happens when you run one
+      </h2>
+
+      <ol className="steps">
+        {steps.map((s) => (
+          <li key={s.n} className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
+            <span className="step-number" aria-hidden>
+              {s.n}
+            </span>
+            <h3>{s.title}</h3>
+            <p className="small" style={{ fontSize: '0.9375rem' }}>
+              {s.body}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/**
+ * The closing ask.
+ *
+ * One action, the same action as the hero, because a page with two
+ * different next steps has decided neither of them matters. The line above
+ * it is the honest version of a guarantee: not that the news will be good,
+ * only that it will be checkable.
+ */
+function Closing() {
+  return (
+    <section className="wrap" style={{ paddingTop: 'var(--s-24)' }}>
+      <div
+        className="stack"
+        style={{
+          ['--gap' as string]: 'var(--s-6)',
+          paddingTop: 'var(--s-12)',
+          borderTop: '1px solid var(--border)',
+        }}
+      >
+        <h2 style={{ fontSize: 'clamp(1.6rem, 1.3rem + 1.4vw, 2.25rem)', maxWidth: '18ch' }}>
+          It takes a name and about a minute.
+        </h2>
+        <p className="small" style={{ fontSize: '0.9375rem', maxWidth: '54ch' }}>
+          We cannot promise the result is flattering. We can promise you will be able to see
+          where every part of it came from, and that nothing is asserted about you that the
+          evidence does not carry.
+        </p>
+        <div>
+          <a href="/audit" className="btn btn-primary">
+            Check My Reputation
+          </a>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -40,7 +40,17 @@ export const WEIGHTS: Record<PresenceDimension, number> = {
   C: 0.12,
 };
 
-const LABELS: Record<PresenceDimension, string> = {
+/**
+ * Exported because the report names dimensions the score could not
+ * evaluate, and `missingDimensions` carries codes rather than results.
+ *
+ * The website had no way to say "Source Authority & Relevance" without
+ * keeping its own copy of these five strings, and a second copy of a label
+ * is a second copy that drifts. The scenario list went the same way, for
+ * the same reason, after the app and the engine quietly disagreed about
+ * which scenarios existed.
+ */
+export const DIMENSION_LABELS: Record<PresenceDimension, string> = {
   D: 'Discoverability & Ownership',
   P: 'Professional Profile Completeness',
   A: 'Source Authority & Relevance',
@@ -107,7 +117,7 @@ const dimension = (
   inapplicableReason?: string
 ): DimensionResult => ({
   code,
-  label: LABELS[code],
+  label: DIMENSION_LABELS[code],
   value,
   applicable: value !== null,
   inapplicableReason: value === null ? inapplicableReason : undefined,

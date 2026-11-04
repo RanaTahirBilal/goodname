@@ -243,6 +243,35 @@ a:hover { color: var(--primary-dark); }
 
 .card-flush { padding: 0; overflow: hidden; }
 
+/* ---------------------------------------------------------------- steps
+ *
+ * A numbered sequence, set as columns on a wide screen and as a list on a
+ * narrow one. No cards: three boxes side by side read as three features to
+ * compare, and these are an order to read.
+ */
+.steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--s-12);
+}
+
+@media (min-width: 860px) {
+  .steps { grid-template-columns: repeat(3, 1fr); gap: var(--s-8); }
+}
+
+.steps > li { padding-top: var(--s-4); border-top: 2px solid var(--primary); }
+
+.step-number {
+  font-family: var(--serif);
+  font-size: 1.75rem;
+  font-weight: 540;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-2);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+
 /**
  * A disclosure that still looks like part of the report.
  *

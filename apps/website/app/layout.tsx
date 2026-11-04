@@ -32,7 +32,7 @@ const sans = Inter({
 export const metadata: Metadata = {
   // Internal name only. Branding is a single value so the commercial name is
   // a one-line change. See docs/PRODUCT_DECISIONS.md PD-006.
-  title: 'Reputation Platform — understand what people find when they search for you',
+  title: 'Reputation Platform — see what they find when they search your name',
   description:
     'An evidence-backed audit of your professional online presence. See what ranks for your name, what it is based on, and what is worth doing about it.',
   robots: { index: false, follow: false },
@@ -44,8 +44,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
+        {/**
+         * Sticky, because the report is long.
+         *
+         * Solid rather than translucent: a blurred bar over scrolling text
+         * is the one decoration this product keeps turning down, and a
+         * backdrop filter over an evidence table makes the row underneath
+         * it unreadable at exactly the moment someone is reading it.
+         */}
         <header
           style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 20,
             borderBottom: '1px solid var(--border)',
             background: 'var(--surface)',
           }}
@@ -54,7 +65,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             className="wrap row"
             style={{ height: 68, justifyContent: 'space-between' }}
           >
-            <a href="/" className="wordmark">
+            <a href="/" className="wordmark row" style={{ gap: 'var(--s-3)' }}>
+              {/* A mark, not a logo: the same rule that opens every section. */}
+              <span
+                aria-hidden
+                style={{
+                  width: 18,
+                  height: 2,
+                  background: 'var(--primary)',
+                  flex: '0 0 auto',
+                }}
+              />
               {BRAND}
             </a>
             <nav className="row" style={{ gap: 'var(--s-6)' }}>
