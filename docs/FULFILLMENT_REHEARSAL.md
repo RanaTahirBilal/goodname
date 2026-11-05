@@ -418,3 +418,41 @@ first rehearsal left open. A genuine disbarment now also waits for a human
 — the same change that stopped a clean record being reported as
 misconduct. That trade was taken deliberately and it is the owner's to
 revisit, not engineering's.
+
+---
+
+## Addendum — two corrections after rehearsal 02
+
+Both from the review of this document, both verified in the running app.
+
+**The headline said the opposite of the sentence under it.** The risk card
+showed **None found**, in success green, above the new paragraph
+explaining that one result mentioned something adverse and had not been
+read. The qualification was accurate and nobody reads the qualification.
+
+Three situations were sharing two words, and now do not: *no confirmed
+adverse findings* (the actual assessed result), *review pending* (we found
+something and have not finished reading it), and *not assessed* (nothing
+was attributable to you, which is not the same as finding nothing against
+you). The headline is derived from the pending count and the level, so the
+screen and the print output cannot disagree about which it is, and an
+unsettled assessment is no longer rendered in the success colour.
+Verified: the card reads **Review pending** at 30px in ink rather than
+green, over "1 result contains a possible adverse reference. Its meaning
+has not been verified, so no adverse finding has been established — and
+none has been ruled out either."
+
+An established finding still outranks a pending one. Burying a severe
+level under "Review pending" would be the same mistake upside down.
+
+**The audit form stopped describing a stranger.** F7 from rehearsal 01,
+left unfixed through the milestone. It now arrives empty; the fixture
+subjects are loaded by a button that names who it is about to fill in; the
+scenario picker no longer overwrites a name somebody typed; and the
+attestation carries the line **"You are about to audit Amara Okonkwo."**
+next to the box being ticked, because confirming "this audit is about me"
+over a form you have not re-read confirms nothing.
+
+That closes every finding from rehearsal 01 except the ones that are
+purchases rather than code: no mail provider, no backups, and a worker
+that dies with the server.

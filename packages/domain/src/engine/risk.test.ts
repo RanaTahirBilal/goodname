@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assessRisk } from './risk.ts';
+import { assessRisk, riskHeadline } from './risk.ts';
+import type { RiskAssessment } from '../contracts/types.ts';
 import { evidence, OBSERVED } from '../testing/factories.ts';
 
 const assess = (records: ReturnType<typeof evidence>[], brokerRan = false) =>
@@ -278,4 +279,82 @@ test('findings are ordered worst first', () => {
   ]);
 
   assert.equal(r.findings[0].status, 'confirmed_finding');
+});
+
+/* ------------------------------------------------- the primary status */
+
+/**
+ * Three situations that used to share two words.
+ *
+ * The risk card showed **None found**, in success green, above a sentence
+ * explaining that one result mentioned something adverse and had not been
+ * read by a person yet. The qualification was accurate. Nobody reads the
+ * qualification: the two most prominent words on the card said the opposite
+ * of the paragraph beneath them.
+ */
+const assessment = (over: Partial<RiskAssessment> = {}): RiskAssessment =>
+  ({
+    methodologyVersion: 'test',
+    level: 'none',
+    levelRationale: 'Nothing in the results we searched asserts substantiated harm.',
+    findings: [],
+    commentary: [],
+    privacy: { level: 'none', exposedListings: 0, note: '' },
+    needsReview: [],
+    awaitingReview: 0,
+    recordsAssessed: 4,
+    containsFixtureData: false,
+    assessedAt: '2026-11-05T00:00:00.000Z',
+    ...over,
+  }) as RiskAssessment;
+
+test('an unread adverse record is not reported as a clean result', () => {
+  const h = riskHeadline(assessment({ awaitingReview: 1 }));
+
+  assert.equal(h.label, 'Review pending');
+  assert.equal(h.settled, false, 'an unfinished assessment is presented as settled');
+  assert.match(h.support, /has not been verified/);
+  assert.match(h.support, /none has been ruled out/, 'it reads as a soft clean bill');
+});
+
+test('an actual clean result says so, and only then', () => {
+  const h = riskHeadline(assessment());
+
+  assert.equal(h.label, 'No confirmed adverse findings');
+  assert.equal(h.settled, true);
+});
+
+test('nothing to assess is not nothing found', () => {
+  // A search that returned nothing attributable and a search that returned
+  // a clean record must not produce the same sentence. Rule 14.
+  const h = riskHeadline(assessment({ recordsAssessed: 0 }));
+
+  assert.equal(h.label, 'Not assessed');
+  assert.equal(h.settled, false);
+  assert.match(h.support, /not the same as finding nothing/i);
+});
+
+test('an established finding outranks a pending one', () => {
+  /**
+   * The same mistake upside down. Something unread does not make a
+   * disbarment we have confirmed any less confirmed, and burying a severe
+   * level under "Review pending" would understate it.
+   */
+  const h = riskHeadline(
+    assessment({ level: 'severe', levelRationale: '1 established finding.', awaitingReview: 2 })
+  );
+
+  assert.equal(h.label, 'Severe');
+  assert.equal(h.settled, false, 'the outstanding records vanished from the status');
+  assert.match(h.support, /2 further results/);
+});
+
+test('the three cases never share a label', () => {
+  const labels = [
+    riskHeadline(assessment()).label,
+    riskHeadline(assessment({ awaitingReview: 1 })).label,
+    riskHeadline(assessment({ recordsAssessed: 0 })).label,
+  ];
+
+  assert.equal(new Set(labels).size, 3, `"${labels.join('", "')}" are not all distinct`);
 });

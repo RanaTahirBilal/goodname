@@ -24,7 +24,7 @@ import type {
   RiskFinding,
   RiskLevel,
 } from '@rep/domain';
-import { DIMENSION_LABELS, PERMITTED_USE, splitFindings } from '@rep/domain';
+import { DIMENSION_LABELS, PERMITTED_USE, riskHeadline, splitFindings } from '@rep/domain';
 
 type Scan = {
   provider: string;
@@ -74,6 +74,14 @@ const RISK_INK: Record<RiskLevel, string> = {
   severe: 'var(--danger)',
 };
 
+/**
+ * The level in words, for the places that are showing a level.
+ *
+ * The risk card no longer uses it: its heading comes from `riskHeadline`,
+ * because "the level" and "the primary status" stopped being the same thing
+ * once a record could be adverse and unread. This map is still what the
+ * privacy exposure chip reads, which genuinely is a level.
+ */
 const RISK_WORD: Record<RiskLevel, string> = {
   none: 'None found',
   low: 'Low',
@@ -626,6 +634,8 @@ function PresenceCard({ presence }: { presence: PresenceScore }) {
 }
 
 function RiskCard({ risk }: { risk: RiskAssessment }) {
+  const headline = riskHeadline(risk);
+
   return (
     <div className="card stack" style={{ ['--gap' as string]: 'var(--s-4)' }}>
       <p className="eyebrow mark">Reputation risk</p>
@@ -642,13 +652,21 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
           fontSize: '1.875rem',
           lineHeight: 1.1,
           fontWeight: 600,
-          color: RISK_INK[risk.level],
+          /**
+           * An unsettled assessment is not green.
+           *
+           * Colour is the first thing read and the last thing qualified. A
+           * pending review shown in the success ink told the reader they
+           * were fine before they reached the sentence saying we had not
+           * finished looking.
+           */
+          color: headline.settled ? RISK_INK[risk.level] : 'var(--text)',
         }}
       >
-        {RISK_WORD[risk.level]}
+        {headline.label}
       </p>
 
-      <p style={{ fontSize: '0.9375rem' }}>{risk.levelRationale}</p>
+      <p style={{ fontSize: '0.9375rem' }}>{headline.support}</p>
 
       <div className="small" style={{ paddingTop: 'var(--s-4)', borderTop: '1px solid var(--border)' }}>
         <div className="row" style={{ justifyContent: 'space-between' }}>

@@ -448,6 +448,14 @@ export interface RiskAssessment {
    * a clean bill, and the report has to say so.
    */
   awaitingReview: number;
+  /**
+   * Attributable records this assessment actually looked at.
+   *
+   * So "we assessed your results and established nothing" can be told apart
+   * from "there was nothing of yours to assess". Both produce a level of
+   * `none`, and only one of them is reassuring.
+   */
+  recordsAssessed: number;
   containsFixtureData: boolean;
   assessedAt: string;
 }

@@ -95,14 +95,27 @@ const formFor = (scenario: string) => {
   };
 };
 
+/**
+ * Empty, and that is the whole point.
+ *
+ * This form used to arrive filled in with Jensen Adoni, attorney, Chicago —
+ * whoever was signed in. Convenient for a demonstration, and the second
+ * fulfillment rehearsal caught what it is in a real engagement: the one
+ * screen in the product where typing the wrong person's name is the exact
+ * failure the product exists to prevent, pre-filled with somebody else's
+ * name, waiting for an operator to not notice.
+ *
+ * The demonstration subjects have not gone anywhere. They are now something
+ * you ask for rather than something you have to clear.
+ */
 const DEFAULTS = {
-  fullName: 'Jensen Adoni',
-  profession: 'attorney',
-  employer: 'Adoni Law',
-  city: 'Chicago',
-  region: 'Illinois',
-  credentials: 'JD',
-  websiteUrl: 'https://adoni-law.example',
+  fullName: '',
+  profession: '',
+  employer: '',
+  city: '',
+  region: '',
+  credentials: '',
+  websiteUrl: '',
 };
 
 export default function AuditClient() {
@@ -398,12 +411,18 @@ export default function AuditClient() {
                 onChange={(e) => {
                   const next = e.target.value;
                   setScenario(next);
-                  // Keep the subject and the scenario in step. Anything the
-                  // customer typed themselves is overwritten, which is the
-                  // right trade on a demonstration control: the alternative
-                  // is a form that quietly describes somebody who is not in
-                  // the results.
-                  setForm(formFor(next));
+                  /**
+                   * Fills the form only when there is nothing to overwrite.
+                   *
+                   * It used to overwrite whatever was there, on the grounds
+                   * that a form describing somebody who is not in the
+                   * results is worse. Both are bad, and silently replacing a
+                   * name somebody typed is the worse one: a control that
+                   * changes the subject of an audit without being asked is
+                   * the same class of mistake as the one this screen exists
+                   * to avoid. The button below does it deliberately.
+                   */
+                  if (form.fullName.trim() === '') setForm(formFor(next));
                 }}
               >
                 {SCENARIOS.map(([v, label]) => (
@@ -412,10 +431,17 @@ export default function AuditClient() {
               </select>
               <span className="hint">
                 No live search provider is connected yet, so audits run against fixture
-                data. Choosing a scenario also fills the form with the person it
-                describes &mdash; they are an attorney, a physician and a founder, and
-                every one of them is invented.
+                data describing invented people &mdash; an attorney, a physician and a
+                founder. The form is not filled in for you.
               </span>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ alignSelf: 'flex-start', marginTop: 'var(--s-2)' }}
+                onClick={() => setForm(formFor(scenario))}
+              >
+                Fill in {subjectFor(scenario).fullName}&rsquo;s details
+              </button>
             </div>
           </div>
 
@@ -428,6 +454,17 @@ export default function AuditClient() {
             />
             <label htmlFor="attested" style={{ fontSize: '0.9375rem' }}>
               {SELF_AUDIT_ATTESTATION}
+              {/*
+                The name is repeated here, next to the box being ticked.
+                Confirming "this audit is about me" above a form you have not
+                re-read is not a confirmation of anything, and the name is
+                the one field where being wrong matters most.
+              */}
+              {form.fullName.trim() !== '' && (
+                <strong style={{ display: 'block', marginTop: 6 }}>
+                  You are about to audit {form.fullName.trim()}.
+                </strong>
+              )}
               <span className="hint" style={{ display: 'block', marginTop: 6 }}>
                 This product is for auditing your own presence. We rate-limit by how many
                 different names an account looks up, not just how many audits it runs.

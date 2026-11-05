@@ -243,6 +243,7 @@ export function assessRisk(input: RiskInput): RiskAssessment {
     level,
     levelRationale: rationaleFor(level, live, privacy, unread.length),
     awaitingReview: unread.length,
+    recordsAssessed: primaries.length,
     findings: live.sort(
       (a, b) =>
         LEVEL_ORDER.indexOf(levelForFinding(b)) - LEVEL_ORDER.indexOf(levelForFinding(a)) ||
@@ -300,3 +301,97 @@ function rationaleFor(
 
   return parts.length ? `Based on ${parts.join(', ')}.` : 'Based on the findings listed.';
 }
+
+/* ------------------------------------------------------------- headline */
+
+export interface RiskHeadline {
+  /** The words at display size. */
+  label: string;
+  /** The sentence under them. Always says which of the three cases this is. */
+  support: string;
+  /** False when the assessment is incomplete, whatever the level says. */
+  settled: boolean;
+}
+
+/**
+ * The primary status a reader sees, which is not always the level.
+ *
+ * `level` answers one question — what is *established* — and answers it
+ * correctly. The problem is what it looks like at display size when the
+ * answer is "nothing yet". The first version of this showed **None found**
+ * in success green above a sentence explaining that one result mentioned
+ * something adverse and had not been read. The qualification was accurate
+ * and nobody reads the qualification; the two most prominent words on the
+ * card said the opposite of the paragraph beneath them.
+ *
+ * Three different situations have to stop sharing one word:
+ *
+ *   - we looked and established nothing — the actual result,
+ *   - we found something adverse and have not finished reading it,
+ *   - there was nothing attributable to assess in the first place.
+ *
+ * Derived rather than stored, from the pending count and the level, so the
+ * screen, the print stylesheet and anything else reading an assessment
+ * cannot disagree about which of the three it is.
+ */
+export function riskHeadline(risk: RiskAssessment): RiskHeadline {
+  const pending = risk.awaitingReview;
+  const plural = pending === 1 ? '' : 's';
+
+  /**
+   * An established finding outranks a pending one. Something unread does not
+   * make a disbarment we have confirmed any less confirmed, and burying the
+   * level under "Review pending" would be the same mistake upside down.
+   */
+  if (risk.level !== 'none') {
+    return {
+      label: LEVEL_WORD[risk.level],
+      support: pending
+        ? `${risk.levelRationale} Separately, ${pending} further result${plural} ` +
+          `contain${pending === 1 ? 's' : ''} a possible adverse reference that has not been verified.`
+        : risk.levelRationale,
+      settled: pending === 0,
+    };
+  }
+
+  if (pending > 0) {
+    return {
+      label: 'Review pending',
+      support:
+        `${pending} result${plural} contain${pending === 1 ? 's' : ''} a possible adverse ` +
+        `reference. Its meaning has not been verified, so no adverse finding has been ` +
+        `established — and none has been ruled out either.`,
+      settled: false,
+    };
+  }
+
+  if (risk.recordsAssessed === 0) {
+    /**
+     * Nothing to assess is not a clean result. Rule 14 again: a search that
+     * returned nothing attributable and a search that returned a clean
+     * record must not produce the same sentence.
+     */
+    return {
+      label: 'Not assessed',
+      support:
+        'Nothing in the results was attributable to you, so there was nothing to assess for ' +
+        'reputational harm. That is not the same as finding nothing against you.',
+      settled: false,
+    };
+  }
+
+  return {
+    label: 'No confirmed adverse findings',
+    support: risk.levelRationale,
+    settled: true,
+  };
+}
+
+/** The level in words. Separate from the headline, which may not be a level. */
+export const LEVEL_WORD: Record<RiskLevel, string> = {
+  none: 'No confirmed adverse findings',
+  low: 'Low',
+  elevated: 'Elevated',
+  high: 'High',
+  severe: 'Severe',
+};
