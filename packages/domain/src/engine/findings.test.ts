@@ -323,3 +323,98 @@ test('the briefing shows at most three at length, and lists the rest', () => {
   assert.equal(remaining.length, all.length - 3);
   assert.ok(remaining.length > 0, 'the split did not actually split anything');
 });
+
+/* ------------------------------------------- the cases the fixtures exist for */
+
+/**
+ * A company closing is not a finding about the person who founded it.
+ *
+ * The most common bad news in a founder's search results, and the one a
+ * reputation product is most likely to get wrong: nobody alleges
+ * anything, no regulator is involved, and the story is about a company.
+ * Reporting it as a risk tells somebody their failure was a character
+ * finding, which is both false and the thing this audience is most afraid
+ * of being told.
+ */
+test('a company shutting down is not a reputation finding about its founder', async () => {
+  const { runAudit } = await import('../audit.ts');
+  const { FixtureSearchProvider, FIXTURE_SUBJECTS, SCENARIO_SUBJECT } = await import(
+    '../providers/fixture.ts'
+  );
+
+  const s = FIXTURE_SUBJECTS[SCENARIO_SUBJECT.founder_company_failure];
+  const report = await runAudit({
+    identity: {
+      fullName: s.fullName,
+      profession: s.profession,
+      employer: s.employer,
+      city: s.city,
+      region: s.region,
+      credentials: [],
+      websiteUrl: s.websiteUrl,
+    },
+    purpose: {
+      kind: 'self_audit',
+      attestationText: 'I confirm this audit is about me.',
+      attestedAt: '2026-11-05T00:00:00.000Z',
+      verification: 'verified_email',
+    } as const,
+    provider: new FixtureSearchProvider('founder_company_failure'),
+  });
+
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  assert.equal(report.risk.level, 'none', 'a shutdown was scored as reputational risk');
+  assert.equal(report.risk.findings.length, 0);
+
+  const shutdown = report.evidence.find((e) => e.sourceUrl.includes('shuts-down'));
+  assert.ok(shutdown, 'the shutdown story is missing from the evidence');
+  assert.equal(
+    shutdown.findingStatus,
+    undefined,
+    'the shutdown became a finding about the founder'
+  );
+});
+
+/**
+ * Poor patient ratings are not misconduct.
+ *
+ * Rule 10, on the case the legal fixtures cannot produce. Dissatisfaction
+ * is a legitimate search result and not substantiated harm; a product that
+ * reports a 2.4 average as a reputation risk is grading a doctor on
+ * bedside manner and calling it a finding.
+ */
+test('poor patient ratings are evidence, not a reputation finding', async () => {
+  const { runAudit } = await import('../audit.ts');
+  const { FixtureSearchProvider, FIXTURE_SUBJECTS, SCENARIO_SUBJECT } = await import(
+    '../providers/fixture.ts'
+  );
+
+  const s = FIXTURE_SUBJECTS[SCENARIO_SUBJECT.physician_review_complaint];
+  const report = await runAudit({
+    identity: {
+      fullName: s.fullName,
+      profession: s.profession,
+      employer: s.employer,
+      city: s.city,
+      region: s.region,
+      credentials: [s.credentials],
+      websiteUrl: s.websiteUrl,
+    },
+    purpose: {
+      kind: 'self_audit',
+      attestationText: 'I confirm this audit is about me.',
+      attestedAt: '2026-11-05T00:00:00.000Z',
+      verification: 'verified_email',
+    } as const,
+    provider: new FixtureSearchProvider('physician_review_complaint'),
+  });
+
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  assert.equal(report.risk.level, 'none', 'patient dissatisfaction was scored as risk');
+
+  const ratings = report.evidence.find((e) => e.sourceUrl.includes('healthgrades'));
+  assert.ok(ratings, 'the ratings page is missing from the evidence entirely');
+  assert.equal(ratings.findingStatus, undefined);
+});

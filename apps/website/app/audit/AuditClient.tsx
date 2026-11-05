@@ -56,6 +56,8 @@ const SCENARIOS = [
   ['sensitive', 'Personal matters mixed in with professional ones'],
   ['physician_strong', 'A physician in good standing'],
   ['physician_review_complaint', 'A physician with poor patient ratings'],
+  ['founder_self_published', 'A founder who published nearly all of it themselves'],
+  ['founder_company_failure', 'A founder whose company shut down'],
   ['sparse', 'Almost nothing findable'],
   ['empty', 'The search returns no results'],
   ['provider_error', 'The search provider fails'],
@@ -411,8 +413,8 @@ export default function AuditClient() {
               <span className="hint">
                 No live search provider is connected yet, so audits run against fixture
                 data. Choosing a scenario also fills the form with the person it
-                describes &mdash; two of them are an attorney, two a physician, and all
-                of them are invented.
+                describes &mdash; they are an attorney, a physician and a founder, and
+                every one of them is invented.
               </span>
             </div>
           </div>

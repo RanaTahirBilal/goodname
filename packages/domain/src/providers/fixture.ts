@@ -44,6 +44,8 @@ export const FIXTURE_SCENARIOS = [
   'sensitive',
   'physician_strong',
   'physician_review_complaint',
+  'founder_self_published',
+  'founder_company_failure',
   'sparse',
   'empty',
   'provider_error',
@@ -157,6 +159,65 @@ const DR_PRESS: Row = {
   position: 5,
   sourceType: 'press',
   publishedAt: '2026-04-18T00:00:00.000Z',
+};
+
+
+/* ----------------------------------------------------- a third subject
+ *
+ * Devon Marsh is a founder, and founders break this model in a way the
+ * other two cannot.
+ *
+ * An attorney's presence is mostly other people's pages about them. A
+ * founder's is mostly their own: a company site, a personal site, a
+ * profile, a podcast they were a guest on, a column they wrote for
+ * somebody else's publication. It *looks* like an enormous presence, and
+ * almost none of it is anyone else choosing to write about them.
+ *
+ * That is the case `isIndependent` in the scorer was written for, and
+ * until now it could only be tested with synthetic records. Here it is
+ * against evidence that reads like real search results.
+ *
+ * Invented, like the other two.
+ */
+
+const FOUNDER_COMPANY: Row = {
+  url: 'https://thornbury.example/about',
+  sourceName: 'Thornbury Labs',
+  title: 'About \u2014 Thornbury Labs',
+  snippet:
+    'Thornbury Labs was founded in 2021 by Devon Marsh to make freight routing legible to small shippers.',
+  position: 1,
+  sourceType: 'owned',
+  publishedAt: '2024-02-10T00:00:00.000Z',
+};
+
+const FOUNDER_PERSONAL: Row = {
+  url: 'https://devonmarsh.example/',
+  sourceName: 'devonmarsh.example',
+  title: 'Devon Marsh \u2014 writing about logistics and small teams',
+  snippet: 'Founder of Thornbury Labs. Essays on freight, pricing and building small.',
+  position: 2,
+  sourceType: 'owned',
+  publishedAt: '2026-01-04T00:00:00.000Z',
+};
+
+const FOUNDER_LINKEDIN: Row = {
+  url: 'https://www.linkedin.com/in/devonmarsh',
+  sourceName: 'LinkedIn',
+  title: 'Devon Marsh - Founder - Thornbury Labs | LinkedIn',
+  snippet: 'San Francisco, California. Founder at Thornbury Labs. Previously operations at a freight brokerage.',
+  position: 3,
+  sourceType: 'profile',
+  publishedAt: '2025-11-20T00:00:00.000Z',
+};
+
+const FOUNDER_CRUNCHBASE: Row = {
+  url: 'https://crunchbase.example/person/devon-marsh',
+  sourceName: 'Crunchbase',
+  title: 'Devon Marsh \u2014 Founder, Thornbury Labs',
+  snippet: 'Founder and chief executive at Thornbury Labs. One seed round raised.',
+  position: 4,
+  sourceType: 'profile',
 };
 
 const SCENARIOS: Record<
@@ -448,6 +509,78 @@ const SCENARIOS: Record<
     DR_DIRECTORY,
   ],
 
+  /**
+   * A founder who is everywhere, published by themselves.
+   *
+   * Seven results, a visible presence, and almost nothing a stranger chose
+   * to write. Discoverability should be healthy and Source Authority
+   * should not, because one is about being findable and the other is about
+   * somebody else's judgement. A model that cannot tell those apart would
+   * rate this person as well-regarded for having a blog.
+   */
+  founder_self_published: [
+    FOUNDER_COMPANY,
+    FOUNDER_PERSONAL,
+    FOUNDER_LINKEDIN,
+    FOUNDER_CRUNCHBASE,
+    {
+      url: 'https://shippingpodcast.example/ep-212-devon-marsh',
+      sourceName: 'The Shipping Podcast',
+      title: 'Ep. 212: Devon Marsh on routing freight for small shippers',
+      snippet:
+        'Devon Marsh joins the show to talk about founding Thornbury Labs and what small shippers get wrong about routing.',
+      position: 5,
+      sourceType: 'press',
+      publishedAt: '2026-05-02T00:00:00.000Z',
+    },
+    {
+      url: 'https://foundersweekly.example/guest-devon-marsh-pricing',
+      sourceName: 'Founders Weekly',
+      title: 'Guest post: what we learned pricing a logistics product',
+      snippet:
+        'Devon Marsh, founder of Thornbury Labs, writes about three pricing models the company tried.',
+      position: 6,
+      sourceType: 'press',
+      publishedAt: '2026-02-14T00:00:00.000Z',
+    },
+    {
+      url: 'https://techtrade.example/thornbury-seed',
+      sourceName: 'Tech Trade',
+      title: 'Thornbury Labs raises seed round for freight routing',
+      snippet:
+        'Thornbury Labs, founded by Devon Marsh, has raised a seed round led by an undisclosed investor.',
+      position: 8,
+      sourceType: 'press',
+      publishedAt: '2025-09-30T00:00:00.000Z',
+    },
+  ],
+
+  /**
+   * The company failed. The person did not do anything wrong.
+   *
+   * Closing a business is the most common bad news in a founder's search
+   * results and it is not misconduct: nobody alleges anything, no
+   * regulator is involved, and the story is about a company. A product
+   * that reports a shutdown as a reputation risk is telling someone their
+   * failure was a character finding, which is both wrong and the thing
+   * this audience is most afraid of being told.
+   */
+  founder_company_failure: [
+    FOUNDER_COMPANY,
+    {
+      url: 'https://techtrade.example/thornbury-shuts-down',
+      sourceName: 'Tech Trade',
+      title: 'Thornbury Labs shuts down after failing to raise a Series A',
+      snippet:
+        'Thornbury Labs, the freight routing startup founded by Devon Marsh, has ceased operations. The company said it would return remaining capital to investors.',
+      position: 2,
+      sourceType: 'press',
+      publishedAt: '2026-07-11T00:00:00.000Z',
+    },
+    FOUNDER_LINKEDIN,
+    FOUNDER_CRUNCHBASE,
+  ],
+
   sparse: [
     {
       url: 'https://directory.example/listing/8821',
@@ -487,7 +620,7 @@ const hostOf = (url: string): string => {
  */
 export interface FixtureSubject {
   fullName: string;
-  profession: 'attorney' | 'physician';
+  profession: 'attorney' | 'physician' | 'founder';
   employer: string;
   city: string;
   region: string;
@@ -495,7 +628,7 @@ export interface FixtureSubject {
   websiteUrl: string;
 }
 
-export const FIXTURE_SUBJECTS: Record<'adoni' | 'okonkwo', FixtureSubject> = {
+export const FIXTURE_SUBJECTS: Record<'adoni' | 'okonkwo' | 'marsh', FixtureSubject> = {
   adoni: {
     fullName: 'Jensen Adoni',
     profession: 'attorney',
@@ -514,6 +647,15 @@ export const FIXTURE_SUBJECTS: Record<'adoni' | 'okonkwo', FixtureSubject> = {
     credentials: 'MD, FACC',
     websiteUrl: 'https://stmartins-health.example',
   },
+  marsh: {
+    fullName: 'Devon Marsh',
+    profession: 'founder',
+    employer: 'Thornbury Labs',
+    city: 'San Francisco',
+    region: 'California',
+    credentials: '',
+    websiteUrl: 'https://thornbury.example',
+  },
 };
 
 /** Which subject each scenario describes. */
@@ -529,6 +671,8 @@ export const SCENARIO_SUBJECT: Record<FixtureScenario, keyof typeof FIXTURE_SUBJ
   sensitive: 'adoni',
   physician_strong: 'okonkwo',
   physician_review_complaint: 'okonkwo',
+  founder_self_published: 'marsh',
+  founder_company_failure: 'marsh',
   sparse: 'adoni',
 
   // These three return no rows at all, so the subject is whoever asked.

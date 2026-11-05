@@ -397,3 +397,43 @@ at 0.85 and 0.60 are product rules, not measured ones, and the question
 of what a 0.78 means remains open until there is a labelled set of correct
 and incorrect matches to measure against. The fix makes the number move in
 the right direction; it does not make it a probability.
+
+### OQ-25 — The customer's own words on somebody else's domain
+**Blocks:** nothing today. Misstates Source Authority for founders now.
+
+Found by building the founder fixtures, which is what they were for.
+
+`founder_self_published` scores Source Authority at **71**, explained as
+"3 independent pieces of earned coverage". The three are a podcast episode
+he appeared on, a guest column he wrote for somebody else's publication,
+and a funding story a reporter wrote. Only the third is independent. The
+other two are the founder's own words, hosted elsewhere.
+
+The engine cannot see the difference. Both sit on third-party domains,
+both carry `sourceType: 'press'`, and the classifier calls them `earned`
+because that is what they look like. OQ-21's authorship model handles the
+case where **we** placed something; it has nothing to say about material
+the **customer** placed, and the default — third party, editorial — is
+wrong for exactly this shape of evidence.
+
+This matters most for the audience it matters least to be wrong about.
+Attorneys and physicians are mostly written about. Founders mostly publish:
+a company page, a personal site, a profile, a podcast, a column. A model
+that reads all of that as independent regard rates somebody as well-thought-of
+for having a blog.
+
+**Three ways out, none free.**
+  - **Ask.** The report already asks "is this you?" for identity. "Did you
+    write this?" is the same shape of question and the customer is the only
+    one who reliably knows. Costs a second decision per record.
+  - **Detect it.** "joins the show", "guest post", "writes about" are
+    plausible markers and this is a lexical classifier with the same
+    ceiling as `classify.ts` and `sensitive.ts` — and a false positive here
+    deletes real coverage from somebody's score.
+  - **Weight by source instead.** Treat podcast and guest-column domains as
+    a lower authority tier regardless of who wrote the words. Cruder, needs
+    no new input, and wrong for a genuine interview.
+
+**Assumed meanwhile:** the figure is reported as it stands, the fixture
+exists so the gap is reproducible rather than theoretical, and no keyword
+guesser has been added on the strength of one example.
