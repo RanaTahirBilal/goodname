@@ -162,7 +162,23 @@ export type Classification =
  * finding at all.
  */
 export type FindingStatus =
-  | 'confirmed_finding'  // official record, or several independent reliable sources
+  | 'confirmed_finding'  // official record UPHELD BY A PERSON, or several independent sources
+  /**
+   * Adverse language was detected and its basis has not been established.
+   *
+   * The state that did not exist, and whose absence produced the defect the
+   * first fulfillment rehearsal found: "No disciplinary actions are recorded
+   * against this certificate" was read as an official record of a
+   * disciplinary action and written straight to `confirmed_finding`, severity
+   * 3. Detection and confirmation were the same step, so a misreading
+   * arrived already settled.
+   *
+   * They are now two steps. The classifier detects; it never confirms. This
+   * status says we saw adverse language, we have not established what it
+   * means, and it is excluded from the risk level until a person says
+   * otherwise in writing.
+   */
+  | 'requires_review'
   | 'allegation'         // asserted, not adjudicated
   | 'disputed'           // contradicted by another source we hold
   | 'corrected'          // the source published a correction
@@ -423,6 +439,15 @@ export interface RiskAssessment {
   privacy: PrivacyExposure;
   /** Findings we could not settle, shown but excluded from the level. */
   needsReview: RiskFinding[];
+  /**
+   * How many of those are adverse material nobody has read yet.
+   *
+   * Distinct from `needsReview.length`, which also holds corrections and
+   * retractions — things we understand and have decided not to count. This
+   * is the number that makes "Risk: none" an incomplete answer rather than
+   * a clean bill, and the report has to say so.
+   */
+  awaitingReview: number;
   containsFixtureData: boolean;
   assessedAt: string;
 }

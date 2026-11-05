@@ -230,9 +230,20 @@ test('a disciplinary finding is reported, not withheld as sensitive', () => {
   assert.equal(records[0].sensitivity?.withhold, false);
   assert.ok(records[0].title.includes('disbarred'), 'the finding was redacted away');
 
+  /**
+   * Surfaced, rather than in `findings` specifically.
+   *
+   * What this test is about is the privacy filter: an official determination
+   * must not be suppressed because it brushes a special category. Whether it
+   * lands in `findings` or in `needsReview` is the separate question of
+   * whether a person has read it yet, and since the classifier stopped
+   * confirming findings on its own the answer here is the latter.
+   */
   const risk = assessRisk({ records, allRecords: records });
-  assert.equal(risk.findings.length, 1);
-  assert.equal(risk.findings[0].status, 'confirmed_finding');
+  const surfaced = [...risk.findings, ...risk.needsReview];
+  assert.equal(surfaced.length, 1, 'the determination was suppressed by the privacy filter');
+  assert.equal(surfaced[0].status, 'requires_review');
+  assert.ok(risk.awaitingReview > 0);
 });
 
 /**
@@ -260,7 +271,11 @@ test('an official record is never withheld, whatever words it contains', () => {
   assert.ok(records[0].title.includes('disbarred'));
 
   const risk = assessRisk({ records, allRecords: records });
-  assert.equal(risk.findings.length, 1, 'the determination was suppressed by the privacy filter');
+  assert.equal(
+    [...risk.findings, ...risk.needsReview].length,
+    1,
+    'the determination was suppressed by the privacy filter'
+  );
 });
 
 /**

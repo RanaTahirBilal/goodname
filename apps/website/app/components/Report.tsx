@@ -84,6 +84,7 @@ const RISK_WORD: Record<RiskLevel, string> = {
 
 const STATUS_PILL: Record<FindingStatus, string> = {
   confirmed_finding: 'pill-danger',
+  requires_review: 'pill-neutral',
   allegation: 'pill-warning',
   disputed: 'pill-warning',
   corrected: 'pill-neutral',
@@ -95,6 +96,7 @@ const STATUS_PILL: Record<FindingStatus, string> = {
 /** Status is always stated in words, never carried by colour alone. */
 const STATUS_WORD: Record<FindingStatus, string> = {
   confirmed_finding: 'Established finding',
+  requires_review: 'Not yet read by a person',
   allegation: 'Allegation — not established',
   disputed: 'Disputed',
   corrected: 'Corrected by the source',

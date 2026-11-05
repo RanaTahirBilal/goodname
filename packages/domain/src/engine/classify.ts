@@ -103,6 +103,47 @@ const DIRECTORY_HOSTS = [
 
 const norm = (s: string): string => s.toLowerCase();
 
+/**
+ * Words that reverse or discharge the claim they sit beside.
+ *
+ * **This is a hint for a reviewer, not a safeguard.** The safeguard is that
+ * nothing in this file confirms a finding any more; this only changes how
+ * loudly the record asks to be read, and how much confidence we admit to.
+ *
+ * Writing it the other way round — trusting a word list to decide whether an
+ * allegation is live — is how the rehearsal defect would come back in a form
+ * that passes its own regression test. Language has more ways to negate a
+ * claim than any list holds: "the complaint was withdrawn", "cleared of",
+ * "the record shows none", "found to have no case to answer".
+ */
+const NEGATORS = [
+  'no', 'not', 'never', 'none', 'without', 'free of', 'clear of', 'cleared of',
+  'dismissed', 'withdrawn', 'expunged', 'overturned', 'vacated', 'exonerated',
+  'acquitted', 'unfounded', 'dropped', 'rescinded',
+];
+
+/**
+ * Whether a negator sits close enough to the matched term to be about it.
+ *
+ * A window rather than the whole document: "No disciplinary actions are
+ * recorded" should count, while a page that says "no" somewhere in a
+ * paragraph about something else should not. Returns the word found, for the
+ * rationale a reviewer reads.
+ */
+function negationAround(text: string, term: string, window = 60): string | null {
+  const at = text.indexOf(term);
+  if (at < 0) return null;
+
+  const around = text.slice(Math.max(0, at - window), at + term.length + window);
+
+  for (const n of NEGATORS) {
+    const escaped = n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`(^|[^\\p{L}])${escaped}($|[^\\p{L}])`, 'u').test(around)) return `"${n}"`;
+  }
+
+  return null;
+}
+
 const hostOf = (url: string): string => {
   try {
     return new URL(url).hostname.replace(/^www\./, '');
@@ -240,18 +281,45 @@ export function classify(
       };
     }
 
-    // Unhedged on an official record is the one case we treat as settled
-    // from a single source. Everything else needs corroboration, decided
-    // across documents rather than here.
+    /**
+     * An official source used to short-circuit to `confirmed_finding` here.
+     * That is the line that produced the rehearsal defect, and it is gone.
+     *
+     * The sentence was: "Certification in Cardiovascular Disease is current.
+     * No disciplinary actions are recorded against this certificate." It
+     * contains the term `disciplinary action`, it carries no hedge, and it
+     * sits on a medical board's domain — so every test this branch applied
+     * passed, and a clean certification became the most damaging thing the
+     * system can say about a doctor.
+     *
+     * The fix is not a negation keyword. "no", "not" and "without" would
+     * catch this exact sentence and fail on the next one, and a guard that
+     * works on the example in front of you is how the defect got here. The
+     * fix is structural: **this classifier does not confirm anything.** An
+     * official source with unhedged adverse language is the strongest signal
+     * it can produce, and the strongest signal it can produce is "a person
+     * needs to read this".
+     *
+     * Promotion to `confirmed_finding` now has exactly two routes, both of
+     * which require evidence beyond one document's wording: corroboration
+     * across independent domains, decided in risk.ts, or a reviewer
+     * upholding it in writing.
+     */
     if (reliability === 'official') {
+      const negated = negationAround(text, worst.term);
+
       return {
         ...base,
         classification: 'negative',
-        findingStatus: 'confirmed_finding',
+        findingStatus: 'requires_review',
         severity: worst.severity,
-        severityRationale: `An official record stating "${worst.term}".`,
-        confidence: 0.9,
-        rationale: 'An official determination, not reporting about one.',
+        severityRationale: negated
+          ? `An official record where "${worst.term}" appears next to ${negated}, which may reverse its meaning.`
+          : `An official record mentioning "${worst.term}". What it establishes has not been read.`,
+        confidence: negated ? 0.3 : 0.6,
+        rationale: negated
+          ? 'Adverse language on an official record, in a context that may deny it. Not a finding until somebody reads the source.'
+          : 'Adverse language on an official record. Detected, not established.',
       };
     }
 

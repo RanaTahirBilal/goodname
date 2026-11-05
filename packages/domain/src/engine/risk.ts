@@ -67,6 +67,9 @@ const NOTES: Record<string, string> = {
   retracted: 'The source withdrew this story. It is listed only so you know it existed.',
   opinion: 'Critical commentary rather than a factual claim. Not counted as reputational harm.',
   unverified: 'We could not establish what this is. Excluded from the risk level.',
+  requires_review:
+    'Adverse language was detected here and what it establishes has not been read. ' +
+    'It is excluded from the risk level until somebody has looked at the source.',
 };
 
 function toFinding(record: EvidenceRecord): RiskFinding {
@@ -121,6 +124,16 @@ function levelForFinding(f: RiskFinding): RiskLevel {
   if (f.status === 'allegation') {
     return f.severity >= 4 ? 'elevated' : 'low';
   }
+
+  /**
+   * Detected, not established — so it contributes nothing to the level.
+   *
+   * This is the whole point of separating detection from confirmation. A
+   * record the classifier is unsure about must not raise a customer's risk
+   * level while it is unsure, and must not disappear either: it is still
+   * listed, and it is still in the review queue.
+   */
+  if (f.status === 'requires_review') return 'none';
 
   if (f.status === 'disputed') return 'low';
 
@@ -202,8 +215,23 @@ export function assessRisk(input: RiskInput): RiskAssessment {
     (f) => f.status === 'confirmed_finding' || f.status === 'allegation' || f.status === 'disputed'
   );
   const needsReview = all.filter(
-    (f) => f.status === 'corrected' || f.status === 'retracted' || f.status === 'unverified'
+    (f) =>
+      f.status === 'corrected' ||
+      f.status === 'retracted' ||
+      f.status === 'unverified' ||
+      f.status === 'requires_review'
   );
+
+  /**
+   * How much adverse material nobody has read yet.
+   *
+   * Carried separately because of what it does to the level. A record at
+   * `requires_review` contributes nothing, which is right — but a report
+   * that says "Risk: none" while a possible disbarment sits unread in a
+   * queue is making the mistake rule 14 names: it is indistinguishable from
+   * a report where we looked and there was nothing there.
+   */
+  const unread = all.filter((f) => f.status === 'requires_review');
 
   const levels = live.map((f) => applyAgeRelief(levelForFinding(f), f));
   const privacy = assessPrivacy(primaries, input.brokerAssessmentRan ?? false);
@@ -213,7 +241,8 @@ export function assessRisk(input: RiskInput): RiskAssessment {
   return {
     methodologyVersion: RISK_METHODOLOGY_VERSION,
     level,
-    levelRationale: rationaleFor(level, live, privacy),
+    levelRationale: rationaleFor(level, live, privacy, unread.length),
+    awaitingReview: unread.length,
     findings: live.sort(
       (a, b) =>
         LEVEL_ORDER.indexOf(levelForFinding(b)) - LEVEL_ORDER.indexOf(levelForFinding(a)) ||
@@ -227,8 +256,25 @@ export function assessRisk(input: RiskInput): RiskAssessment {
   };
 }
 
-function rationaleFor(level: RiskLevel, live: RiskFinding[], privacy: PrivacyExposure): string {
+function rationaleFor(
+  level: RiskLevel,
+  live: RiskFinding[],
+  privacy: PrivacyExposure,
+  awaitingReview: number
+): string {
   if (level === 'none') {
+    /**
+     * "We found nothing" and "we have not finished looking" are different
+     * sentences, and only one of them is true here.
+     */
+    if (awaitingReview > 0) {
+      return (
+        `Nothing is established. ${awaitingReview} result${awaitingReview > 1 ? 's' : ''} ` +
+        `mention${awaitingReview > 1 ? '' : 's'} something adverse and ` +
+        `${awaitingReview > 1 ? 'have' : 'has'} not been read by a person yet, so ` +
+        `${awaitingReview > 1 ? 'they are' : 'it is'} not counted here either way.`
+      );
+    }
     return 'Nothing in the results we searched asserts substantiated harm.';
   }
 

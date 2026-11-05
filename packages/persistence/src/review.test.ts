@@ -153,11 +153,20 @@ test('rejecting a finding as the wrong person changes the customer’s report', 
   const { repo, review, rScope, scope, scanId } = await setup();
 
   const before = rebuildReport(repo.getScan(scope, scanId)!, { reviews: [] });
-  assert.equal(before.risk.level, 'severe');
+
+  /**
+   * The record starts unread, not severe. Rejecting it has to do two
+   * distinct things, and only the second is about the risk level: it must
+   * leave the customer's report, and it must stop being something waiting to
+   * be read — otherwise the report goes on saying an assessment is
+   * unfinished after the only outstanding item has been settled.
+   */
+  assert.equal(before.risk.level, 'none');
+  assert.ok(before.risk.awaitingReview > 0);
 
   const finding = review
     .queue(rScope)
-    .find((q) => q.findingStatus === 'confirmed_finding')!;
+    .find((q) => q.findingStatus === 'requires_review')!;
 
   review.decide(
     rScope,
@@ -172,12 +181,13 @@ test('rejecting a finding as the wrong person changes the customer’s report', 
   });
 
   assert.notEqual(after.risk.level, 'severe', 'the review did not reach the report');
+  assert.equal(after.risk.awaitingReview, 0, 'a settled record is still reported as unread');
   assert.equal(after.reviewCount, 1);
 });
 
 test('downgrading a finding softens the level without hiding it', async () => {
   const { repo, review, rScope, scope, scanId } = await setup();
-  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
 
   review.decide(
     rScope,
@@ -197,11 +207,25 @@ test('downgrading a finding softens the level without hiding it', async () => {
   assert.equal(stillThere!.status, 'allegation');
 });
 
-test('upholding a finding leaves it exactly as it was', async () => {
+/**
+ * Upholding used to be a no-op on the record. It is now the thing that makes
+ * a finding a finding.
+ *
+ * The classifier stopped writing `confirmed_finding` after the first
+ * fulfillment rehearsal, where "No disciplinary actions are recorded against
+ * this certificate" arrived already settled as a severity-3 finding. Adverse
+ * material now lands at `requires_review` and contributes nothing to the
+ * risk level. A named person reading it and writing down why is what moves
+ * it, and this test is that promotion.
+ */
+test('upholding is what turns a detection into a finding', async () => {
   const { repo, review, rScope, scope, scanId } = await setup();
 
   const before = rebuildReport(repo.getScan(scope, scanId)!, { reviews: [] });
-  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+  assert.ok(before.risk.awaitingReview > 0, 'nothing was waiting to be read');
+  assert.equal(before.risk.level, 'none', 'an unread record reached the level on its own');
+
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
 
   review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Official record, correct person.');
 
@@ -209,14 +233,37 @@ test('upholding a finding leaves it exactly as it was', async () => {
     reviews: review.decisionsFor(scanId),
   });
 
-  assert.equal(after.risk.level, before.risk.level);
   const record = after.evidence.find((e) => e.id === finding.evidenceId)!;
   assert.equal(record.reviewStatus, 'reviewer_upheld');
+  assert.equal(record.findingStatus, 'confirmed_finding', 'the reviewer upheld it into nothing');
+  assert.notEqual(after.risk.level, 'none', 'an upheld disbarment never reaches the customer');
+});
+
+test('upholding an allegation does not quietly settle it', async () => {
+  /**
+   * Promotion is from `requires_review` only. A reviewer agreeing that a
+   * newspaper's claim is reported accurately is not a finding that the claim
+   * is true, and the one-line version of this change — "uphold sets
+   * confirmed_finding" — would have made it one.
+   */
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const allegation = review.queue(rScope).find((q) => q.findingStatus === 'allegation');
+  if (!allegation) return; // this fixture has none; the rule is asserted in domain tests
+
+  review.decide(rScope, scanId, allegation.evidenceId, 'uphold', 'Accurately reported as claimed.');
+
+  const after = rebuildReport(repo.getScan(scope, scanId)!, {
+    reviews: review.decisionsFor(scanId),
+  });
+
+  const record = after.evidence.find((e) => e.id === allegation.evidenceId)!;
+  assert.equal(record.findingStatus, 'allegation', 'an unsettled claim was settled by agreement');
 });
 
 test('the customer has the last word on whether a result is them', async () => {
   const { repo, review, rScope, scope, scanId } = await setup();
-  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
 
   review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Official record, looks correct.');
   repo.recordDecision(scope, scanId, finding.evidenceId, 'rejected');
@@ -296,7 +343,7 @@ test('applyReviewDecisions leaves untouched evidence alone', async () => {
 
 test('the newest decision on a record wins', async () => {
   const { repo, review, rScope, scope, scanId } = await setup();
-  const finding = review.queue(rScope).find((q) => q.findingStatus === 'confirmed_finding')!;
+  const finding = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
 
   review.decide(rScope, scanId, finding.evidenceId, 'uphold', 'Looked right on first pass.');
   review.decide(

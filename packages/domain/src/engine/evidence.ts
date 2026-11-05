@@ -218,7 +218,12 @@ function redactIfSensitive(record: EvidenceRecord): EvidenceRecord {
  */
 function needsReview(status: string | undefined, identityStatus: string): boolean {
   if (identityStatus === 'probable' || identityStatus === 'uncertain') return true;
-  return status === 'confirmed_finding' || status === 'allegation' || status === 'disputed';
+  return (
+    status === 'confirmed_finding' ||
+    status === 'requires_review' ||
+    status === 'allegation' ||
+    status === 'disputed'
+  );
 }
 
 /** A correction or retraction points back at what it supersedes. */
@@ -269,7 +274,13 @@ function linkClusters(records: EvidenceRecord[]): void {
 function markDisputed(records: EvidenceRecord[]): void {
   for (const rec of records) {
     if (!rec.storyClusterId) continue;
-    if (rec.findingStatus !== 'confirmed_finding' && rec.findingStatus !== 'allegation') continue;
+    if (
+      rec.findingStatus !== 'confirmed_finding' &&
+      rec.findingStatus !== 'requires_review' &&
+      rec.findingStatus !== 'allegation'
+    ) {
+      continue;
+    }
 
     const siblings = records.filter(
       (r) => r.storyClusterId === rec.storyClusterId && r.id !== rec.id

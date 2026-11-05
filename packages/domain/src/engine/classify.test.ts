@@ -65,7 +65,25 @@ test('unhedged harm from a non-official source is an allegation, not a finding',
   assert.match(c.rationale, /pending corroboration/i);
 });
 
-test('unhedged harm from an official source is a confirmed finding', () => {
+/**
+ * This test used to assert that an official source with unhedged harm
+ * language was a `confirmed_finding`, and that assertion was the defect.
+ *
+ * The first fulfillment rehearsal put this sentence through it:
+ *
+ *   "Certification in Cardiovascular Disease is current. No disciplinary
+ *    actions are recorded against this certificate."
+ *
+ * An official domain, no hedging, and the term `disciplinary action` present
+ * — so every condition this branch tested was satisfied, and a clean board
+ * certification came back as a severity-3 established finding about a
+ * physician. Detection and confirmation were one step, so a misreading
+ * arrived already settled.
+ *
+ * What the classifier now owes is detection. Confirmation is a person's,
+ * in writing, or corroboration's across independent sources.
+ */
+test('an official source is the strongest detection, and still not a finding', () => {
   const c = classify(
     result({
       url: 'https://ilcourts.example/discipline/adoni',
@@ -76,8 +94,85 @@ test('unhedged harm from an official source is a confirmed finding', () => {
     ADONI
   );
 
-  assert.equal(c.findingStatus, 'confirmed_finding');
-  assert.equal(c.severity, 5);
+  assert.equal(c.classification, 'negative');
+  assert.equal(
+    c.findingStatus,
+    'requires_review',
+    'the classifier settled a professional record on its own reading of one sentence'
+  );
+  assert.equal(c.severity, 5, 'severity is what it would mean if established');
+});
+
+test('nothing in the classifier confirms a finding, whatever the input', () => {
+  /**
+   * The structural guarantee, asserted structurally. A future contributor
+   * adding a branch that looks certain enough has to fail this to do it.
+   */
+  const inputs = [
+    { url: 'https://ilcourts.example/d/a', title: 'Adoni disbarred', snippet: 'Disbarred.', sourceType: 'official' as const },
+    { url: 'https://statebar.example/x', title: 'Order', snippet: 'Jensen Adoni was sanctioned and censured.', sourceType: 'official' as const },
+    { url: 'https://news.example/x', title: 'Convicted', snippet: 'Pleaded guilty.', sourceType: 'press' as const },
+    { url: 'https://medicalboard.example/x', title: 'Licence revoked', snippet: 'The licence was revoked.', sourceType: 'official' as const },
+  ];
+
+  for (const over of inputs) {
+    const c = classify(result(over), ADONI);
+    assert.notEqual(
+      c.findingStatus,
+      'confirmed_finding',
+      `"${over.snippet}" was confirmed by the classifier alone`
+    );
+  }
+});
+
+test('the sentence that produced the defect does not become a finding', () => {
+  // Verbatim from the rehearsal, on a board's own domain.
+  const c = classify(
+    result({
+      url: 'https://abim.example/verify/okonkwo-amara',
+      title: 'Okonkwo, Amara — Board certified, Cardiovascular Disease',
+      snippet:
+        'Certification in Cardiovascular Disease is current. No disciplinary actions are recorded against this certificate.',
+      sourceType: 'official',
+    }),
+    ADONI
+  );
+
+  assert.notEqual(c.findingStatus, 'confirmed_finding');
+  assert.equal(c.findingStatus, 'requires_review');
+  assert.match(
+    c.rationale,
+    /may deny it|not a finding/i,
+    'the reviewer is given no hint that the sentence may say the opposite'
+  );
+  assert.ok(
+    c.confidence <= 0.4,
+    `claimed ${c.confidence} confidence in a reading that is probably backwards`
+  );
+});
+
+test('a negation hint is a hint, not the safeguard', () => {
+  /**
+   * The negation window catches the easy half of the problem. The hard half
+   * — "the complaint was found to have no case to answer", "cleared after a
+   * review" — it will miss, and that is exactly why the protection is that
+   * the classifier cannot confirm anything rather than that it can spot a
+   * denial.
+   *
+   * So: a sentence with no negator anywhere near the term still comes back
+   * unconfirmed.
+   */
+  const c = classify(
+    result({
+      url: 'https://statebar.example/orders/adoni',
+      title: 'In the matter of Jensen Adoni',
+      snippet: 'The tribunal concluded its review. Jensen Adoni was sanctioned.',
+      sourceType: 'official',
+    }),
+    ADONI
+  );
+
+  assert.equal(c.findingStatus, 'requires_review');
 });
 
 test('hedged harm is an allegation even from an official domain', () => {

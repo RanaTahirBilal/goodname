@@ -389,8 +389,25 @@ export function applyReviewDecisions(
     const base = { ...e, reviewStatus: STATUS_FOR_OUTCOME[d.outcome] };
 
     switch (d.outcome) {
+      /**
+       * Upholding is what promotes a detection into a finding.
+       *
+       * The classifier no longer writes `confirmed_finding` for anything —
+       * it detects adverse language and says so. A record sitting at
+       * `requires_review` has been read by a named person who wrote down why
+       * it stands, and that written act is the "explicit, reviewable
+       * evidence basis" the status was created to require.
+       *
+       * Any other status is left exactly as it was: upholding an allegation
+       * affirms that it is an allegation, and does not quietly settle it.
+       * Corroboration across independent sources is the other route to
+       * confirmed, and it belongs in risk.ts where the sources can be
+       * counted.
+       */
       case 'uphold':
-        return base;
+        return e.findingStatus === 'requires_review'
+          ? { ...base, findingStatus: 'confirmed_finding' as const }
+          : base;
       case 'downgrade_to_allegation':
         return { ...base, findingStatus: 'allegation' as const };
       case 'reject_not_this_person':

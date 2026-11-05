@@ -12,6 +12,7 @@ import { runAudit } from './audit.ts';
 import { FixtureSearchProvider } from './providers/fixture.ts';
 import { SELF_AUDIT_ATTESTATION } from './safeguards.ts';
 import { ADONI } from './testing/factories.ts';
+import { rescore } from './index.ts';
 
 const PURPOSE: AuditPurpose = {
   kind: 'self_audit',
@@ -44,14 +45,67 @@ test('a hedged accusation is reported as an allegation, never as a finding', asy
   assert.match(finding!.note, /not established/i);
 });
 
-test('an official record is treated as an established finding', async () => {
+/**
+ * An official record used to arrive already severe. It now arrives unread.
+ *
+ * This is the behaviour change the first fulfillment rehearsal forced, and
+ * the cost of it is real: a genuine disbarment no longer raises the level
+ * until a person has read it. That is the price of not letting a misread
+ * sentence raise it either — the same branch produced both, and there is no
+ * version of it that is confident about one and careful about the other.
+ */
+test('an official record is detected, and not established by the machine', async () => {
   const report = await audit('official_finding');
   if (report.status !== 'complete') return assert.fail('expected a report');
 
-  assert.equal(report.risk.level, 'severe');
-  const finding = report.risk.findings[0];
-  assert.equal(finding.status, 'confirmed_finding');
-  assert.equal(finding.reliability, 'official');
+  const record = report.evidence.find((e) => e.findingStatus === 'requires_review');
+  assert.ok(record, 'the disbarment was not detected at all');
+  assert.equal(record!.sourceReliability, 'official');
+  assert.equal(record!.severity, 5, 'severity is what it would mean if established');
+  assert.equal(record!.reviewStatus, 'needs_human_review');
+});
+
+test('an unread finding does not read as a clean record', async () => {
+  /**
+   * The failure mode this guards is rule 14's, one layer up. "Risk: none"
+   * with a possible disbarment sitting unread in a queue is
+   * indistinguishable from "we looked and there was nothing" — and it is the
+   * more dangerous of the two, because the customer acts on it.
+   */
+  const report = await audit('official_finding');
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  assert.ok(report.risk.awaitingReview > 0, 'nothing says the assessment is unfinished');
+  assert.ok(
+    report.risk.needsReview.length > 0,
+    'the record vanished instead of being shown as unsettled'
+  );
+  assert.match(
+    report.risk.levelRationale,
+    /not been read|not counted/i,
+    `the rationale claims a clean result: "${report.risk.levelRationale}"`
+  );
+});
+
+test('a reviewer upholding it is what makes it a finding', async () => {
+  /**
+   * The other half of the change. Removing the automatic confirmation would
+   * be a bug of its own if nothing could ever confirm anything: a real
+   * disbarment has to be able to reach the customer's risk level.
+   */
+  const report = await audit('official_finding');
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  const record = report.evidence.find((e) => e.findingStatus === 'requires_review')!;
+
+  const upheld = report.evidence.map((e) =>
+    e.id === record.id ? { ...e, findingStatus: 'confirmed_finding' as const } : e
+  );
+
+  const after = rescore({ identity: ADONI, evidence: upheld });
+
+  assert.equal(after.risk.level, 'severe', 'an upheld disbarment still does not reach the level');
+  assert.equal(after.risk.findings[0]!.status, 'confirmed_finding');
 });
 
 test('a severe finding leaves the presence score intact and visible', async () => {
@@ -63,7 +117,11 @@ test('a severe finding leaves the presence score intact and visible', async () =
   assert.equal(report.presence.status, 'scored');
   if (report.presence.status !== 'scored') return;
   assert.ok(report.presence.score > 0);
-  assert.equal(report.risk.level, 'severe');
+
+  const upheld = report.evidence.map((e) =>
+    e.findingStatus === 'requires_review' ? { ...e, findingStatus: 'confirmed_finding' as const } : e
+  );
+  assert.equal(rescore({ identity: ADONI, evidence: upheld }).risk.level, 'severe');
 });
 
 /* ----------------------------------------------- duplicates and sources */
@@ -166,7 +224,7 @@ test('anything damaging or uncertain is flagged for human review', async () => {
   const report = await audit('official_finding');
   if (report.status !== 'complete') return assert.fail('expected a report');
 
-  const finding = report.evidence.find((e) => e.findingStatus === 'confirmed_finding')!;
+  const finding = report.evidence.find((e) => e.findingStatus === 'requires_review')!;
   assert.equal(finding.reviewStatus, 'needs_human_review');
   assert.ok(report.confidence.needsHumanReview.includes(finding.id));
 });
@@ -206,8 +264,22 @@ test('sparse evidence declines to score rather than returning a low one', async 
 /* ----------------------------------------------------- recommendations */
 
 test('recommendations are evidence-backed and promise nothing', async () => {
-  const report = await audit('official_finding');
-  if (report.status !== 'complete') return assert.fail('expected a report');
+  const raw = await audit('official_finding');
+  if (raw.status !== 'complete') return assert.fail('expected a report');
+
+  /**
+   * Upheld first, deliberately.
+   *
+   * There is no honest urgent recommendation to make about a record nobody
+   * has read: "deal with this disbarment" is a claim that it is one. The
+   * recommendation follows the finding, and the finding now follows a
+   * person. What this test is for is the wording once there is something to
+   * recommend.
+   */
+  const upheld = raw.evidence.map((e) =>
+    e.findingStatus === 'requires_review' ? { ...e, findingStatus: 'confirmed_finding' as const } : e
+  );
+  const report = rescore({ identity: ADONI, evidence: upheld });
 
   assert.ok(report.recommendations.length > 0);
 
