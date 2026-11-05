@@ -20,7 +20,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { FIXTURE_SCENARIOS } from '@rep/domain';
+import { FIXTURE_SCENARIOS, SCENARIO_SUBJECT, FIXTURE_SUBJECTS} from '@rep/domain';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const read = (...parts: string[]) => readFileSync(join(here, '..', ...parts), 'utf8');
@@ -72,5 +72,40 @@ test('the audit route takes its scenario list from the engine', () => {
     route,
     /const SCENARIOS[^=]*=\s*FIXTURE_SCENARIOS/,
     'the route has gone back to keeping its own copy of the scenario names'
+  );
+});
+
+/**
+ * Every scenario names a subject, and the form can fill it.
+ *
+ * The fixtures describe two different people now. Nothing in a scenario
+ * name says which, and the gap between the two is exactly where the
+ * identity defect lived: a form pre-filled with an attorney, a scenario
+ * describing a cardiologist, and a report that scored the mismatch
+ * without noticing.
+ */
+test('every scenario says which person it is about', () => {
+  for (const scenario of FIXTURE_SCENARIOS) {
+    const key = SCENARIO_SUBJECT[scenario];
+    assert.ok(key, `${scenario} is not paired with a subject`);
+    assert.ok(FIXTURE_SUBJECTS[key], `${scenario} names a subject that does not exist`);
+  }
+});
+
+test('the subjects are different people, not one person twice', () => {
+  const names = Object.values(FIXTURE_SUBJECTS).map((s) => s.fullName);
+
+  assert.equal(new Set(names).size, names.length, 'two subjects share a name');
+  assert.ok(names.length >= 2, 'the fixtures are back to describing one person');
+});
+
+test('a physician scenario fills the form with the physician', () => {
+  const subject = FIXTURE_SUBJECTS[SCENARIO_SUBJECT.physician_strong];
+
+  assert.equal(subject.profession, 'physician');
+  assert.notEqual(
+    subject.fullName,
+    FIXTURE_SUBJECTS[SCENARIO_SUBJECT.strong].fullName,
+    'the physician scenario is about the attorney, which is the mismatch this prevents'
   );
 });

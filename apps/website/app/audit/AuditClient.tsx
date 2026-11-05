@@ -11,6 +11,7 @@
  */
 import { useState } from 'react';
 import { Report, type CompleteReport, type ScoreHistoryEntry } from '../components/Report';
+import { FIXTURE_SUBJECTS, SCENARIO_SUBJECT } from '@rep/domain';
 
 const SELF_AUDIT_ATTESTATION =
   'I confirm this audit is about me, and that I am not using it to research another person.';
@@ -53,11 +54,44 @@ const SCENARIOS = [
   ['employer_collision', 'News about the firm, not the person'],
   ['ambiguous', 'A different person with the same name'],
   ['sensitive', 'Personal matters mixed in with professional ones'],
+  ['physician_strong', 'A physician in good standing'],
+  ['physician_review_complaint', 'A physician with poor patient ratings'],
   ['sparse', 'Almost nothing findable'],
   ['empty', 'The search returns no results'],
   ['provider_error', 'The search provider fails'],
   ['rate_limited', 'The search provider throttles us'],
 ] as const;
+
+/**
+ * The form follows the scenario, rather than the two disagreeing.
+ *
+ * The defaults used to be one hard-coded attorney while the scenario list
+ * described two different people. Choosing a physician scenario left the
+ * form claiming to be Jensen Adoni, the engine correctly found nothing
+ * about him in a cardiologist's results, and the report scored the
+ * mismatch — which is precisely how the identity defect was found, by a
+ * demonstration going wrong rather than by anyone reading the code.
+ *
+ * `SCENARIO_SUBJECT` comes from the engine, so there is one statement of
+ * who these people are and the website does not keep a second copy of it.
+ */
+const subjectFor = (scenario: string) => {
+  const key = SCENARIO_SUBJECT[scenario as keyof typeof SCENARIO_SUBJECT] ?? 'adoni';
+  return FIXTURE_SUBJECTS[key];
+};
+
+const formFor = (scenario: string) => {
+  const s = subjectFor(scenario);
+  return {
+    fullName: s.fullName,
+    profession: s.profession as string,
+    employer: s.employer,
+    city: s.city,
+    region: s.region,
+    credentials: s.credentials,
+    websiteUrl: s.websiteUrl,
+  };
+};
 
 const DEFAULTS = {
   fullName: 'Jensen Adoni',
@@ -359,15 +393,26 @@ export default function AuditClient() {
                 id="scenario"
                 className="select"
                 value={scenario}
-                onChange={(e) => setScenario(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setScenario(next);
+                  // Keep the subject and the scenario in step. Anything the
+                  // customer typed themselves is overwritten, which is the
+                  // right trade on a demonstration control: the alternative
+                  // is a form that quietly describes somebody who is not in
+                  // the results.
+                  setForm(formFor(next));
+                }}
               >
                 {SCENARIOS.map(([v, label]) => (
                   <option key={v} value={v}>{label}</option>
                 ))}
               </select>
               <span className="hint">
-                No live search provider is connected yet, so audits run against fixture data.
-                This chooses which situation to demonstrate.
+                No live search provider is connected yet, so audits run against fixture
+                data. Choosing a scenario also fills the form with the person it
+                describes &mdash; two of them are an attorney, two a physician, and all
+                of them are invented.
               </span>
             </div>
           </div>

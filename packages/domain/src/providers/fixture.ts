@@ -42,6 +42,8 @@ export const FIXTURE_SCENARIOS = [
   'employer_collision',
   'ambiguous',
   'sensitive',
+  'physician_strong',
+  'physician_review_complaint',
   'sparse',
   'empty',
   'provider_error',
@@ -95,6 +97,66 @@ const BROKER: Row = {
     'Jensen Adoni, Chicago IL. Age, current address, phone number and relatives.',
   position: 9,
   sourceType: 'aggregator',
+};
+
+
+/* ------------------------------------------------- a second subject
+ *
+ * Every fixture used to be about one Chicago attorney. That is enough to
+ * test the engine and not enough to trust it: a model tuned, even
+ * accidentally, to one profession's shape of evidence looks correct right
+ * up until somebody else runs it.
+ *
+ * Dr Amara Okonkwo is a physician, which exercises source types the legal
+ * set never touches — a hospital staff directory, a specialty board, a
+ * patient-review site — and one thing attorneys rarely have: a body of
+ * ratings that is neither a finding nor nothing.
+ *
+ * As fictional as the first. No real physician is described here, and
+ * `isFixture` rides on every row that leaves this file.
+ */
+
+const DR_HOSPITAL: Row = {
+  url: 'https://stmartins-health.example/providers/a-okonkwo',
+  sourceName: "St Martin's Health",
+  title: 'Dr Amara Okonkwo, MD — Cardiology',
+  snippet:
+    'Dr Amara Okonkwo is a consultant cardiologist at St Martin\u2019s Health in Boston, specialising in heart failure. MD, Johns Hopkins.',
+  position: 1,
+  sourceType: 'owned',
+  publishedAt: '2025-06-12T00:00:00.000Z',
+};
+
+const DR_BOARD: Row = {
+  url: 'https://abim.example/verify/okonkwo-amara',
+  sourceName: 'American Board of Internal Medicine',
+  title: 'Okonkwo, Amara — Board certified, Cardiovascular Disease',
+  snippet:
+    'Certification in Cardiovascular Disease is current. No disciplinary actions are recorded against this certificate.',
+  position: 2,
+  sourceType: 'official',
+  publishedAt: '2024-01-15T00:00:00.000Z',
+};
+
+const DR_DIRECTORY: Row = {
+  url: 'https://doximity.example/dr-amara-okonkwo',
+  sourceName: 'Doximity',
+  title: 'Dr Amara Okonkwo, MD — Boston, MA',
+  snippet: 'Cardiology. St Martin\u2019s Health. MD Johns Hopkins, residency Mass General.',
+  position: 4,
+  sourceType: 'profile',
+  publishedAt: '2023-09-02T00:00:00.000Z',
+};
+
+const DR_PRESS: Row = {
+  url: 'https://bostonhealthreview.example/heart-failure-clinic',
+  sourceName: 'Boston Health Review',
+  title: 'Inside the heart-failure clinic rethinking follow-up care',
+  snippet:
+    'The clinic, led by cardiologist Amara Okonkwo, cut thirty-day readmissions by changing how patients are contacted after discharge.',
+  position: 5,
+  sourceType: 'press',
+  publishedAt: '2026-04-18T00:00:00.000Z',
 };
 
 const SCENARIOS: Record<
@@ -358,6 +420,34 @@ const SCENARIOS: Record<
     },
   ],
 
+  /** A physician in good standing. Different sources, same shape of answer. */
+  physician_strong: [DR_HOSPITAL, DR_BOARD, DR_DIRECTORY, DR_PRESS],
+
+  /**
+   * A patient-review page with poor ratings.
+   *
+   * The case the legal fixtures cannot produce, and the one most likely to
+   * be got wrong. Dissatisfaction is not a finding: no regulator has said
+   * anything, nothing is substantiated, and a product that reports a
+   * one-star average as a reputation risk is grading a doctor on bedside
+   * manner and calling it misconduct. Rule 10 exists for this row.
+   */
+  physician_review_complaint: [
+    DR_HOSPITAL,
+    DR_BOARD,
+    {
+      url: 'https://healthgrades.example/dr-amara-okonkwo',
+      sourceName: 'Healthgrades',
+      title: 'Dr Amara Okonkwo, MD \u2014 patient ratings and reviews',
+      snippet:
+        'Average patient rating 2.4 of 5 from 31 reviews. Several reviewers describe long waiting times and feeling rushed during appointments.',
+      position: 3,
+      sourceType: 'profile',
+      publishedAt: '2026-09-01T00:00:00.000Z',
+    },
+    DR_DIRECTORY,
+  ],
+
   sparse: [
     {
       url: 'https://directory.example/listing/8821',
@@ -376,6 +466,75 @@ const hostOf = (url: string): string => {
   } catch {
     return '';
   }
+};
+
+
+/**
+ * Who each scenario is about.
+ *
+ * The fixtures describe two different people, and nothing in a scenario
+ * name says which. That gap is how the original identity defect was found:
+ * a form pre-filled with one subject, a scenario describing another, and a
+ * report that scored the mismatch at 59 out of 100 without noticing.
+ *
+ * Exporting the pairing means the interface can offer the subject and the
+ * scenario together, and a test can assert the two lists never drift. The
+ * alternative is the website keeping its own copy of who these people are,
+ * which is the mistake `FIXTURE_SCENARIOS` was extracted to stop.
+ *
+ * Both are invented. No real attorney or physician is described anywhere in
+ * this file.
+ */
+export interface FixtureSubject {
+  fullName: string;
+  profession: 'attorney' | 'physician';
+  employer: string;
+  city: string;
+  region: string;
+  credentials: string;
+  websiteUrl: string;
+}
+
+export const FIXTURE_SUBJECTS: Record<'adoni' | 'okonkwo', FixtureSubject> = {
+  adoni: {
+    fullName: 'Jensen Adoni',
+    profession: 'attorney',
+    employer: 'Adoni Law',
+    city: 'Chicago',
+    region: 'Illinois',
+    credentials: 'JD',
+    websiteUrl: 'https://adoni-law.example',
+  },
+  okonkwo: {
+    fullName: 'Amara Okonkwo',
+    profession: 'physician',
+    employer: "St Martin's Health",
+    city: 'Boston',
+    region: 'Massachusetts',
+    credentials: 'MD, FACC',
+    websiteUrl: 'https://stmartins-health.example',
+  },
+};
+
+/** Which subject each scenario describes. */
+export const SCENARIO_SUBJECT: Record<FixtureScenario, keyof typeof FIXTURE_SUBJECTS> = {
+  strong: 'adoni',
+  official_finding: 'adoni',
+  allegation: 'adoni',
+  syndicated: 'adoni',
+  corroborated: 'adoni',
+  retracted: 'adoni',
+  employer_collision: 'adoni',
+  ambiguous: 'adoni',
+  sensitive: 'adoni',
+  physician_strong: 'okonkwo',
+  physician_review_complaint: 'okonkwo',
+  sparse: 'adoni',
+
+  // These three return no rows at all, so the subject is whoever asked.
+  empty: 'adoni',
+  provider_error: 'adoni',
+  rate_limited: 'adoni',
 };
 
 export class FixtureSearchProvider implements SearchProvider {
