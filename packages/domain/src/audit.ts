@@ -23,6 +23,7 @@ import { scorePresence, type ProfileObservation, type WebsiteCheck } from './eng
 import { assessRisk } from './engine/risk.ts';
 import { buildConfidence } from './engine/confidence.ts';
 import { recommend, type Recommendation } from './engine/recommend.ts';
+import { buildFindings, type BriefingFinding } from './engine/findings.ts';
 import { gate, type AttemptStore, type GateReason } from './safeguards.ts';
 
 /* -------------------------------------------------------------- validation */
@@ -210,6 +211,7 @@ export type AuditReport =
       risk: RiskAssessment;
       confidence: ConfidenceReport;
       recommendations: Recommendation[];
+      findings: BriefingFinding[];
     };
 
 export interface RescoreInput {
@@ -226,6 +228,7 @@ export interface ScoredOutputs {
   risk: RiskAssessment;
   confidence: ConfidenceReport;
   recommendations: Recommendation[];
+  findings: BriefingFinding[];
   awaitingConfirmation: EvidenceRecord[];
 }
 
@@ -260,11 +263,23 @@ export function rescore(input: RescoreInput): ScoredOutputs {
 
   const confidence = buildConfidence(input.evidence, presence.coverage);
 
+  const recommendations = recommend(presence, risk, confidence);
+
   return {
     presence,
     risk,
     confidence,
-    recommendations: recommend(presence, risk, confidence),
+    recommendations,
+    /**
+     * Derived here rather than in the interface.
+     *
+     * The report opens with a few sentences about what the audit found, and
+     * the interface is the worst place to compose them: every input is a
+     * number, the output is prose, and nothing downstream can tell a
+     * computed sentence from an invented one. `buildFindings` only emits a
+     * finding when the engine output that justifies it exists.
+     */
+    findings: buildFindings(presence, risk, confidence, recommendations),
     awaitingConfirmation: awaitingConfirmation(input.evidence),
   };
 }

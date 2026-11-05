@@ -9,6 +9,7 @@ export * from './engine/score.ts';
 export * from './engine/risk.ts';
 export * from './engine/confidence.ts';
 export * from './engine/recommend.ts';
+export * from './engine/findings.ts';
 export * from './providers/fixture.ts';
 export * from './safeguards.ts';
 export * from './audit.ts';
