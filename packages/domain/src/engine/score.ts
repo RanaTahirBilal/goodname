@@ -184,20 +184,69 @@ function sourceAuthority(records: EvidenceRecord[]): DimensionResult {
     return dimension('A', null, 'No results were attributed to you.', [], 'no_results_attributed');
   }
 
+  /**
+   * Coverage we arranged is not coverage somebody gave.
+   *
+   * This is the dimension a reputation service could inflate by selling
+   * itself: publish a release for a customer, watch it land on a
+   * third-party domain, and every other field on the record — source type,
+   * reliability, the `earned` classification — says independent coverage.
+   * Nothing in a search result distinguishes it from the real thing.
+   *
+   * So the test is authorship rather than appearance. Anything we created,
+   * and anything bought or pushed through a syndication network, is left
+   * out of this dimension whatever it looks like. It is still real
+   * presence and still counts toward being findable; it is not somebody
+   * choosing to write about you, which is the only thing this number is
+   * supposed to measure.
+   *
+   * Said out loud in the explanation when it happens, because a customer
+   * paying for the work is entitled to see us decline to credit ourselves
+   * for it.
+   */
   const earned = records.filter((r) => r.classification === 'earned');
-  const total = earned.reduce((s, r) => s + r.authority * decayOf(r), 0);
+  const independent = earned.filter(isIndependent);
+  const ours = earned.length - independent.length;
+
+  const total = independent.reduce((s, r) => s + r.authority * decayOf(r), 0);
+
+  const explanation =
+    independent.length === 0
+      ? ours > 0
+        ? `No independent coverage. ${ours} result${ours > 1 ? 's were' : ' was'} placed on your behalf and ${ours > 1 ? 'are' : 'is'} not counted here.`
+        : 'No earned third-party coverage was found.'
+      : ours > 0
+        ? `${independent.length} independent piece${independent.length > 1 ? 's' : ''} of earned coverage. ${ours} placed on your behalf and not counted here.`
+        : `${independent.length} independent piece${independent.length > 1 ? 's' : ''} of earned coverage.`;
 
   // Caps at roughly three solid, recent mentions. Not scaling past that is
   // deliberate: this must not reward press-release spam.
-  return dimension(
-    'A',
-    clamp(total / 3.0),
-    earned.length === 0
-      ? 'No earned third-party coverage was found.'
-      : `${earned.length} independent piece${earned.length > 1 ? 's' : ''} of earned coverage.`,
-    ids(earned)
-  );
+  return dimension('A', clamp(total / 3.0), explanation, ids(independent));
 }
+
+/**
+ * Whether a result can be read as somebody else's editorial decision.
+ *
+ * Deliberately not "did we touch it". A piece we drafted that a publication
+ * read and chose to run is an independent decision by the publication, and
+ * excluding it would under-report a real outcome — so `editorial`
+ * distribution with verified independence survives. What does not is
+ * anything we authored into a channel that accepts everything.
+ */
+const isIndependent = (r: EvidenceRecord): boolean => {
+  const { createdBy, distribution, editorialIndependence } = r.authorship;
+
+  if (distribution === 'paid' || distribution === 'syndicated') return false;
+  if (createdBy === 'customer') return false;
+
+  if (createdBy === 'us') {
+    // Our words, but somebody else's decision to run them — and only when
+    // that has actually been established rather than assumed.
+    return distribution === 'editorial' && editorialIndependence === 'verified';
+  }
+
+  return true;
+};
 
 function consistency(obs?: ConsistencyObservation): DimensionResult {
   if (!obs || obs.comparableFields === 0) {

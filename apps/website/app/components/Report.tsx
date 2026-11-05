@@ -834,6 +834,25 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                 </td>
                 <td data-label="Source" style={{ minWidth: 130 }}>
                   <div>{e.sourceName}</div>
+
+                  {/**
+                   * Said on the customer's own report, not only in ours.
+                   *
+                   * If we placed something, the person paying for the work
+                   * is the first person entitled to know which results are
+                   * ours — otherwise the before-and-after is a conjuring
+                   * trick. It also explains why a result that looks like
+                   * coverage is not counted as coverage, which is
+                   * otherwise the most confusing number on the page.
+                   */}
+                  {e.authorship.createdBy === 'us' && (
+                    <div className="small" style={{ marginTop: 4, color: 'var(--warning)' }}>
+                      Placed by us
+                      {e.authorship.editorialIndependence === 'verified'
+                        ? ' — accepted by this publication'
+                        : ' — not counted as independent coverage'}
+                    </div>
+                  )}
                   <div className="small" style={{ marginTop: 4 }}>
                     Reliability: {e.sourceReliability}
                   </div>

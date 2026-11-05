@@ -379,8 +379,9 @@ export class ScanRepository {
             classification_conf, classification_reason, finding_status, severity,
             severity_rationale, review_status, contradicted_by, correction_of,
             story_cluster_id, duplicate_of, independent_sources,
-            sensitivity_categories, sensitivity_signals, sensitivity_withheld)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            sensitivity_categories, sensitivity_signals, sensitivity_withheld,
+            created_by, distribution, editorial_independence, campaign_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         e.id, scanId, accountId, e.sourceUrl, e.sourceName, e.domain, e.retrievedAt,
@@ -402,7 +403,20 @@ export class ScanRepository {
          */
         e.sensitivity ? toJson(e.sensitivity.categories) : null,
         e.sensitivity ? toJson(e.sensitivity.signals) : null,
-        e.sensitivity ? (e.sensitivity.withhold ? 1 : 0) : null
+        e.sensitivity ? (e.sensitivity.withhold ? 1 : 0) : null,
+
+        /**
+         * Who wrote it, stored so a rescore cannot quietly re-credit us.
+         *
+         * Without these four the engine would rebuild every record as
+         * undeclared on the next rescore, and material we placed would go
+         * back to counting as independent coverage the moment a customer
+         * confirmed an unrelated result.
+         */
+        e.authorship.createdBy,
+        e.authorship.distribution,
+        e.authorship.editorialIndependence,
+        e.authorship.campaignId ?? null
       );
   }
 
@@ -494,6 +508,22 @@ export class ScanRepository {
          * reader that treated null as `withhold: false` would be asserting
          * something nobody ever checked.
          */
+        /**
+         * A null predates migration 9, and reads as the engine's own
+         * default for a result nobody declared: third party, editorial,
+         * independence not verified. An old scan therefore rescores to
+         * what it scored before rather than changing under the customer.
+         */
+        authorship: {
+          createdBy: (e.created_by as EvidenceRecord['authorship']['createdBy']) ?? 'third_party',
+          distribution:
+            (e.distribution as EvidenceRecord['authorship']['distribution']) ?? 'editorial',
+          editorialIndependence:
+            (e.editorial_independence as EvidenceRecord['authorship']['editorialIndependence']) ??
+            'not_verified',
+          campaignId: (e.campaign_id as string | null) ?? undefined,
+        },
+
         sensitivity:
           e.sensitivity_withheld === null || e.sensitivity_withheld === undefined
             ? undefined

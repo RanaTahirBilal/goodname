@@ -24,6 +24,7 @@ import { assessRisk } from './engine/risk.ts';
 import { buildConfidence } from './engine/confidence.ts';
 import { recommend, type Recommendation } from './engine/recommend.ts';
 import { buildFindings, type BriefingFinding } from './engine/findings.ts';
+import type { Placement } from './contracts/types.ts';
 import { gate, type AttemptStore, type GateReason } from './safeguards.ts';
 
 /* -------------------------------------------------------------- validation */
@@ -180,6 +181,11 @@ export interface AuditInput {
   websiteChecks?: WebsiteCheck[];
   brokerAssessmentRan?: boolean;
   hasRichEntity?: boolean;
+  /**
+   * Material published for this customer by us, so the engine can decline
+   * to credit itself for it. See `isIndependent` in `engine/score.ts`.
+   */
+  placements?: Placement[];
 }
 
 export type AuditReport =
@@ -340,6 +346,7 @@ export async function runAudit(input: AuditInput): Promise<AuditReport> {
     results: outcome.results,
     identity: input.identity,
     provenance: input.provider.isFixture ? 'fixture' : 'live_search',
+    placements: input.placements,
   });
 
   const scored = rescore({

@@ -174,6 +174,71 @@ export type SourceReliability = 'official' | 'high' | 'moderate' | 'low' | 'unkn
 
 export type Provenance = 'live_search' | 'fixture' | 'customer_supplied' | 'connected_account';
 
+/* --------------------------------------------------------- authorship */
+
+/**
+ * Who wrote the thing, which is not the same question as who hosts it.
+ *
+ * `provenance` above says how *we* came by a record. This says where the
+ * content came from, and it exists because the two can disagree in the one
+ * way that matters commercially: a press release we drafted and syndicated
+ * sits on a third-party domain and looks, to every other field on the
+ * record, exactly like coverage somebody chose to give.
+ */
+export type ContentOrigin =
+  /** Somebody unconnected to the customer or to us wrote it. */
+  | 'third_party'
+  /** The customer wrote it: their site, their profile, their bio. */
+  | 'customer'
+  /** We wrote it, on the customer's behalf. */
+  | 'us'
+  | 'unknown';
+
+/** How it reached the page it is on. */
+export type Distribution =
+  /** A publication decided to run it. */
+  | 'editorial'
+  /** A property the customer controls. */
+  | 'owned'
+  /** Placement was bought. */
+  | 'paid'
+  /** Pushed through a distribution network to many sites at once. */
+  | 'syndicated'
+  | 'unknown';
+
+/**
+ * Whether anybody independent actually exercised judgement.
+ *
+ * Only `verified` is a positive claim, and it has to be established rather
+ * than assumed — which is why the absent case is `not_verified` rather than
+ * a third state meaning "probably fine".
+ */
+export type EditorialIndependence = 'verified' | 'not_verified' | 'not_applicable';
+
+export interface Authorship {
+  createdBy: ContentOrigin;
+  distribution: Distribution;
+  editorialIndependence: EditorialIndependence;
+  /** The engagement that produced it, where we produced it. */
+  campaignId?: string;
+}
+
+/**
+ * Something we put there, declared so the engine can refuse to credit it.
+ *
+ * Supplied as an input to the audit rather than inferred, because nothing
+ * in a search result says who commissioned it. A placement matches by
+ * exact URL or by domain; the URL wins where both are given.
+ */
+export interface Placement {
+  url?: string;
+  domain?: string;
+  createdBy: ContentOrigin;
+  distribution: Distribution;
+  editorialIndependence?: EditorialIndependence;
+  campaignId?: string;
+}
+
 export type ReviewStatus =
   | 'auto'
   | 'needs_human_review'
@@ -218,6 +283,17 @@ export interface EvidenceRecord {
 
   provenance: Provenance;
   providerName: string;
+
+  /**
+   * Who wrote it and how it got there.
+   *
+   * Defaults to third-party and editorial when no placement declares
+   * otherwise, so an ordinary audit of somebody we have never worked for
+   * scores exactly as it did before. The field earns its place only once
+   * we have published something for this customer — which is precisely
+   * when the engine must stop counting our own work as independent.
+   */
+  authorship: Authorship;
 
   identityConfidence: number;
   identityStatus: IdentityStatus;

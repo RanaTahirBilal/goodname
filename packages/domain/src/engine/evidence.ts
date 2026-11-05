@@ -14,6 +14,8 @@ import type {
   ProfessionalIdentity,
   Provenance,
   SearchResult,
+  Authorship,
+  Placement,
 } from '../contracts/types.ts';
 import { classify } from './classify.ts';
 import { matchResult } from './identity.ts';
@@ -39,6 +41,53 @@ export interface BuildEvidenceInput {
   results: SearchResult[];
   identity: ProfessionalIdentity;
   provenance: Provenance;
+  /**
+   * Material we placed for this customer, declared by the caller.
+   *
+   * Nothing in a search result says who commissioned it, so this cannot be
+   * inferred and is not guessed at. An audit for somebody we have never
+   * worked for passes nothing here and is scored exactly as before.
+   */
+  placements?: Placement[];
+}
+
+/**
+ * The default: somebody else wrote it and a publication ran it.
+ *
+ * Chosen so that adding this field changes no existing score. The stronger
+ * reading — that nothing counts as independent until independence has been
+ * verified — would be more honest and would zero source authority for every
+ * audit ever run, so it is a product decision rather than a refactor. See
+ * OQ-21.
+ */
+const UNDECLARED: Authorship = {
+  createdBy: 'third_party',
+  distribution: 'editorial',
+  editorialIndependence: 'not_verified',
+};
+
+/**
+ * Matches a result against what we know we placed.
+ *
+ * URL before domain, because a customer's firm may host both a page we
+ * wrote and twenty we did not, and the exact URL is the only one of the
+ * two that can tell them apart.
+ */
+function authorshipFor(result: SearchResult, placements: Placement[]): Authorship {
+  const host = result.domain || hostOf(result.url);
+
+  const match =
+    placements.find((p) => p.url && p.url === result.url) ??
+    placements.find((p) => p.domain && p.domain === host);
+
+  if (!match) return UNDECLARED;
+
+  return {
+    createdBy: match.createdBy,
+    distribution: match.distribution,
+    editorialIndependence: match.editorialIndependence ?? 'not_verified',
+    campaignId: match.campaignId,
+  };
 }
 
 export function buildEvidence(input: BuildEvidenceInput): EvidenceRecord[] {
@@ -68,6 +117,8 @@ export function buildEvidence(input: BuildEvidenceInput): EvidenceRecord[] {
 
       provenance: result.isFixture ? 'fixture' : input.provenance,
       providerName: result.provider,
+
+      authorship: authorshipFor(result, input.placements ?? []),
 
       identityConfidence: identity.confidence,
       identityStatus: identity.status,

@@ -481,4 +481,36 @@ export const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_accounts_purge ON accounts (purge_at);
     `,
   },
+  {
+    version: 9,
+    name: 'authorship',
+    sql: `
+      /**
+       * Who wrote a result, and how it got where it is.
+       *
+       * Separate from the existing provenance column, which records how we
+       * came by the record rather than where the content came from. The two
+       * disagree in exactly the case that matters: a release we drafted and
+       * syndicated arrives through a live search, sits on a third-party
+       * domain, and is indistinguishable from coverage somebody chose to
+       * give — unless this is stored beside it.
+       *
+       * Nullable, because every row written before this migration predates
+       * the question. A null reads as the undeclared default when the record
+       * is rebuilt: third-party, editorial, independence not verified. That
+       * is the same answer the engine gives for an audit of somebody we have
+       * never worked for, so old scans rescore to what they scored before.
+       */
+      ALTER TABLE evidence ADD COLUMN created_by TEXT;
+      ALTER TABLE evidence ADD COLUMN distribution TEXT;
+      ALTER TABLE evidence ADD COLUMN editorial_independence TEXT;
+      ALTER TABLE evidence ADD COLUMN campaign_id TEXT;
+
+      /**
+       * So "what did we publish for this customer, and is any of it still
+       * visible" is one query rather than a scan of every excerpt.
+       */
+      CREATE INDEX idx_evidence_campaign ON evidence (campaign_id);
+    `,
+  },
 ];

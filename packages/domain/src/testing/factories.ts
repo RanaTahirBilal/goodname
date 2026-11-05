@@ -9,6 +9,7 @@ import type {
   IdentityStatus,
   ProfessionalIdentity,
   SourceReliability,
+  Authorship,
 } from '../contracts/types.ts';
 
 export const OBSERVED = '2026-10-29T00:00:00.000Z';
@@ -24,6 +25,7 @@ export const ADONI: ProfessionalIdentity = {
 };
 
 export interface EvidenceOpts {
+  authorship?: Authorship;
   id?: string;
   url?: string;
   domain?: string;
@@ -53,6 +55,17 @@ export const evidence = (o: EvidenceOpts = {}): EvidenceRecord => {
     confidence >= 0.85 ? 'confirmed' : confidence >= 0.6 ? 'probable' : confidence >= 0.3 ? 'uncertain' : 'rejected';
 
   return {
+    /**
+     * Undeclared by default, matching an audit for somebody we have never
+     * worked for. A test that cares about authorship overrides it, and one
+     * that does not behaves exactly as it did before the field existed.
+     */
+    authorship: o.authorship ?? {
+      createdBy: 'third_party',
+      distribution: 'editorial',
+      editorialIndependence: 'not_verified',
+    },
+
     id: o.id ?? `ev-${n}`,
     sourceUrl: o.url ?? `https://example.test/${n}`,
     sourceName: o.domain ?? 'example.test',
