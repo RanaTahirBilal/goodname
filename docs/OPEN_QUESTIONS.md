@@ -355,3 +355,45 @@ guesswork until three engagements have been delivered and timed.
 
 **Assumed meanwhile:** nothing is quoted and no price appears anywhere in
 the product.
+
+### OQ-24 — Identity confidence was confidently wrong — *fixed 2026-11-05*
+Found by running the product, not by reading it: a report headed with one
+name, scoring 59, built from six results of which five were explicitly
+somebody else, and labelled **Identity: high**.
+
+The cause was one filter in `identityConfidence`:
+
+```ts
+const named = records.filter((r) => r.identityConfidence > 0);
+```
+
+Intended as "results that bear the name". Behaved as "results we did not
+reject", because a rejection scores exactly zero. The average was then
+taken over the matches, which is to say it could not fall. The comment
+four lines above it claimed the opposite.
+
+**The deeper fault was the metric, not the filter.** One number was
+answering two questions — how much of what we found is about this person,
+and how sure we are of the part that is — and reporting only the second.
+It is now the product of both, because both have to hold. One confident
+match among five contradictions is not a confident report, and five
+tentative matches with nothing against them is not one either.
+
+Prominence now weights the share rather than the verdict. A wrong-person
+result at position one contests more than one at position thirty: that is
+a statement about how much it matters, not about whether it is them.
+
+**A behaviour change worth stating, because it is a demotion.** The
+flagship scenario moved from `high` to `moderate` (0.78). Three of its
+five attributed results are only *probable*, so the report genuinely is
+not high-confidence until the customer confirms them — and confirming
+them now moves the figure, which is what the "Is this you?" prompt was
+always supposed to be for. Tuning the thresholds to keep the old answer
+was available and is exactly the thing rule 9 forbids: adjusting a score
+so the product looks better.
+
+**Still unresolved, and inherited:** none of this is calibrated. The bands
+at 0.85 and 0.60 are product rules, not measured ones, and the question
+of what a 0.78 means remains open until there is a labelled set of correct
+and incorrect matches to measure against. The fix makes the number move in
+the right direction; it does not make it a probability.

@@ -17,24 +17,67 @@ import { prominence, meanOrNull } from './metrics.ts';
 export const CONFIDENCE_BANDS = { high: 0.85, moderate: 0.6 } as const;
 
 /**
- * Prominence-weighted over every record bearing the person's name, including
- * the ones we rejected.
+ * How much of what we found is about this person, and how sure we are of
+ * the part that is.
  *
- * Averaging only the records that passed the bar would make this structurally
- * incapable of falling below the `probable` threshold, and the flag it feeds
- * would never fire. The question is "how sure are we which of these is you",
- * and the results we rejected are exactly what makes that uncertain.
+ * Those are two questions and this used to answer only the second, which is
+ * how a report could read "high" while five of its six results were
+ * somebody else. The old version filtered on `identityConfidence > 0` —
+ * intended to drop results that never bore the name, and in practice
+ * dropping every result we had *rejected*, because a rejection scores
+ * exactly zero. The average was then taken over the survivors, which is to
+ * say over the matches, which is to say it could not fall. Its own comment
+ * claimed the opposite; the filter was four lines below it.
+ *
+ *   share   = how much of the named evidence we could attribute
+ *   quality = how sure we are of those attributions
+ *
+ * and the answer is the product, because both have to hold. One confident
+ * match among five contradictions is not a confident report, and five
+ * tentative matches with nothing against them is not one either.
+ *
+ * Prominence weights the share rather than the verdict. A wrong-person
+ * result at position one contests more than one at position thirty, which
+ * is a statement about how much it matters, not about whether it is them —
+ * the distinction the old weighting lost.
+ *
+ * Unresolved results count against the share. They genuinely are
+ * unresolved, and this is what gives the "Is this you?" prompt a purpose:
+ * answering it moves the number, in whichever direction is true.
  */
 export function identityConfidence(records: EvidenceRecord[]): number {
-  const named = records.filter((r) => r.identityConfidence > 0);
-  if (named.length === 0) return 0;
+  const attributed = records.filter(
+    (r) => r.identityStatus === 'confirmed' || r.identityStatus === 'probable'
+  );
+  if (attributed.length === 0) return 0;
 
-  const weights = named.map((r) => prominence(r.position));
-  const total = weights.reduce((s, w) => s + w, 0);
+  const weigh = (rs: EvidenceRecord[]) =>
+    rs.reduce((s, r) => s + prominence(r.position), 0);
 
-  if (total === 0) return meanOrNull(named.map((r) => r.identityConfidence)) ?? 0;
+  const named = records.filter((r) =>
+    ['confirmed', 'probable', 'uncertain', 'rejected'].includes(r.identityStatus)
+  );
 
-  return named.reduce((s, r, i) => s + r.identityConfidence * weights[i], 0) / total;
+  const namedWeight = weigh(named);
+  const attributedWeight = weigh(attributed);
+
+  // Everything carries zero prominence only when nothing has a position at
+  // all, which a provider can do. Counting by record is the honest
+  // fallback: it is the same question with a blunter instrument.
+  const share =
+    namedWeight === 0
+      ? attributed.length / Math.max(named.length, 1)
+      : attributedWeight / namedWeight;
+
+  const quality =
+    attributedWeight === 0
+      ? (meanOrNull(attributed.map((r) => r.identityConfidence)) ?? 0)
+      : attributed.reduce(
+          (s, r) => s + r.identityConfidence * prominence(r.position),
+          0
+        ) / attributedWeight;
+
+  return share * quality;
 }
 
 const bandFor = (c: number): ConfidenceReport['band'] =>
@@ -66,13 +109,64 @@ export function buildConfidence(
   const mix = { ...EMPTY_MIX };
   for (const r of attributed) mix[r.sourceReliability]++;
 
+  /**
+   * Which of the two things went wrong, not merely that something did.
+   *
+   * The band is a share times a quality, so a low one has two quite
+   * different causes and they call for different actions. Most of the
+   * evidence being somebody else's is not a thing the customer can fix by
+   * confirming anything, and telling them to confirm results would be
+   * advice that cannot work. A few unresolved ones is exactly what they
+   * can fix, in about a minute.
+   */
   const notes: string[] = [];
-  if (band === 'low') {
+  const contested = rejected.length;
+  const unresolved = allRecords.filter((r) => r.identityStatus === 'uncertain').length;
+
+  if (attributed.length === 0 && unresolved === 0) {
+    // Nothing attributed and nothing to ask about: the only honest message,
+    // and there is no action to offer with it.
+    notes.push(
+      'Nothing we found is attributable to you, so there is no report to be confident about yet.'
+    );
+  } else if (attributed.length === 0) {
+    /**
+     * Nothing attributed *yet*, but results are waiting on an answer.
+     *
+     * The bleak note above fits the arithmetic here and is the wrong thing
+     * to say: there is something the customer can do, it takes a minute,
+     * and it is the whole reason the "Is this you?" prompt exists. Telling
+     * somebody their report is empty when a question of theirs would fill
+     * it is accurate and useless.
+     */
+    notes.push(
+      'Several prominent results carrying your name may not be you. Confirming or rejecting them will change this report.'
+    );
+  } else if (band === 'low' && contested > attributed.length) {
+    notes.push(
+      `Most of what we found is about somebody else: ${contested} of these results are not you. ` +
+        (attributed.length === 1
+          ? 'The figures here are built from the one that is.'
+          : `The figures here are built from the ${attributed.length} that are.`)
+    );
+  } else if (band === 'low') {
     notes.push(
       'Several prominent results carrying your name may not be you. Confirming or rejecting them will change this report.'
     );
   } else if (band === 'moderate') {
-    notes.push('Most results are attributable to you, but some need your confirmation.');
+    /**
+     * Counted the way the figures beside it are counted.
+     *
+     * `awaiting` is uncertain *and* probable — a probable match is in the
+     * score and still worth asking about — and it is the number the report
+     * prints as "Need confirming". Saying a different one in the sentence
+     * directly above that figure would read as an arithmetic error.
+     */
+    notes.push(
+      awaiting.length > 0
+        ? `Most results are attributable to you. ${awaiting.length} still need your confirmation, and answering moves this figure.`
+        : 'Most results are attributable to you, but some need your confirmation.'
+    );
   } else {
     notes.push('The results are confidently attributable to you.');
   }
