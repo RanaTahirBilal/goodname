@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reputation MVP — Build Status</title>
-<meta name="description" content="What is built, what is not, and the one defect that would break the demo. A status report on the reputation-audit MVP, 3 November 2026.">
+<meta name="description" content="What is built, what is not, and what the last defect cost to fix. A status report on the reputation-audit MVP, 3 November 2026.">
 <meta property="og:title" content="Reputation MVP — Build Status">
-<meta property="og:description" content="What is built, what is not, and the one defect that would break the demo.">
+<meta property="og:description" content="What is built, what is not, and what the last defect cost to fix.">
 <meta property="og:type" content="article">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -345,7 +345,7 @@ footer p { max-width: 62ch; }
 <header class="masthead">
   <div class="wrap">
     <span class="wordmark">Reputation Platform</span>
-    <span style="color: var(--text-2)">Build status &middot; updated 4 November 2026</span>
+    <span style="color: var(--text-2)">Build status &middot; updated 5 November 2026</span>
   </div>
 </header>
 
@@ -355,43 +355,44 @@ footer p { max-width: 62ch; }
   <section class="hero">
     <div class="rule"></div>
     <p class="eyebrow">Status report, not a launch</p>
-    <h1>What is built, what is not, and the one thing that would break the demo.</h1>
+    <h1>What is built, what is not, and what the last defect cost to fix.</h1>
     <p class="lede" style="margin-top: var(--s-6)">
-      The core reputation-check journey runs end to end. No live search provider is
-      connected, so every result on this page comes from fixture data. One defect
-      would embarrass the product in front of an audience, and it is named below.
+      The reputation-check journey runs end to end. No live search provider is connected,
+      so every result on this page comes from fixture data. The defect this page was
+      written to report is now fixed, and fixing it made the product&rsquo;s own headline
+      number go down.
     </p>
     <p style="margin-top: var(--s-8)">
       <a class="btn" href="https://github.com/RanaTahirBilal/goodname/issues/new">Leave feedback</a>
     </p>
     <div class="meta">
-      <span>269 tests passing</span>
+      <span>316 tests passing</span>
       <span>Typecheck clean</span>
-      <span>Commit <code>7ad4d03</code></span>
+      <span>Commit <code>f2a7e48</code></span>
       <span><a href="https://github.com/RanaTahirBilal/goodname">Source on GitHub</a></span>
+      <span><a href="directions/">Design directions</a></span>
     </div>
   </section>
 
   <section>
     <h2>How this was checked</h2>
     <p>
-      Every claim here was produced by running the application, not by reading it.
-      The commands and their real output:
+      Every claim here was produced by running the application, not by reading it. The
+      commands and their real output:
     </p>
-<pre><code>npm test          →  269 pass, 0 fail
-                     domain 104 · persistence 143 · website 22
+<pre><code>npm test          →  316 pass, 0 fail
+                     domain 142 · persistence 143 · website 31
 npm run typecheck →  clean
-npm run dev       →  :4300, journey exercised in a browser</code></pre>
+npm run build     →  compiled successfully</code></pre>
     <p>
-      The Expo app was built separately with <code>npx expo export --platform web</code>,
-      which exited 0, and <code>tsc --noEmit</code>, which was clean.
+      The screenshots below were taken from the running application on 5 November 2026.
     </p>
   </section>
 
   <section>
     <h2>Feature status</h2>
     <p>
-      Four states, kept apart on purpose: verified means it was exercised just now,
+      Four states, kept apart on purpose: verified means it was exercised in a browser,
       not that the code exists.
     </p>
     <table>
@@ -399,190 +400,190 @@ npm run dev       →  :4300, journey exercised in a browser</code></pre>
         <tr><th scope="col">Feature</th><th scope="col">Status</th><th scope="col">Note</th></tr>
       </thead>
       <tbody>
-        <tr><td>Home screen</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
-        <tr><td>Reputation-check action</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
+        <tr><td>Home screen</td><td><span class="tag tag-ok">Verified</span></td><td>Hero, three steps, closing ask</td></tr>
         <tr><td>Name input form</td><td><span class="tag tag-ok">Verified</span></td><td>Seven fields, validation, attestation</td></tr>
         <tr><td>Audit execution</td><td><span class="tag tag-ok">Verified</span></td><td>Queued job, polled; about 2s on fixtures</td></tr>
-        <tr><td>Online Presence Score</td><td><span class="tag tag-ok">Verified</span></td><td>Six weighted dimensions</td></tr>
-        <tr><td>Reputation risk</td><td><span class="tag tag-ok">Verified</span></td><td>Reported separately, no aggregate number</td></tr>
-        <tr><td>Evidence and source links</td><td><span class="tag tag-ok">Verified</span></td><td>URL, source, reliability, date, position</td></tr>
-        <tr><td>Recommendations</td><td><span class="tag tag-ok">Verified</span></td><td>Ordered; each names its evidence</td></tr>
-        <tr><td>Results screen</td><td><span class="tag tag-ok">Verified</span></td><td>Including print and PDF</td></tr>
-        <tr><td>Loading states</td><td><span class="tag tag-ok">Verified</span></td><td>Queries shown live, retry counter</td></tr>
-        <tr><td>Error states</td><td><span class="tag tag-ok">Verified</span></td><td>A failure now offers Try again and Edit details</td></tr>
+        <tr><td>Online Presence Score</td><td><span class="tag tag-ok">Verified</span></td><td>Six weighted dimensions, shown as a ribbon</td></tr>
+        <tr><td>Reputation risk</td><td><span class="tag tag-ok">Verified</span></td><td>Reported separately, never averaged in</td></tr>
+        <tr><td>Identity confidence</td><td><span class="tag tag-ok">Verified</span></td><td>Rebuilt. See below</td></tr>
+        <tr><td>Findings</td><td><span class="tag tag-ok">Verified</span></td><td>Derived in the engine; none, three or twelve all work</td></tr>
+        <tr><td>Evidence</td><td><span class="tag tag-ok">Verified</span></td><td>Reading view and register, same data</td></tr>
+        <tr><td>Recommendations</td><td><span class="tag tag-ok">Verified</span></td><td>Each says who decides whether it happens</td></tr>
+        <tr><td>Print / PDF</td><td><span class="tag tag-ok">Verified</span></td><td>Cover un-reverses, register always prints</td></tr>
+        <tr><td>Error states</td><td><span class="tag tag-ok">Verified</span></td><td>A failure offers Try again and Edit details</td></tr>
         <tr><td>Insufficient evidence</td><td><span class="tag tag-ok">Verified</span></td><td>Reads as a finished check, not a blank</td></tr>
-        <tr><td>Anonymous flow</td><td><span class="tag tag-ok">Verified</span></td><td>&mdash;</td></tr>
         <tr><td>Sign-in and account claiming</td><td><span class="tag tag-ok">Verified</span></td><td>An earlier audit follows you into the account</td></tr>
-        <tr><td>Identity confidence</td><td><span class="tag tag-part">Partial</span></td><td>Works, but mis-bands. See the defect</td></tr>
-        <tr><td>Search provider</td><td><span class="tag tag-no">Fixture only</span></td><td>No credentials exist</td></tr>
+        <tr><td>Export and deletion</td><td><span class="tag tag-ok">Verified</span></td><td>30-day grace, cancellable, then a hard purge</td></tr>
+        <tr><td>Evidence provenance</td><td><span class="tag tag-part">Partial</span></td><td>Built and tested; no engagement has used it yet</td></tr>
+        <tr><td>Search provider</td><td><span class="tag tag-no">Fixture only</span></td><td>No credentials exist. The main blocker</td></tr>
+        <tr><td>Hosting</td><td><span class="tag tag-no">Not deployed</span></td><td>Needs a Node host; cannot go on static pages</td></tr>
         <tr><td>Email delivery</td><td><span class="tag tag-no">Not built</span></td><td>Codes appear on screen in development</td></tr>
-        <tr><td>iOS / Android execution</td><td><span class="tag tag-no">Not this product</span></td><td>See below</td></tr>
+        <tr><td>Managed-service plan</td><td><span class="tag tag-no">Blocked</span></td><td>Needs a decision on what the service promises</td></tr>
       </tbody>
     </table>
   </section>
 
   <section>
-    <h2>Live search is not configured</h2>
+    <h2>Live search is still not configured</h2>
     <div class="note">
       <strong>Entering a name triggers no internet search of any kind.</strong>
       <p>
-        A fixture provider returns hard-coded rows. There are no provider credentials
-        in the repository and no code path that would use them. The provider has not
-        been chosen yet.
+        A fixture provider returns hard-coded rows. There are no provider credentials in
+        the repository and no code path that would use them. This has not changed and is
+        the single thing standing between this and a real audit.
       </p>
     </div>
     <p>
       The application says so in three places rather than one: a banner above every
-      report, an <code>isFixture: true</code> flag on each stored record, and a
-      selector labelled <em>Demonstration scenario</em>. The flag lives in the data
-      rather than only in the interface, because a banner is lost the moment someone
-      screenshots a report.
+      report, an <code>isFixture: true</code> flag on each stored record, and a selector
+      labelled <em>Demonstration scenario</em>. The flag lives in the data rather than
+      only in the interface, because a banner is lost the moment somebody screenshots a
+      report.
     </p>
   </section>
 
   <section>
-    <h2>The journey, as it runs</h2>
+    <h2>The report</h2>
     <p>
-      Home, then the name form, then a report. Captured from the running application.
-      Every score shown is computed from fixture data about a fictional attorney.
+      Rebuilt as a briefing after three directions were rendered and compared. Running the
+      disbarment scenario, which exercises an official finding, an unresolved identity
+      match and a weak dimension at once.
     </p>
 
     <div class="shots">
       <figure>
-        <img src="img/1-home.jpg" alt="The landing page: a large serif headline reading &lsquo;Understand what people find when they search for you&rsquo;, with a Check My Reputation button and an example report card.">
-        <figcaption>1. Home. One headline, one action.</figcaption>
+        <img src="img/1-cover.jpg" alt="A dark green report cover headed Jensen Adoni, reading four results assessed, four attributed, with identity, model coverage, assessment date and methodology version listed beneath.">
+        <figcaption>1. The cover. Subject first, then the conditions the number holds under.</figcaption>
       </figure>
       <figure>
-        <img src="img/2-name-form.jpg" alt="The audit form showing fields for full name, profession, employer, city, state, credentials and website.">
-        <figcaption>2. The name form. The more it knows, the better it can tell you apart from others.</figcaption>
+        <img src="img/2-score-and-ribbon.jpg" alt="A large serif numeral 56 beside a sentence explaining that the score measures observable presence and not character, above a row of five dimension scores.">
+        <figcaption>2. One figure, the engine&rsquo;s own sentence, then what it is made of.</figcaption>
       </figure>
       <figure>
-        <img src="img/3-report-score.jpg" alt="A report headed Jensen Adoni showing an online presence score of 65 out of 100, with a fixture-data warning banner above it and a reputation risk panel reading None found.">
-        <figcaption>3. The report. Score, coverage, and the fixture warning above everything.</figcaption>
+        <img src="img/3-findings.jpg" alt="Three findings set as chapters, including one headed In re Jensen Adoni, disbarred, each followed by a boxed explanation of what that kind of finding means.">
+        <figcaption>3. Findings, with a <em>What that means</em> box. Every sentence comes from the engine.</figcaption>
       </figure>
       <figure>
-        <img src="img/4-evidence.jpg" alt="An evidence table listing each result with what it is, whether it is attributed to the subject, its source and reliability, and the date it was seen.">
-        <figcaption>4. Evidence. Each row carries its source, its date and whether it is you.</figcaption>
-      </figure>
-    </div>
-
-    <h3>The honest failure states work</h3>
-    <p>
-      These matter more than the happy path, because they are what stops the product
-      inventing a number when it does not have one.
-    </p>
-
-    <div class="shots">
-      <figure>
-        <img src="img/5-insufficient-evidence.jpg" alt="A report reading Not enough evidence to score, explaining that coverage fell below the required 55 percent and listing what would change that.">
-        <figcaption>5. Below 55% coverage the product refuses to score and says what would change that.</figcaption>
+        <img src="img/4-presence-and-risk.jpg" alt="Two matched panels side by side: online presence 56 out of 100, and reputation risk reading Severe based on one established finding.">
+        <figcaption>4. Presence and risk as a matched pair, never averaged together.</figcaption>
       </figure>
       <figure>
-        <img src="img/6-provider-failed.jpg" alt="An error screen reading The search did not complete, explaining that the provider did not respond after three attempts and that nothing was scored or partially saved.">
-        <figcaption>6. A failed search never renders as an empty report. &ldquo;An empty report would suggest we looked and found nothing about you, which is a very different thing from not having looked.&rdquo;</figcaption>
+        <img src="img/5-dimensions-and-confidence.jpg" alt="A section listing each scoring dimension with the engine's explanation, above a panel headed How confident we are.">
+        <figcaption>5. The dimension explanations, without repeating the figures above them.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/6-recommendations.jpg" alt="Recommendations each tagged with a priority and with who decides, including one marked Later and Waits on someone else.">
+        <figcaption>6. Recommendations say who decides whether they happen.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/7-evidence-reading.jpg" alt="Evidence shown as cards, each with an attribution label, the source, the quoted excerpt and the identity match figure.">
+        <figcaption>7. Evidence, reading view.</figcaption>
+      </figure>
+      <figure>
+        <img src="img/8-evidence-register.jpg" alt="The same evidence shown as a comparison table with columns for result, identity, type, source and date.">
+        <figcaption>8. The same evidence, register view. This is what prints, either way.</figcaption>
       </figure>
     </div>
   </section>
 
   <section>
-    <h2>The defect</h2>
+    <h2>The defect, and what fixing it cost</h2>
 
-    <div class="note bad">
-      <strong>A name the fixtures do not cover still gets a confident score.</strong>
+    <div class="note good">
+      <strong>Fixed.</strong>
       <p>
-        Entering a different name returned a report headed with that name, an
-        Online Presence score of 59 out of 100, 88% model coverage, and an identity
-        confidence band of <em>high</em> &mdash; above the words &ldquo;the results
-        are confidently attributable to you&rdquo;. Every one of the eight results
-        was about somebody else.
+        A subject the fixtures do not cover used to produce a report scoring 59 with the
+        identity band reading <em>high</em>, while five of its six results were explicitly
+        somebody else. It now reads <strong>low</strong>, and says why: &ldquo;Most of what
+        we found is about somebody else: 5 of these results are not you. The figures here
+        are built from the one that is.&rdquo;
       </p>
     </div>
 
-    <figure>
-      <img src="img/7-defect-score.jpg" alt="A report headed Marcus Webb showing an online presence score of 59 out of 100 and 88 percent coverage, with eight results seen and one attributed to the subject.">
-      <figcaption>
-        7. The report that should not exist. Eight results seen, one attributed, and
-        only because the form still claimed a website the subject does not own.
-      </figcaption>
-    </figure>
-
-    <figure>
-      <img src="img/7b-defect-confidence.jpg" alt="A panel headed How confident we are, tagged Identity high, reading &lsquo;The results are confidently attributable to you&rsquo;, above counts of one attributed and five marked not you.">
-      <figcaption>
-        8. The same report, further down. One attributed, five explicitly
-        <em>not you</em>, and the band still reads <em>high</em>.
-      </figcaption>
-    </figure>
-
-    <p>The cause is a single filter in the confidence engine:</p>
+    <p>The cause was one filter:</p>
 
 <pre><code>const named = records.filter((r) =&gt; r.identityConfidence &gt; 0);</code></pre>
 
     <p>
-      The comment four lines above it says the average is taken over every result
-      bearing the person&rsquo;s name, <em>including the ones we rejected</em>,
-      because the rejections are exactly what should make the answer uncertain. It
-      is not: <code>&gt; 0</code> drops the rejected results, which score zero. One
-      self-claimed URL at 0.98 therefore averages to 0.98, and the band reads
-      <em>high</em>.
-    </p>
-    <p>
-      The filter cannot tell <em>no name here</em> from <em>a name, and it is not
-      yours</em>. The project&rsquo;s own rule 11 &mdash; a name match is not an
-      identity match &mdash; is the rule this breaks.
+      Intended as <em>results that bear the name</em>. Behaved as <em>results we did not
+      reject</em>, because a rejection scores exactly zero. The average was then taken over
+      the matches, which is to say it could not fall. The comment four lines above it
+      claimed the opposite, which is how it survived review.
     </p>
 
-    <h3>The fix is not to make the fixture follow the name</h3>
+    <h3>The filter was the symptom</h3>
     <p>
-      The tempting repair is to substitute whatever name is typed into the fixture
-      rows, so a demonstration always looks good. That would manufacture findings,
-      sources and credentials about a real person, which is the one thing the
-      product forbids outright. The correct repair is the opposite: when the subject
-      does not match what the evidence is about, decline to produce a score and say
-      why.
+      One number was answering two questions &mdash; how much of what we found is about
+      this person, and how sure we are of the part that is &mdash; and reporting only the
+      second. It is the product of both now, because both have to hold. One confident match
+      among five contradictions is not a confident report, and five tentative matches with
+      nothing against them is not one either.
+    </p>
+
+    <div class="note bad">
+      <strong>What it cost.</strong>
+      <p>
+        The flagship scenario dropped from <em>high</em> to <em>moderate</em>. Three of its
+        five attributed results are only <em>probable</em>, so it genuinely is not
+        high-confidence until somebody confirms them. Tuning the thresholds to keep the old
+        answer was available and easy, and is exactly the thing the project&rsquo;s own rules
+        forbid: adjusting a score so the product looks better.
+      </p>
+    </div>
+
+    <p>
+      <strong>What is still not true:</strong> none of this is calibrated. The bands at 0.85
+      and 0.60 are product rules, not measured ones, and 0.78 does not mean a 78% chance of
+      anything. The number moves in the right direction now. It is not yet a probability,
+      and will not be until there is a labelled set of correct and incorrect matches to
+      measure against.
     </p>
   </section>
 
   <section>
-    <h2>The mobile app is a different product</h2>
+    <h2>The engine will not credit its own work</h2>
     <p>
-      An Expo app exists and builds. It is not a client for this engine, and
-      demonstrating on it would show invented numbers from an earlier product aimed
-      at a different audience.
+      If this product ever sells a service that publishes material for a customer, and the
+      audit then counts that material, it is marking its own homework and selling the mark.
+      The hole is specific: a release drafted and syndicated lands on a third-party domain,
+      and every field on the record &mdash; source type, reliability, the <em>earned</em>
+      classification &mdash; reads as coverage somebody chose to give.
     </p>
-    <ul>
-      <li>It runs entirely on a local mock module. It has never called the audit engine.</li>
-      <li>Its API base points at a host that does not exist.</li>
-      <li>It produces a single aggregate &ldquo;Reputation Health Score&rdquo;. This product deliberately reports three separate outputs with no aggregate.</li>
-      <li>Its screens &mdash; brokers, disputes, removals, paywall &mdash; belong to the consumer product, which is paused.</li>
-    </ul>
+    <p>
+      Evidence now carries authorship, and source authority tests that rather than
+      appearance. Marking one result as placed on a real scan moved the score from 65 to 61
+      and the report said why. <strong>Declaring our own work makes the number go down.</strong>
+      A system where it went up is one a customer would eventually find.
+    </p>
+  </section>
+
+  <section>
+    <h2>The mobile app is still a different product</h2>
+    <p>
+      An Expo app exists and builds. It is not a client for this engine: it runs entirely on
+      a local mock, its API base points at a host that does not exist, and it produces a
+      single aggregate score &mdash; the old model this product deliberately replaced with
+      three separate outputs.
+    </p>
 
     <figure style="max-width: 320px">
-      <img src="img/8-expo-app-mock-score.jpg" alt="The Expo app showing a circular gauge with the number 68 labelled Fair, under a banner reading Sample data, not a real person.">
-      <figcaption>9. The Expo app&rsquo;s 68 is invented by a mock module. It is labelled, and it is not this product.</figcaption>
+      <img src="img/9-expo-app-mock-score.jpg" alt="The Expo app showing a circular gauge with the number 68 labelled Fair, under a banner reading Sample data, not a real person.">
+      <figcaption>9. Its 68 is invented by a mock module. It is labelled, and it is not this product.</figcaption>
     </figure>
-
-    <p>
-      To its credit, it says so on every screen that shows a number. That labelling
-      is why it is honest and still not demonstrable.
-    </p>
   </section>
 
   <section>
     <h2>What to do next</h2>
-    <p>
-      In order. None of these is a refactor, and nothing else on the MVP list is
-      outstanding.
-    </p>
+    <p>In order. The first is a decision rather than a task.</p>
 
     <div class="priority">
       <span class="num">1</span>
       <div>
-        <h3>Stop scoring a subject the evidence is not about</h3>
+        <h3>Choose a search provider</h3>
         <p>
-          Fix the confidence filter so rejected results count against the band, and
-          refuse to render a score when a fixture run&rsquo;s subject does not match
-          the fixture subject. One filter and one branch.
+          Everything else is finished pretending. Until a real search runs, this is an
+          engine with excellent manners and nothing to read. Research and prices are in the
+          repository; the decision is not a technical one.
         </p>
       </div>
     </div>
@@ -590,12 +591,11 @@ npm run dev       →  :4300, journey exercised in a browser</code></pre>
     <div class="priority">
       <span class="num">2</span>
       <div>
-        <h3>Make the demonstration path deliberate</h3>
+        <h3>Decide what the managed service promises</h3>
         <p>
-          The form currently pre-fills a fictional attorney as a default. Present
-          that subject as the demonstration subject instead, so the boundary of the
-          fixture data is visible rather than something a viewer discovers by typing
-          their own name.
+          The report has nowhere to go at the end. Building that section means stating what
+          will be done, what needs the client&rsquo;s approval, what is measured and what is
+          excluded &mdash; commitments that cannot be invented on the client&rsquo;s behalf.
         </p>
       </div>
     </div>
@@ -603,60 +603,21 @@ npm run dev       →  :4300, journey exercised in a browser</code></pre>
     <div class="priority">
       <span class="num">3</span>
       <div>
-        <h3>Clear the second-name block for a demonstration</h3>
+        <h3>Put it somewhere</h3>
         <p>
-          A second distinct name is refused until an email address is verified. That
-          is correct behaviour &mdash; it is what stops the product being a
-          people-search engine &mdash; but with no mail provider connected it stops a
-          live walkthrough. Pre-verify the session, or raise the limit for the demo
-          only.
+          A Node server with a database, so not static hosting. The SEO foundation is built
+          and defaults to <code>noindex</code> until a deployment says otherwise, so launch
+          is a configuration change rather than a code change.
         </p>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>What changed since this was written</h2>
-    <p>
-      The page is dated, so it has to say what is no longer true of it. Screenshots 1 to 7b
-      were retaken on 4 November against commit <code>7ad4d03</code>.
-    </p>
-
-    <div class="note good">
-      <strong>Fixed</strong>
-      <p>
-        The report now opens with who it is about rather than how the search was run; the
-        provenance moved into a collapsed <em>Audit details</em> that still prints. The
-        evidence table leads with identity and the bare <code>0.98</code> is labelled as an
-        identity match. A failed search offers <em>Try again</em> and <em>Edit details</em>
-        instead of a dead end. The insufficient-evidence state reads as a completed check
-        with a limited conclusion. The home page gained three steps and a closing ask.
-      </p>
-    </div>
-
-    <div class="note bad">
-      <strong>Still broken</strong>
-      <p>
-        The identity-confidence defect below is unchanged. The band still reads
-        <em>high</em> off a single self-claimed result, and a subject the fixtures do not
-        cover is still scored. The report no longer hides the contradiction &mdash; screenshot 7
-        shows &ldquo;1 of 6 results is attributed to you&rdquo; directly above a 59 &mdash; but
-        showing a problem is not fixing it.
-      </p>
-    </div>
-
-    <p>
-      Three alternative design directions for the report are rendered on the same data at
-      <a href="directions/">/directions</a>, for comparison rather than description. They are
-      compositions, not a built product.
-    </p>
-  </section>
-
-  <section>
     <h2>Feedback</h2>
     <p>
-      Corrections are more useful than agreement. If something here reads as
-      overstated, or a status is wrong, say so.
+      Corrections are more useful than agreement. If something here reads as overstated, or
+      a status is wrong, say so.
     </p>
     <p style="margin-top: var(--s-6)">
       <a class="btn" href="https://github.com/RanaTahirBilal/goodname/issues/new">Open an issue</a>
@@ -664,13 +625,14 @@ npm run dev       →  :4300, journey exercised in a browser</code></pre>
   </section>
 
 </article>
+
 </main>
 
 <footer>
   <div class="wrap">
     <p>
-      A status report on an unreleased product, first written 3 November 2026, updated 4 November against
-      commit <code>7ad4d03</code>. Every score and every result shown on this page is
+      A status report on an unreleased product, first written 3 November 2026, updated 5 November against
+      commit <code>f2a7e48</code>. Every score and every result shown on this page is
       fixture data describing a fictional person. Nothing here is a real reputation
       finding about anybody.
     </p>
