@@ -36,7 +36,7 @@ export const INDEXABLE = process.env.REP_INDEXABLE === 'true';
  * and `/signin` are per-customer and have nothing to rank for. `/api` is not
  * a page.
  */
-export const PRIVATE_PATHS = ['/api/', '/review', '/account', '/signin'];
+export const PRIVATE_PATHS = ['/api/', '/review', '/account', '/signin', '/report'];
 
 /** The public pages, in the order a reader would meet them. */
 export const PUBLIC_PATHS = ['/', '/audit'];

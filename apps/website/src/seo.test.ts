@@ -139,3 +139,23 @@ test('no structured data makes claims the page does not show', () => {
   assert.match(layout, /'@type':\s*'Organization'/);
   assert.match(layout, /'@type':\s*'WebSite'/);
 });
+
+test('a report about a named person is never crawlable', () => {
+  /**
+   * `/report/[id]` is the durable route added after the first fulfillment
+   * rehearsal, and it is the only page in the product whose content is a
+   * document about an identifiable person. It is behind a session and the id
+   * is not a capability — but a path that must never be indexed should be
+   * refused in robots.txt as well as in the handler, because those two
+   * protections fail for different reasons.
+   */
+  assert.ok(
+    PRIVATE_PATHS.includes('/report'),
+    'the report route is not listed as private'
+  );
+
+  assert.ok(
+    !PUBLIC_PATHS.some((p) => p.startsWith('/report')),
+    'a report route is in the sitemap'
+  );
+});

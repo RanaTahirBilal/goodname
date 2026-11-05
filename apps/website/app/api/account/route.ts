@@ -24,6 +24,21 @@ export async function GET() {
       // An anonymous account has an opaque identifier, not an address.
       email: scope.verified ? scope.email : null,
       scans: repo.listScans(scope).length,
+      /**
+       * The reports themselves, not just how many there are.
+       *
+       * This page used to say "Audits stored: 1" and give no way to open it.
+       * The data was there, the API would rebuild it, and the id — the only
+       * thing a customer needed — was never handed over. A count of
+       * deliverables you cannot reach is a worse answer than no count.
+       */
+      reports: repo.listScans(scope).map((s) => ({
+        id: s.id,
+        startedAt: s.startedAt,
+        status: s.status,
+        isFixture: s.isFixture,
+        evidenceExpiredAt: s.evidenceExpiredAt ?? null,
+      })),
       pendingDeletion: repo.deletionStatus(scope),
     },
     { status: 200 }

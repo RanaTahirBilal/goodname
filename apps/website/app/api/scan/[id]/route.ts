@@ -7,7 +7,7 @@
  * caller to reach for.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { rebuildReport } from '@rep/persistence';
+import { rebuildReport, reconcileAssessment } from '@rep/persistence';
 import { store } from '../../../../src/server/db.ts';
 import { currentScope } from '../../../../src/server/session.ts';
 
@@ -72,10 +72,20 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       : undefined,
   });
 
+  /**
+   * Record any divergence before the history is read for the response.
+   *
+   * The report is recomputed on every read, so an engine change moves an old
+   * number with no new evidence and nothing to show for it. This turns that
+   * into an event: a new snapshot with a reason, and a line on the page.
+   */
+  const reassessed = reconcileAssessment(repo, scope, scan.id, rebuilt);
+
   return NextResponse.json(
     {
       status: 'complete',
       scanId: scan.id,
+      reassessed,
       scan: {
         provider: scan.provider,
         isFixture: scan.isFixture,

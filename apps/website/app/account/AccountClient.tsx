@@ -14,6 +14,7 @@
  * happens, and a cancellation offered in the same breath.
  */
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface PendingDeletion {
   requestedAt: string;
@@ -26,6 +27,13 @@ interface AccountState {
   verified?: boolean;
   email?: string | null;
   scans?: number;
+  reports?: Array<{
+    id: string;
+    startedAt: string;
+    status: string;
+    isFixture: boolean;
+    evidenceExpiredAt: string | null;
+  }>;
   pendingDeletion?: PendingDeletion | null;
   /** The request itself failed, which is not the same as having no session. */
   unreachable?: boolean;
@@ -189,6 +197,44 @@ export default function AccountClient() {
           <Pair label="Audits stored" value={String(account.scans ?? 0)} />
         </dl>
       </section>
+
+      {/* ------------------------------------------------------ reports */}
+
+      {account.reports && account.reports.length > 0 && (
+        <section className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
+          <h2 className="mark" style={{ fontSize: '1.5rem' }}>
+            Your reports
+          </h2>
+          <p className="small" style={{ fontSize: '0.9375rem' }}>
+            Each one opens as it stands now: if you have answered an “is this you?” since, or a
+            reviewer has looked at something, the report reflects it.
+          </p>
+          <ul className="small stack" style={{ ['--gap' as string]: 'var(--s-2)', paddingLeft: 0, listStyle: 'none' }}>
+            {account.reports.map((r) => (
+              <li key={r.id}>
+                <Link href={`/report/${r.id}`}>
+                  {new Date(r.startedAt).toLocaleDateString(undefined, {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })}
+                </Link>
+                {r.isFixture && <span className="pill pill-warning" style={{ marginLeft: 8 }}>Fixture data</span>}
+                {r.evidenceExpiredAt && (
+                  <span className="pill pill-neutral" style={{ marginLeft: 8 }}>
+                    Evidence deleted
+                  </span>
+                )}
+                {r.status === 'search_failed' && (
+                  <span className="pill pill-neutral" style={{ marginLeft: 8 }}>
+                    Did not complete
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* ------------------------------------------------------- export */}
 
