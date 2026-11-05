@@ -376,3 +376,77 @@ test('pending count reflects the queue', async () => {
 
   assert.equal(review.pendingCount(), before - 1);
 });
+
+/* ---------------------------------------------- the customer's own answer */
+
+/**
+ * Two thirds of the review minutes in the first fulfillment rehearsal went
+ * on records the customer had already resolved. She pressed "This is me" on
+ * the Healthgrades and Doximity results; both stayed in the queue, shown to
+ * a reviewer under "we are not certain this result is about the customer".
+ *
+ * Each one is also a crossing of the account boundary — the one operation in
+ * this system that does that — logged against a named member of staff for no
+ * reason. The cost is not only the minutes.
+ */
+test("a record the customer has claimed leaves the identity queue", async () => {
+  // `ambiguous` is the scenario whose whole queue is identity questions.
+  const { repo, review, rScope, scope, scanId } = await setup('ambiguous');
+
+  const identityOnly = review.queue(rScope).find((q) => !q.findingStatus);
+
+  if (!identityOnly) return assert.fail('this fixture no longer queues an identity-only record');
+
+  repo.recordDecision(scope, scanId, identityOnly.evidenceId, 'confirmed');
+
+  const after = review.queue(rScope).map((q) => q.evidenceId);
+  assert.ok(
+    !after.includes(identityOnly.evidenceId),
+    'a reviewer is still being asked a question the customer answered'
+  );
+});
+
+test('rejecting it as not them also closes the question', async () => {
+  // The other answer settles it just as completely: a result the customer
+  // says is somebody else is not one we need a reviewer to identify.
+  const { repo, review, rScope, scope, scanId } = await setup('ambiguous');
+
+  const before = review.queue(rScope);
+  repo.recordDecision(scope, scanId, before[0]!.evidenceId, 'rejected');
+
+  assert.equal(review.queue(rScope).length, before.length - 1);
+});
+
+test("a claimed record carrying adverse language stays in the queue", async () => {
+  /**
+   * The limit of the rule above, and the one that matters.
+   *
+   * "Yes, that is me" answers who the result is about. It says nothing about
+   * whether the source establishes what we classified it as — and a customer
+   * confirming identity on a disciplinary record must not be the thing that
+   * removes it from human review. That would turn an answer into an
+   * exemption.
+   */
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const adverse = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
+
+  repo.recordDecision(scope, scanId, adverse.evidenceId, 'confirmed');
+
+  const after = review.queue(rScope).map((q) => q.evidenceId);
+  assert.ok(
+    after.includes(adverse.evidenceId),
+    'claiming a record as yours removed it from review'
+  );
+});
+
+test('the pending count agrees with the queue', async () => {
+  // They are two queries over the same question, and a dashboard saying "3
+  // waiting" over a screen showing one is its own small dishonesty.
+  const { repo, review, rScope, scope, scanId } = await setup('ambiguous');
+
+  const identityOnly = review.queue(rScope).find((q) => !q.findingStatus);
+  if (identityOnly) repo.recordDecision(scope, scanId, identityOnly.evidenceId, 'confirmed');
+
+  assert.equal(review.pendingCount(), review.queue(rScope).length);
+});

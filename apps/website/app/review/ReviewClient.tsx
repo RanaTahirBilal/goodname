@@ -35,17 +35,23 @@ interface QueueItem {
   flaggedBecause: string;
 }
 
+/**
+ * The decisions, and the order is deliberate.
+ *
+ * "Uphold" was first, and it was also preselected. The first fulfillment
+ * rehearsal put a clean board certification in front of this screen,
+ * classified as a severity-3 disciplinary finding on a misread negation —
+ * and the cheapest action available, the one already chosen, the one a
+ * reviewer reaches by pressing the button without touching anything, was to
+ * confirm it.
+ *
+ * So: nothing is preselected, and upholding is last. Upholding is now the
+ * act that creates a finding about a person, which makes it the most
+ * consequential thing on this page, not the default one. The ordering runs
+ * from the answers that cost a customer nothing to the one that costs them
+ * the most.
+ */
 const OUTCOMES: { value: Outcome; label: string; help: string }[] = [
-  {
-    value: 'uphold',
-    label: 'Uphold',
-    help: 'The classification is right. It stands as written.',
-  },
-  {
-    value: 'downgrade_to_allegation',
-    label: 'Downgrade to allegation',
-    help: 'About the right person, but not established. Reported, not proven.',
-  },
   {
     value: 'reject_not_this_person',
     label: 'Not this person',
@@ -54,7 +60,17 @@ const OUTCOMES: { value: Outcome; label: string; help: string }[] = [
   {
     value: 'reject_not_harm',
     label: 'Not harm',
-    help: 'Right person, but this is commentary rather than a harm claim.',
+    help: 'Right person, but this is commentary, or the source says the opposite of the classification.',
+  },
+  {
+    value: 'downgrade_to_allegation',
+    label: 'Downgrade to allegation',
+    help: 'About the right person, but not established. Reported, not proven.',
+  },
+  {
+    value: 'uphold',
+    label: 'Uphold as an established finding',
+    help: 'You have read the source and it establishes this. The customer will be told it is settled.',
   },
 ];
 
@@ -67,7 +83,13 @@ export default function ReviewClient() {
   const [items, setItems] = useState<QueueItem[] | null>(null);
   const [pending, setPending] = useState(0);
   const [me, setMe] = useState<Me | null | undefined>(undefined);
-  const [outcome, setOutcome] = useState<Outcome>('uphold');
+  /**
+   * No default. A decision has to be made, not accepted.
+   *
+   * `null` is the whole point: with a preselected value, "I did not choose"
+   * and "I chose this" are the same state by the time it reaches the server.
+   */
+  const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [rationale, setRationale] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -113,7 +135,7 @@ export default function ReviewClient() {
   const current = items?.[0];
 
   async function decide() {
-    if (!current) return;
+    if (!current || outcome === null) return;
     setBusy(true);
     setError(null);
 
@@ -136,7 +158,7 @@ export default function ReviewClient() {
       }
 
       setRationale('');
-      setOutcome('uphold');
+      setOutcome(null);
       await load();
     } finally {
       setBusy(false);
@@ -284,10 +306,10 @@ export default function ReviewClient() {
           type="button"
           className="btn btn-primary"
           style={{ alignSelf: 'flex-start' }}
-          disabled={busy || rationale.trim().length < 10}
+          disabled={busy || outcome === null || rationale.trim().length < 10}
           onClick={decide}
         >
-          {busy ? 'Saving…' : 'Record decision'}
+          {busy ? 'Saving…' : outcome === null ? 'Choose a decision' : 'Record decision'}
         </button>
       </div>
     </div>

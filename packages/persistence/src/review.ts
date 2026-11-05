@@ -81,6 +81,40 @@ export const STATUS_FOR_OUTCOME: Record<ReviewOutcome, ReviewStatus> = {
 
 const MIN_RATIONALE = 10;
 
+/** Finding statuses that put a record in front of a person on their own. */
+const ADVERSE = `('confirmed_finding','requires_review','allegation','disputed')`;
+
+/**
+ * Records queued only because we were unsure they were the customer, where
+ * the customer has since told us.
+ *
+ * The first fulfillment rehearsal timed one engagement: three records
+ * reached the review queue, and two of them had already been answered by the
+ * customer on her own report — she had pressed "This is me" on both — and
+ * were still being shown to a reviewer under the words "we are not certain
+ * this result is about the customer". Two thirds of the review minutes in
+ * that engagement went on a question that was settled before the reviewer
+ * opened it.
+ *
+ * It is not only wasted time. Reviewing is the one operation in this system
+ * that crosses the account boundary (rule 16o), so each of those was a
+ * logged crossing that did not need to happen, and the access log is
+ * supposed to mean something.
+ *
+ * The customer is the authority on whether a result is about them, so their
+ * answer closes that question outright. It closes *only* that question: a
+ * record carrying adverse language stays in the queue however confidently
+ * they claim it, because "yes that is me" is not a judgement about what the
+ * source says.
+ */
+const ONLY_IDENTITY_AND_CUSTOMER_ANSWERED = `
+  EXISTS (
+    SELECT 1 FROM identity_decisions c
+     WHERE c.scan_id = e.scan_id AND c.evidence_id = e.id
+  )
+  AND (e.finding_status IS NULL OR e.finding_status NOT IN ${ADVERSE})
+`;
+
 export class ReviewRepository {
   private readonly db: Db;
 
@@ -160,6 +194,7 @@ export class ReviewRepository {
               SELECT 1 FROM review_decisions d
                WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
             )
+            AND NOT (${ONLY_IDENTITY_AND_CUSTOMER_ANSWERED})
           ORDER BY e.retrieved_at
           LIMIT ?`
       )
@@ -206,7 +241,8 @@ export class ReviewRepository {
             AND NOT EXISTS (
               SELECT 1 FROM review_decisions d
                WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
-            )`
+            )
+            AND NOT (${ONLY_IDENTITY_AND_CUSTOMER_ANSWERED})`
       )
       .get();
     return Number((row as { n: number }).n);
