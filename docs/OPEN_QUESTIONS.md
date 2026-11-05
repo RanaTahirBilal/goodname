@@ -573,3 +573,51 @@ somebody answers the question.
 Still reported to counsel in `COUNSEL_TECHNICAL_APPENDIX.md` §5, as
 closed rather than open — a gap found and fixed in the same week is a more
 useful thing for them to see than a gap that was never there.
+
+---
+
+### OQ-29 — What the first fulfillment rehearsal found — *opened 5 Nov 2026*
+**Blocks:** a first paid engagement. Not the search provider decision.
+
+`docs/FULFILLMENT_REHEARSAL.md` has the full run. Three of its eight
+findings are decisions rather than tidying, so they live here.
+
+**F1. A report cannot be opened twice.** It exists only in the tab that
+produced it: no URL, no list of past audits, no link from the account
+page, which says "Audits stored: 1" and offers only a JSON download. The
+data survives and `/api/scan/<id>` rebuilds it; nothing ever hands the
+customer that id. This is the one item on the critical path that is
+engineering's to fix rather than the owner's to buy, and it is not a
+small screen — it needs a decision about whether a report is a durable
+artifact with an address, and what happens to that address when the
+evidence behind it expires at 180 days (rule 16x already says the page
+must say so rather than render empty).
+
+**F2. The classifier reads a negation as the thing it negates.** "No
+disciplinary actions are recorded against this certificate" was
+classified `negative` / `confirmed_finding` / severity 3, citing the
+phrase it found inside the denial. The review gate held it back from the
+customer, which is what the gate is for — but the gate is a person, and
+"Uphold" is the first option on the screen. The decision is whether to
+handle negation in the classifier, or to treat official-source negatives
+as always requiring a reviewer who is told to read for exactly this.
+
+**F3. `Last, First` is not a name match.** `Okonkwo, Amara` scores 0.10
+and is rejected; `Amara Okonkwo` scores 0.35. State bars, medical boards,
+court records and academic directories publish surname-first almost
+without exception, and those are the sources the score weights most. This
+is the inverse of rule 11: not a false match, a true one discarded. The
+decision is how much corroboration a reversed-order match should need,
+given that making it cheaper makes collisions cheaper too.
+
+F2 and F3 arrived in the same fixture and compound: the record that would
+have cleared her was discarded, and the same record was reported as
+misconduct. The physician scenarios have had less adversarial attention
+than the attorney ones they were modelled on, and the other professions
+should be assumed to be in the same state until someone looks.
+
+**Decide:** whether these are fixed before a first engagement or managed
+around it by hand. Fixing F4 — the customer's own "this is me" not
+clearing a record from the staff queue — is separately worth doing first,
+since it removes two thirds of the review work this engagement generated
+and is a query change rather than a judgement call.
