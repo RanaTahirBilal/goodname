@@ -621,3 +621,60 @@ around it by hand. Fixing F4 — the customer's own "this is me" not
 clearing a record from the staff queue — is separately worth doing first,
 since it removes two thirds of the review work this engagement generated
 and is a query change rather than a judgement call.
+
+**Addendum, same day — the ordering above was wrong.** I had argued F2
+and F3 were contained because the review gate holds unreviewed findings
+back from the customer. The correction, and it is right: the rehearsal
+showed the gate stops an *unapproved* finding reaching the customer. It
+showed nothing about whether a reviewer reliably *notices* a wrong
+classification — and the screen puts **Uphold** first, which makes
+confirming the easiest action available. Containment by a human who is
+being nudged toward agreement is not containment.
+
+So all four are engineering's, under an explicit boundary: *the owner
+decides whether GoodName offers automated audits at all; engineering
+decides whether the implemented audit is safe enough to use inside
+whatever scope is authorised.* Fixing a defect that violates an invariant
+the product already claims is not new product scope.
+
+Three things that change what the fix looks like:
+
+- **No negation keyword patch.** Searching for "no", "not", "without"
+  fails on harder language. The rule to implement instead: no automated
+  adverse finding is `confirmed` without an explicit reviewable basis.
+  Split *possible adverse content* from *confirmed adverse finding*,
+  give ambiguity its own state, and make negations, resolved
+  allegations, quotations and other-person references regression cases.
+  Remove the preselected Uphold; make reject, uncertain and escalate
+  equally reachable.
+- **Do not fix F3 by lowering the threshold.** That trades a false
+  rejection for a false attribution. Normalise names into components and
+  accept the presentation forms (given+family, family-first, middles and
+  initials, titles and suffixes, Unicode and punctuation), while keeping
+  *name compatibility* distinct from *person identity* — a compatible
+  name still needs corroboration for a high-impact record.
+- **A fifth defect, not yet in this list and the more serious one.**
+  There are three versions of the truth: the evidence stored at audit
+  time, the current engine's reading of it, and the report rendered
+  later. A durable report route (F1) exposes it — reopen an old audit
+  after an engine change and the score, findings or risk could differ
+  with no new evidence. Rebuilding on read is rule 16d and it is right
+  for a live scan; it is wrong for a historical one. New engine logic
+  should produce a new versioned assessment, never rewrite the old one.
+  Called out as a more important safeguard than extracting the worker
+  from the web process — which, separately, is not a launch dependency
+  so long as jobs persist before execution, interrupted jobs are
+  identifiable, retry is safe, duplicates cannot double-publish and
+  staff can recover failures. The scheduled *deletion* timer is the part
+  that genuinely cannot live in a process that may sleep or scale to
+  zero.
+
+Proposed milestone, 3–5 working days, then engineering stops again: the
+negation regression and the unsafe Uphold default, surname-first
+normalisation with corroboration tests, the authenticated durable report
+route plus an account-history link, the review queue excluding
+identity-only records the customer already resolved, snapshot and version
+consistency across view/print/export, and one complete repeat of the
+rehearsal — reopening the report in a fresh session, with an
+unauthorised account, against a negated disciplinary statement and a
+surname-first name.
