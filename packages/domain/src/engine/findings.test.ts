@@ -229,6 +229,7 @@ test('a finding links the recommendation that shares its evidence', () => {
       title: 'Earn independent coverage',
       why: 'Two independent pieces of earned coverage.',
       evidenceIds: ['ev-A'],
+      control: 'not_yours',
     },
     {
       id: 'unrelated',
@@ -236,6 +237,7 @@ test('a finding links the recommendation that shares its evidence', () => {
       title: 'Something else',
       why: 'Unconnected.',
       evidenceIds: ['ev-zzz'],
+      control: 'yours',
     },
   ];
 

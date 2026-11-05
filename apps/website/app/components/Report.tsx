@@ -863,17 +863,34 @@ function Recommendations({ items }: { items: Recommendation[] }) {
   const LABEL = { now: 'Do now', soon: 'Do soon', later: 'Later' } as const;
   const PILL = { now: 'pill-danger', soon: 'pill-warning', later: 'pill-neutral' } as const;
 
+  /**
+   * Who decides, said in words rather than carried by a colour.
+   *
+   * The distinction a reader actually wants is not how important something
+   * is — the order already says that — but whether they can start it
+   * today. "Waits on someone else" is the one that changes a plan.
+   */
+  const CONTROL = {
+    yours: 'Yours to do',
+    shared: 'Yours to ask for',
+    not_yours: 'Waits on someone else',
+  } as const;
+
   return (
     <section className="card stack" style={{ ['--gap' as string]: '0' }}>
-      <h2 style={{ fontSize: '1.25rem', marginBottom: 4 }}>What to do next</h2>
+      <h2 className="mark" style={{ fontSize: '1.25rem', marginBottom: 4 }}>
+        What to do next
+      </h2>
       <p className="small" style={{ marginBottom: 6 }}>
-        Ordered by what would change most. Each one names the evidence it came from.
+        Ordered by what would change most, and within that by what you can start without
+        anyone&rsquo;s permission. Each one names the evidence it came from.
       </p>
 
       {items.map((r) => (
         <div key={r.id} style={{ padding: '16px 0', borderTop: '1px solid var(--border)' }}>
           <div className="row" style={{ gap: 10, marginBottom: 6, flexWrap: 'wrap' }}>
             <span className={`pill ${PILL[r.priority]}`}>{LABEL[r.priority]}</span>
+            <span className="pill pill-neutral">{CONTROL[r.control]}</span>
             {r.evidenceIds.length > 0 && (
               <span className="pill pill-neutral">
                 {r.evidenceIds.length} piece{r.evidenceIds.length === 1 ? '' : 's'} of evidence
@@ -882,6 +899,29 @@ function Recommendations({ items }: { items: Recommendation[] }) {
           </div>
           <h3 style={{ marginBottom: 4 }}>{r.title}</h3>
           <p className="small">{r.why}</p>
+
+          {/**
+           * The answer to "fine, but how".
+           *
+           * Set apart from `why` because they are different kinds of
+           * sentence: `why` is about this customer's results, and this is
+           * general practice that reads the same for everybody. Running
+           * them together would make the second look like a finding about
+           * the reader.
+           */}
+          {r.how && (
+            <p
+              className="small"
+              style={{
+                marginTop: 'var(--s-3)',
+                paddingLeft: 'var(--s-4)',
+                borderLeft: '2px solid var(--border)',
+              }}
+            >
+              {r.how}
+            </p>
+          )}
+
           {r.caveat && (
             <p className="small" style={{ marginTop: 6, color: 'var(--warning)' }}>
               {r.caveat}
