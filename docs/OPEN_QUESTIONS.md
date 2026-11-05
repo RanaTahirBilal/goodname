@@ -267,3 +267,91 @@ them on environment support. See PD-001.
 
 ### OQ-R2 — Can the first slice run without Supabase? — *resolved 2026-10-29*
 Yes. Domain logic is pure and persistence sits behind an interface. See PD-003.
+
+### OQ-21 — Scoring a presence we were paid to build
+**Blocks:** selling any managed service alongside the audit.
+
+The audit scores someone's online presence. The proposed service improves
+it. If the service publishes pages for a customer and the audit then counts
+them, the company is marking its own homework and selling the mark.
+
+The engine already refuses the crudest version of this: `dedupe.ts` clusters
+syndicated copies and risk counts clusters rather than documents, so one
+release reprinted twenty times is one story. That handles corroboration. It
+does not handle authorship, which is the part that matters here — a cluster
+of one is still a cluster, and `sourceType: 'press'` says nothing about who
+wrote it or who paid for its distribution.
+
+**The distinction is not who pressed publish.** It is who controlled the
+content, whether anybody exercised editorial judgement, and what was
+actually observed in a search result. A piece we drafted that an editor
+accepted is not the same as a release we syndicated to twenty sites, and
+neither is the same as the customer's own site.
+
+**Proposed, not implemented.** Evidence gains provenance beyond
+`sourceType`: who owns it, who created it, how it was distributed (owned,
+paid, syndicated, editorial), whether editorial independence was verified,
+and which engagement produced it. Then three rules:
+
+  - **Publishing is not discoverability.** A live page is not an indexed
+    page and an indexed page is not a visible one. Discoverability counts
+    what was observed in results, never the publishing ledger.
+  - **Source authority cannot be bought through our own pipeline.**
+    Anything we created or distributed is excluded from it, whatever it
+    looks like.
+  - **The intervention is never hidden.** A customer's own report
+    distinguishes organic third-party results from material we placed.
+
+A fourth, which is the one that stops the score flattering us: **keep the
+pre-engagement baseline and the methodology version with it.** Otherwise a
+later change to weights or classification is indistinguishable from work
+having been done.
+
+**Assumed meanwhile:** no managed service is sold, so nothing is
+mis-scored. This has to be built before the first engagement, not after.
+
+### OQ-22 — Is a paid vanity placement a buying signal?
+**Blocks:** committing to an acquisition motion.
+
+Somebody who has paid for a Who's Who or similar placement has
+demonstrated they will spend money to look better online, which makes them
+a plausible first customer and an easy one to find.
+
+The counter-argument is worth recording rather than dismissing: a vanity
+placement may be a one-off purchase made on feeling, or one the buyer was
+disappointed by, and neither implies an appetite for ongoing management.
+Prior spending establishes willingness to pay for recognition, not for this.
+
+**To settle empirically, not by argument:** three groups of ten — recent
+paid placement, same profession with no known placement, and placement plus
+an observable presence problem — with the offer held constant. The measure
+is qualified meetings and deposits, not replies.
+
+**Assumed meanwhile:** a prospecting signal, not a validated segment, and
+never the content of the approach. Opening by implying we know what
+somebody paid for, or that it was wasted, is both poor selling and exactly
+the behaviour this product is supposed to be the opposite of.
+
+### OQ-23 — What the service costs, and what it may claim
+**Blocks:** quoting anybody.
+
+No price exists. The working hypotheses from the strategy discussion are a
+fixed-scope engagement in the region of a four-figure sum, with an optional
+monitoring retainer after it — both explicitly test prices to find out what
+somebody will actually buy, not a rate card.
+
+Two decisions are more important than the number:
+
+**Not per asset.** Charging per published item creates a reason to publish
+things that add nothing, which is how this category earned its reputation.
+
+**Not a recurring automated scan.** A retainer has to carry enough review
+and accountability to be worth renewing; otherwise it is a subscription to
+a cron job.
+
+**Unknown until measured:** actual delivery hours including revisions,
+approval delays, publishing failures and support. The margin arithmetic is
+guesswork until three engagements have been delivered and timed.
+
+**Assumed meanwhile:** nothing is quoted and no price appears anywhere in
+the product.
