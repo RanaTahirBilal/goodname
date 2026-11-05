@@ -18,7 +18,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { PresenceScore, RiskAssessment } from '@rep/domain';
-import { reconcileAssessment } from './report.ts';
+import { latestReassessment, reconcileAssessment } from './report.ts';
 import type { AccountScope } from './repository.ts';
 
 const SCOPE: AccountScope = { accountId: 'acct_1', actor: 'customer' };
@@ -164,4 +164,58 @@ test('a scan with no history is left alone', () => {
     null
   );
   assert.equal(repo.saved.length, 0);
+});
+
+/* ------------------------------------------- the notice, after the event */
+
+/**
+ * A fact about the report, not about the request that noticed it.
+ *
+ * The second rehearsal caught this live. `reconcileAssessment` returns what
+ * it just recorded, the page rendered that, and the notice vanished on the
+ * next load — because by then nothing had changed and the reconciler
+ * correctly returned null. React mounting effects twice in development made
+ * it disappear before it could be read; in production it would have survived
+ * exactly one view, which is worse, because that view might not be the
+ * customer's.
+ */
+test('the notice survives being looked at again', () => {
+  const history = [
+    row({ score: 57, methodologyVersion: '3.1.0', computedAt: '2026-11-05T20:00:00.000Z',
+      reason: 'methodology 3.0.0-provisional → 3.1.0' }),
+    row({ score: 61, methodologyVersion: '3.0.0-provisional' }),
+  ];
+
+  const first = latestReassessment(history);
+  const second = latestReassessment(history);
+
+  assert.ok(first, 'the reassessment is invisible to a page that just loads');
+  assert.deepEqual(first, second, 'reading it twice gives different answers');
+  assert.equal(first!.from, '3.0.0-provisional');
+  assert.equal(first!.to, '3.1.0');
+  assert.equal(first!.previousScore, 61);
+});
+
+test('an ordinary recomputation is not announced', () => {
+  // Only a methodology change moves a number with nobody doing anything. A
+  // report that announces every recomputation teaches the reader to skip the
+  // word, and then the one that matters is skipped too.
+  const history = [
+    row({ score: 55, reason: 'recomputed from the evidence as it now stands' }),
+    row({ score: 61 }),
+  ];
+
+  assert.equal(latestReassessment(history), null);
+});
+
+test('a customer decision is not a reassessment', () => {
+  const history = [row({ score: 57, reason: 'customer confirmed ev-002' }), row({ score: 61 })];
+
+  assert.equal(latestReassessment(history), null);
+});
+
+test('the first assessment of a report announces nothing', () => {
+  // Nothing to have changed from.
+  assert.equal(latestReassessment([row({ reason: 'initial scan' })]), null);
+  assert.equal(latestReassessment([]), null);
 });

@@ -194,3 +194,42 @@ export function reconcileAssessment(
     reason,
   };
 }
+
+/**
+ * The reassessment a report should still be declaring, read from history.
+ *
+ * `reconcileAssessment` returns what it just did, which is the obvious thing
+ * for a page to render and the wrong one. The second rehearsal caught it: the
+ * notice appeared on the request that recorded the change and vanished on the
+ * next page load, because by then nothing had changed and the reconciler
+ * correctly returned null. In development React mounts effects twice, so the
+ * notice was gone before anybody saw it — and in production it would have
+ * lasted exactly one view, which is worse, because the one view might not be
+ * the customer's.
+ *
+ * A fact about the report is not a fact about the request that noticed it.
+ * The snapshot history is append-only and durable, so the notice is derived
+ * from that: if the newest assessment came from a methodology change, the
+ * report says so for as long as that remains the newest assessment.
+ */
+export function latestReassessment(
+  history: Array<{
+    score: number | null;
+    methodologyVersion: string;
+    computedAt: string;
+    reason: string;
+  }>
+): Reassessment | null {
+  const [current, previous] = history;
+  if (!current || !previous) return null;
+  if (!current.reason.startsWith('methodology ')) return null;
+
+  return {
+    from: previous.methodologyVersion,
+    to: current.methodologyVersion,
+    previousScore: previous.score,
+    currentScore: current.score,
+    previousAt: previous.computedAt,
+    reason: current.reason,
+  };
+}

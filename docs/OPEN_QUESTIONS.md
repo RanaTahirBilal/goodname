@@ -576,7 +576,7 @@ useful thing for them to see than a gap that was never there.
 
 ---
 
-### OQ-29 — What the first fulfillment rehearsal found — *opened 5 Nov 2026*
+### OQ-29 — What the first fulfillment rehearsal found — *F1–F4 closed 5 Nov 2026*
 **Blocks:** a first paid engagement. Not the search provider decision.
 
 `docs/FULFILLMENT_REHEARSAL.md` has the full run. Three of its eight
@@ -678,3 +678,39 @@ consistency across view/print/export, and one complete repeat of the
 rehearsal — reopening the report in a fresh session, with an
 unauthorised account, against a negated disciplinary statement and a
 surname-first name.
+
+**Closed, and verified by rehearsal 02** (`docs/FULFILLMENT_REHEARSAL.md`).
+
+F1 is `/report/[id]`, listed on the account page. The id is not a
+capability: a different signed-in account gets the same 404 a nonexistent
+scan gets. F2 is structural rather than a negation patch — nothing in the
+classifier emits `confirmed_finding` any more, and promotion needs either
+corroboration across independent domains or a named reviewer upholding it
+in writing. F3 takes names apart into components and accepts both written
+orders at the same weight, without lowering what a name alone is worth.
+F4 is a query: a customer's answer closes the identity question and only
+that question.
+
+The screen changed with them. Nothing is preselected, the button says
+"Choose a decision" until one is made, and Uphold is last rather than
+first — upholding is now the act that creates a finding about a person,
+so it should be the most deliberate thing on the page.
+
+**The fifth defect is closed too, and it is the one worth remembering.**
+Reopening a report after an engine change moved the number under the
+original date. Recomputation stays (rule 16d is right for a live scan);
+divergence is now an event in the append-only history, with a reason
+naming what moved and a line on the page. Rehearsal 02 checked it by
+actually bumping the methodology version — and found that the notice
+appeared once and vanished, because the page was rendering what the
+reconciler had just done rather than what was true of the report. A fact
+about the report is not a fact about the request that noticed it.
+
+**Still open, and deliberately.** The audit form opens pre-filled with the
+demo attorney's details for whoever is signed in; that is the one screen
+where typing the wrong person's name is the failure the product exists to
+prevent. And the cost of F2: a genuine disbarment no longer raises the
+risk level until a person has read it. The same branch produced both
+outcomes and there is no version of it that is confident about the real
+one and careful about the misread one, so the trade is the owner's to
+revisit, not engineering's.

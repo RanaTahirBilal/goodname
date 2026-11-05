@@ -7,7 +7,7 @@
  * caller to reach for.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { rebuildReport, reconcileAssessment } from '@rep/persistence';
+import { latestReassessment, rebuildReport, reconcileAssessment } from '@rep/persistence';
 import { store } from '../../../../src/server/db.ts';
 import { currentScope } from '../../../../src/server/session.ts';
 
@@ -79,7 +79,16 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
    * number with no new evidence and nothing to show for it. This turns that
    * into an event: a new snapshot with a reason, and a line on the page.
    */
-  const reassessed = reconcileAssessment(repo, scope, scan.id, rebuilt);
+  reconcileAssessment(repo, scope, scan.id, rebuilt);
+
+  /**
+   * Read back from the history rather than using what the reconciler just
+   * returned. The notice belongs to the report, not to the request that
+   * happened to record the change — otherwise it shows once and is gone,
+   * quite possibly before the customer loads the page.
+   */
+  const history = repo.presenceHistory(scope, scan.id);
+  const reassessed = latestReassessment(history);
 
   return NextResponse.json(
     {
@@ -101,7 +110,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       },
       identity: scan.identity,
       decisionCount: rebuilt.decisionCount,
-      presenceHistory: repo.presenceHistory(scope, scan.id),
+      presenceHistory: history,
       evidence: rebuilt.evidence,
       awaitingConfirmation: rebuilt.awaitingConfirmation,
       presence: rebuilt.presence,

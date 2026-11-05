@@ -382,22 +382,49 @@ export class ReviewRepository {
 }
 
 /** Says, in words, why a record is in the queue. */
+/**
+ * Why this record is in front of a reviewer, worst reason first.
+ *
+ * Identity used to be tested before everything else, so a record carrying
+ * adverse language and an unsure identity was introduced as "we are not
+ * certain this result is about the customer". The second rehearsal caught
+ * it: a board certification misread as a disciplinary finding was handed to
+ * a reviewer under a heading about name matching, which is the question that
+ * matters less and the one that invites the quicker answer.
+ *
+ * A reviewer is told the most consequential reason they are looking at
+ * something, and the identity doubt is added to it rather than replacing it.
+ */
 function explainFlag(findingStatus: string | null, identityStatus: string): string {
-  if (identityStatus === 'uncertain' || identityStatus === 'probable') {
-    return 'We are not certain this result is about the customer.';
+  const unsure = identityStatus === 'uncertain' || identityStatus === 'probable';
+  const maybe = unsure ? ' We are also not certain it is about this customer.' : '';
+
+  if (findingStatus === 'requires_review') {
+    return (
+      'Adverse language was detected and nothing has established what it means. ' +
+      'Read the source before deciding: upholding this tells the customer it is settled.' +
+      maybe
+    );
   }
   if (findingStatus === 'confirmed_finding') {
-    return 'Classified as an established finding, which is the most damaging thing we can say.';
+    return (
+      'Classified as an established finding, which is the most damaging thing we can say.' +
+      maybe
+    );
+  }
+  if (unsure && !findingStatus) {
+    return 'We are not certain this result is about the customer.';
   }
   if (findingStatus === 'allegation') {
-    return 'An unsettled claim. Whether it is reported as one matters.';
+    return 'An unsettled claim. Whether it is reported as one matters.' + maybe;
   }
   if (findingStatus === 'disputed') {
-    return 'Sources contradict each other.';
+    return 'Sources contradict each other.' + maybe;
   }
   if (findingStatus === 'corrected' || findingStatus === 'retracted') {
-    return 'The source withdrew or corrected this.';
+    return 'The source withdrew or corrected this.' + maybe;
   }
+  if (unsure) return 'We are not certain this result is about the customer.';
   return 'Flagged for a human to look at.';
 }
 

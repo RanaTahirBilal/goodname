@@ -267,3 +267,154 @@ code out of `email_outbox`, work the queue at `/review`, and export from
 Re-run this whole rehearsal after any change to classification, identity
 matching or the review queue, and append the result as rehearsal 02 rather
 than editing this one. The value is in the comparison.
+
+---
+
+# Fulfillment rehearsal 02
+
+Same engagement, same subject, same operator. 5 November 2026, against
+`6fc16c0` plus the milestone work. Run to check the six acceptance items
+from the correctness-and-delivery milestone, not to re-measure the clock.
+
+**4m 38s**, against 5m 18s. The number is not the point and is not
+comparable: the operator was faster for having done it before, and one leg
+genuinely shrank because there was two thirds less review work to do.
+
+---
+
+## The six items
+
+| # | Item | Result |
+|---|---|---|
+| 1 | A negated disciplinary statement does not become a finding | **Passed** |
+| 2 | Surname-first names are recognised | **Passed** |
+| 3 | No unsafe default on the review screen | **Passed** |
+| 4 | Records the customer resolved leave the queue | **Passed** |
+| 5 | The report reopens, authenticated, and cannot change silently | **Passed**, after a defect found and fixed mid-rehearsal |
+| 6 | One complete repeat of the rehearsal | this document |
+
+### 1 and 2 — the board record, in the database after a live run
+
+```
+American Board of Internal Medicine
+  identity_status   rejected  →  uncertain
+  identity_confidence  0.10   →  0.35
+  identity_signals  "Only your surname appears, which is weak on its own."
+                 →  "Your name appears surname first, as registries write it."
+  finding_status    confirmed_finding  →  requires_review
+```
+
+The official record about her is no longer somebody else, and is no longer
+a disciplinary finding. After she confirmed it, **identity read 4 of 4**
+rather than 3 of 4.
+
+The reviewer screen now carries the classifier's own doubt:
+
+> Classifier said: An official record where "disciplinary action" appears
+> next to "no", which may reverse its meaning.
+
+And the risk section said, with nothing yet read:
+
+> **None found.** Nothing is established. 1 result mentions something
+> adverse and has not been read by a person yet, so it is not counted here
+> either way.
+
+That sentence is the one that did not exist in rehearsal 01, where "Risk:
+none" would have been indistinguishable from a clean bill.
+
+**One thing the presence score did that is worth stating:** confirming the
+board record moved it from 61 to **57**. Attributing a `negative`
+classification to the customer lowers the number. It is the right
+direction and it is a slightly odd outcome of a correctness fix, and it is
+recorded here rather than smoothed over.
+
+### 3 — the review screen
+
+Nothing preselected (`anyRadioChecked: false`), the button reads **"Choose
+a decision"** and is disabled until one is made. Uphold is last, and says
+what it does: "You have read the source and it establishes this. The
+customer will be told it is settled."
+
+### 4 — review work
+
+**The queue held one record, not three.** Healthgrades and Doximity left
+when the customer answered; the board record stayed, because she claimed
+it and claiming it is not a judgement about what the source says.
+
+One decision, recorded with a written reason. Access log: 7 `listed`, 1
+`decided:reject_not_harm`.
+
+### 5 — the durable report, and a defect found in the running system
+
+The route behaved:
+
+| Who | Result |
+|---|---|
+| No session at all | `401`, and the page says to sign in |
+| **A different signed-in account** | `404` — identical to a scan that does not exist |
+| That account's own page | `scans: 0, reports: []` |
+| The owner, in a fresh session after signing out and back in | The report, 57, identity 4 of 4 |
+
+Then the methodology-change guard, checked by actually changing it:
+`PRESENCE_METHODOLOGY_VERSION` bumped to `3.1.0-rehearsal`, the report
+reopened, and the snapshot history gained a row reading
+`methodology 3.0.0-provisional → 3.1.0-rehearsal`. The version was
+reverted afterwards.
+
+**The notice did not appear.** The mechanism worked, the page said
+nothing.
+
+The page was rendering what `reconcileAssessment` returned, which is what
+*that request* recorded. React mounts effects twice in development, so the
+second fetch found nothing to reconcile, correctly returned null, and
+overwrote the notice before it could be read. In production it would have
+survived exactly one page view — worse, because that view might not be the
+customer's.
+
+A fact about the report is not a fact about the request that noticed it.
+The notice is now derived from the append-only snapshot history, so it
+persists for as long as the reassessment is the newest one. Verified by
+loading the page twice.
+
+That is the one defect this rehearsal found, and it was in the work the
+rehearsal was convened to check.
+
+---
+
+## What is still true from rehearsal 01
+
+- **No mail provider.** The customer's code is on screen under an honest
+  notice; the reviewer's came out of the `email_outbox` table with a shell
+  command. Every staff sign-in is still an operator with database access.
+- **The audit form still opens pre-filled with Jensen Adoni**, the demo
+  attorney, for a signed-in physician (F7). Unfixed: it was not in the
+  milestone, and it is the one screen where typing the wrong person's name
+  is the failure the product exists to prevent.
+- **"Answering moves this figure"** (F8) — unfixed, though less wrong
+  than it was: confirming the board record did move identity from 3 of 4
+  to 4 of 4 this time, because that record was `uncertain` rather than
+  `probable`.
+- **No backups. Single-process worker.** Both unchanged and both written
+  down in `COUNSEL_TECHNICAL_APPENDIX.md`.
+
+## Human review minutes per engagement
+
+Rehearsal 01: three records queued, two of which did not need a human.
+Rehearsal 02: **one record queued, and it was the one that needed
+reading.**
+
+That is the metric moving for the right reason — not a faster reviewer, a
+queue that stopped asking settled questions. The reading itself is still
+unmeasured and still dominant: the only reason the board record was
+decided correctly is that somebody read the sentence rather than the
+phrase the classifier cited.
+
+## What this does not establish
+
+The engine is more careful than it was. Nothing here is evidence that it
+is right about a real person: every result is still fixture data, no live
+provider is connected, and `docs/OPEN_QUESTIONS.md` OQ-29 lists what the
+first rehearsal left open. A genuine disbarment now also waits for a human
+— the same change that stopped a clean record being reported as
+misconduct. That trade was taken deliberately and it is the owner's to
+revisit, not engineering's.
