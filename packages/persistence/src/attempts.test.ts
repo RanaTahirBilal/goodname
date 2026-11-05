@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { open } from './db.ts';
-import { SqliteAttemptStore } from './attempts.ts';
+import { SqliteAttemptStore, requesterIdFor } from './attempts.ts';
 import { gate, SELF_AUDIT_ATTESTATION, DEFAULT_POLICY, type AuditPurpose } from '@rep/domain';
 
 const purpose = (over: Partial<AuditPurpose> = {}): AuditPurpose => ({
@@ -132,17 +132,32 @@ test('name variants count as one subject', async () => {
   assert.equal(again.allowed, true, 'typing your own name differently is not enumeration');
 });
 
-test('pruning removes attempts past retention', async () => {
+/**
+ * The attempt store deliberately has no `prune` of its own.
+ *
+ * It used to, with a test very like the one that was here, and nothing in
+ * the application called it — so the table holding a person's typed name was
+ * the one table in the system with no clock on it (OQ-28). A passing test on
+ * an unreachable method is worse than no method: it reads as a retention
+ * policy from the outside.
+ *
+ * The sweep now lives in `enforceRetention`, and `retention.test.ts` holds
+ * the test for it. This asserts the method has not come back, because the
+ * obvious way to reintroduce the bug is to add it again for convenience.
+ */
+test('the store exposes no pruning of its own', () => {
   const db = open({ location: ':memory:' });
-  const store = new SqliteAttemptStore(db);
+  const store = new SqliteAttemptStore(db) as unknown as Record<string, unknown>;
 
-  await store.record(attempt('Jensen Adoni', '2026-09-01T10:00:00.000Z'));
-  await store.record(attempt('Jensen Adoni', '2026-10-29T10:00:00.000Z'));
+  assert.equal(
+    typeof store.prune,
+    'undefined',
+    'attempts have a second retention path; the one in enforceRetention is no longer the whole story'
+  );
+});
 
-  // These rows hold a name someone typed. Once they can no longer affect a
-  // rate-limit decision there is no reason to keep them.
-  const removed = store.prune('2026-10-01T00:00:00.000Z');
-
-  assert.equal(removed, 1);
-  assert.equal((await store.recent('req-1', '2026-01-01T00:00:00.000Z')).length, 1);
+test('the requester id is derived in one place', () => {
+  // The audit route writes rows under this, and deleteAccount removes them
+  // by it. They are the same function or deletion silently misses.
+  assert.equal(requesterIdFor('acct_123'), 'account:acct_123');
 });

@@ -10,6 +10,7 @@ import { ReviewRepository } from './review.ts';
 import { StaffAuthRepository } from './staffAuth.ts';
 import { AuthRepository } from './auth.ts';
 import { JobQueue } from './jobs.ts';
+import { SqliteAttemptStore, requesterIdFor } from './attempts.ts';
 import { rebuildReport } from './report.ts';
 import {
   enforceRetention,
@@ -425,4 +426,142 @@ test('a policy with shorter periods expires more', async () => {
 
   const strict: RetentionPolicy = { ...DEFAULT_RETENTION, evidenceDays: 7 };
   assert.equal(retentionPreview(db, strict, NOW).scansExpiring, 1);
+});
+
+/* ------------------------------------------------------------- OQ-28 */
+
+/**
+ * Rate-limit attempts.
+ *
+ * These rows hold a name somebody typed, and until this was wired in they
+ * were the only such rows in the system with nothing ageing them out. The
+ * store had a `prune()` with a passing test and no caller, which is the
+ * failure worth naming: the capability existed, it was tested, and it had
+ * never once run.
+ *
+ * So the test that matters is not "does the delete work" — it is "does the
+ * sweep that actually runs reach this table".
+ */
+test('the hourly sweep ages out rate-limit attempts', async () => {
+  const db = open({ location: ':memory:' });
+  const store = new SqliteAttemptStore(db);
+
+  const at = (iso: string) => ({
+    requesterId: 'account:acct_1',
+    subjectName: 'Jensen Adoni',
+    purpose: PURPOSE,
+    at: iso,
+  });
+
+  await store.record(at('2026-06-01T10:00:00.000Z'));
+  await store.record(at('2026-10-29T10:00:00.000Z'));
+
+  // The default pass, not a bespoke policy: the question is whether the job
+  // the server runs on its own clock covers this table.
+  const result = enforceRetention(db, DEFAULT_RETENTION, '2026-11-05T00:00:00.000Z');
+
+  assert.equal(result.attemptsDeleted, 1, 'the sweep did not reach audit_attempts');
+
+  const left = await store.recent('account:acct_1', '2026-01-01T00:00:00.000Z');
+  assert.equal(left.length, 1);
+  assert.equal(left[0]!.at, '2026-10-29T10:00:00.000Z', 'the wrong row went');
+});
+
+test('an attempt inside the window is kept', () => {
+  // Retention never deletes to save space. A row the gate could still need
+  // stays, and 24 hours of rate-limiting is well inside 30 days.
+  const db = open({ location: ':memory:' });
+  db.prepare(
+    `INSERT INTO audit_attempts (id, requester_id, subject_key, subject_name, purpose, attempted_at)
+     VALUES ('att_1', 'account:acct_1', 'jensen adoni', 'Jensen Adoni', '{}', ?)`
+  ).run('2026-11-04T10:00:00.000Z');
+
+  const result = enforceRetention(db, DEFAULT_RETENTION, '2026-11-05T00:00:00.000Z');
+
+  assert.equal(result.attemptsDeleted, 0);
+});
+
+test('deleting an account takes its attempts with it', async () => {
+  /**
+   * `audit_attempts` has no `account_id`, so the deletion loop over
+   * ACCOUNT_OWNED_TABLES cannot reach it and nothing failed to say so. This
+   * is the regression test for the silence, not for the delete.
+   */
+  const db = open({ location: ':memory:' });
+  const repo = new ScanRepository(db);
+  const store = new SqliteAttemptStore(db);
+
+  const mine = repo.createAccount('jensen@example.test');
+  const theirs = repo.createAccount('okonkwo@example.test');
+
+  await store.record({
+    requesterId: requesterIdFor(mine.id),
+    subjectName: 'Jensen Adoni',
+    purpose: PURPOSE,
+    at: '2026-11-04T10:00:00.000Z',
+  });
+  await store.record({
+    requesterId: requesterIdFor(theirs.id),
+    subjectName: 'Ada Okonkwo',
+    purpose: PURPOSE,
+    at: '2026-11-04T10:00:00.000Z',
+  });
+
+  const counts = repo.deleteAccount({ accountId: mine.id, actor: 'customer' });
+
+  assert.equal(counts.audit_attempts, 1, 'the deletion did not count the attempt rows');
+
+  const left = db.prepare('SELECT requester_id, subject_name FROM audit_attempts').all() as Array<{
+    requester_id: string;
+    subject_name: string;
+  }>;
+
+  assert.equal(left.length, 1, "a deleted customer's typed name is still in audit_attempts");
+  assert.equal(left[0]!.requester_id, requesterIdFor(theirs.id), 'the wrong account was cleared');
+});
+
+test('no name outlives its account in any table', () => {
+  /**
+   * The general form of the bug, rather than the instance of it.
+   *
+   * OQ-28 was not "we forgot a DELETE". It was that one table held personal
+   * data and was reachable by neither the deletion loop nor the retention
+   * sweep, and no test asked the question in a way that would have noticed.
+   * This asks it: every table naming a person is covered by one or the other.
+   */
+  const covered = new Set<string>([
+    ...ACCOUNT_OWNED_TABLES,
+    // Cleared by email or by requester id inside deleteAccount.
+    'sign_in_tokens',
+    'audit_attempts',
+    // Anonymised on deletion, deliberately kept for accountability.
+    'review_access_log',
+    // Swept on the retention clock; none is account-scoped.
+    'email_outbox',
+    'staff_sessions',
+    'staff_sign_in_tokens',
+    // Holds no personal data by construction.
+    'deletion_log',
+    'accounts',
+    // Staff, created and removed out of band.
+    'staff',
+    // Bookkeeping for the migration runner.
+    'schema_migrations',
+  ]);
+
+  const db = open({ location: ':memory:' });
+  const tables = (
+    db
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+      .all() as Array<{ name: string }>
+  ).map((t) => t.name);
+
+  const uncovered = tables.filter((t) => !covered.has(t));
+
+  assert.deepEqual(
+    uncovered,
+    [],
+    `${uncovered.join(', ')}: a table reachable by neither deletion nor retention. ` +
+      'If it holds no personal data, add it to the list above with the reason.'
+  );
 });

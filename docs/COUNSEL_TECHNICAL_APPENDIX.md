@@ -215,19 +215,25 @@ against a requester id. Two properties of it matter:
 - **A refusal records nothing.** The attempt is written only after every check
   passes, so a request we turned down leaves no row naming that person. A
   blocked audit costs nothing and tells us nothing we then have to hold.
-- **The table is not scoped to an account, and nothing ages it out.** It is
-  keyed on a requester id, so it is the one place a name sits without an
-  account owning it: it is **not covered by the account-deletion sweep**, and
-  although the store has a `prune()` method with a test, **nothing in the
-  application calls it.** The retention sweep does not touch the table. A
-  customer who deletes their account therefore leaves their name here. The row
-  also stores the purpose blob, which carries the attestation text and time.
+- **The table is keyed on a requester id, not an account.** It has to be: its
+  job is to notice one requester working through a list of different names,
+  which is not a question that can be asked from inside a single account. The
+  row also stores the purpose blob, which carries the attestation text and
+  time.
 
-  Today the only names in it are those of customers auditing themselves, at
-  most two per requester, and the counting is done on a normalised key rather
-  than the typed name. **This is the one retention gap we know about and have
-  not closed**, and we would rather have it in front of you than tidied away
-  before you saw it. It is recorded as `OQ-28`.
+  **This was a gap until 5 November 2026, and we would rather you saw it than
+  not.** Because the table has no `account_id`, the deletion loop could not
+  reach it, and the retention sweep did not cover it. The store had a
+  `prune()` method with a passing test and no caller anywhere in the
+  application — which reads from the outside exactly like a retention policy.
+  A customer who deleted their account left their name here indefinitely.
+
+  **Now:** attempts expire after **30 days** on the same hourly sweep as
+  everything else, `deleteAccount` removes them by requester id, and one
+  shared definition of that id is used by the route that writes them and the
+  deletion that removes them. A test asserts the general form — every table in
+  the schema is covered by deletion or by retention, or is listed with the
+  reason it holds no personal data. Recorded as `OQ-28`.
 
 `packages/domain/src/safeguards.ts`, `packages/persistence/src/attempts.ts`,
 `apps/website/app/api/audit/route.ts`.
@@ -301,8 +307,8 @@ and never returns is exactly the person whose purge must still run.
 | Expired/revoked sessions | 30 days | `retention.ts` |
 | Consumed or expired sign-in codes | deleted on the next sweep | `retention.ts` |
 | Email outbox | 30 days | `retention.ts` |
+| Rate-limit attempts | 30 days | `retention.ts` |
 | Deletion log | **indefinitely** (no personal data) | not swept |
-| `audit_attempts` | **never — a known gap**, see §5 | not swept |
 
 Two design decisions a reviewer should weigh:
 
@@ -320,6 +326,68 @@ is not. A snapshot holds a number, a coverage fraction and a methodology
 version. Whether that split is defensible is question 2 in the covering letter.
 
 `packages/persistence/src/retention.ts`.
+
+---
+
+## 7a. Deletion
+
+Distinct from retention, and deliberately not folded into it: retention ages
+out data we are allowed to hold, deletion destroys data we were asked to
+destroy.
+
+**The flow.** A customer requests deletion in the product. The account is
+scheduled for purge **30 days** later and is cancellable throughout that
+window. The purge runs on the same hourly sweep, started because the server
+started — the person who asks to be deleted and never comes back is exactly
+the person whose purge must still run, and an earlier version that started the
+worker on the first audit meant it never did.
+
+**Requesting twice does not restart the clock.**
+
+**A pending deletion does not set `deleted_at`.** The unique email index is
+partial on that column, so marking the account deleted would free the address
+immediately and a cancellation inside the grace period would then collide. A
+pending deletion is a live account that has asked to stop.
+
+**The purge is the hard deletion, not a flag.** It routes through
+`deleteAccount`, so the tests for hard deletion are also the tests for what the
+grace period ends in. Each account purges in its own transaction; one that
+throws is left due rather than silently marked done.
+
+**What `deleteAccount` removes**, in one transaction: identity decisions,
+presence and risk snapshots, review decisions, jobs (their payload holds the
+name, employer and city we searched for), evidence, scans, professional
+identities, sessions, audit events, sign-in codes for the address, rate-limit
+attempts for the requester, and the account row.
+
+**Two things survive, each for a stated reason.**
+
+- **The reviewer access log is anonymised, not deleted.** It records that a
+  named member of staff read a customer's evidence, which is the accountability
+  for the one operation crossing the account boundary. Destroying it with the
+  evidence would erase the record of who looked at what at the moment that
+  record matters most. The account id becomes a one-way reference: who read how
+  much, and when, survives; whose it was does not. **Whether that exception is
+  defensible is question 2 in the covering letter.**
+- **The deletion log**, holding a one-way account reference, row counts and a
+  timestamp. No personal data, and it exists to show a deletion happened.
+
+**The failure mode this has already produced, twice.** Every table with an
+`account_id` must be listed in `ACCOUNT_OWNED_TABLES`. A missing one is not a
+leftover row: the foreign key refuses, the transaction rolls back, and the
+deletion request fails with *nothing* removed. `review_decisions` and `jobs`
+were each missing once, and in each case deletion was broken for every account
+that had used the feature. A test now asserts the general form — every table in
+the schema is reached by deletion or by retention, or is listed with the reason
+it holds no personal data.
+
+**Backups.** None exist (§3). There is no copy of a purged row anywhere,
+because there is no copy of anything anywhere. This is a gap to close before
+real data, not a privacy property, and the backup policy chosen later will need
+a deletion story of its own.
+
+`packages/persistence/src/repository.ts` → `requestDeletion`,
+`cancelDeletion`, `deleteAccount`, `purgeDueAccounts`.
 
 ---
 

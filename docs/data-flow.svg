@@ -70,7 +70,7 @@
   <text class="tb" x="988" y="150">audit_attempts</text>
   <text class="s" x="988" y="170">Requester + name,</text>
   <text class="s" x="988" y="187">for enumeration</text>
-  <text class="s" x="988" y="204">detection only</text>
+  <text class="s" x="988" y="204">detection · 30 days</text>
 
   <path class="line" d="M 220 168 L 266 168"/>
   <path class="lineR" d="M 362 210 L 362 242"/>
@@ -171,7 +171,7 @@
   <rect class="box" x="40" y="742" width="330" height="72" rx="3"/>
   <text class="tb" x="56" y="766">Retention sweep · hourly</text>
   <text class="s" x="56" y="786">Evidence 180d · reviewer decisions 730d</text>
-  <text class="s" x="56" y="803">access log 730d · jobs, sessions, outbox 30d</text>
+  <text class="s" x="56" y="803">access log 730d · jobs, sessions, outbox, attempts 30d</text>
 
   <rect class="box" x="402" y="742" width="330" height="72" rx="3"/>
   <text class="tb" x="418" y="766">Deletion purge · hourly</text>

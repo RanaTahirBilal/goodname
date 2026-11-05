@@ -59,6 +59,8 @@ export interface RetentionPolicy {
   deadSessionDays: number;
   /** Days a sent message is kept in the outbox. In development it holds codes. */
   outboxDays: number;
+  /** Days a rate-limit attempt is kept. It holds a name somebody typed. */
+  attemptDays: number;
 }
 
 export const DEFAULT_RETENTION: RetentionPolicy = {
@@ -82,6 +84,23 @@ export const DEFAULT_RETENTION: RetentionPolicy = {
   finishedJobDays: 30,
   deadSessionDays: 30,
   outboxDays: 30,
+
+  /**
+   * Thirty days, and the reasoning is worth writing down because the obvious
+   * number is wrong in both directions.
+   *
+   * The gate only ever looks back 24 hours, so on the rate limit alone this
+   * could be a day. But an attempt row is also the only record of somebody
+   * working through a list of names, and that pattern is not visible inside
+   * a single day — the request that matters is "has this requester been
+   * doing this all month", asked after somebody noticed.
+   *
+   * Thirty days is the same tier as the other operational rows, long enough
+   * to answer that question, and far short of the 180 days the evidence gets.
+   * The names here were typed by the requester and never searched for, which
+   * is why this is not the evidence tier.
+   */
+  attemptDays: 30,
 };
 
 export interface RetentionResult {
@@ -97,6 +116,7 @@ export interface RetentionResult {
   signInTokensDeleted: number;
   staffSignInTokensDeleted: number;
   outboxDeleted: number;
+  attemptsDeleted: number;
 }
 
 const daysBefore = (iso: string, days: number): string =>
@@ -128,6 +148,7 @@ export function enforceRetention(
       signInTokensDeleted: 0,
       staffSignInTokensDeleted: 0,
       outboxDeleted: 0,
+      attemptsDeleted: 0,
     };
 
     /* ----------------------------------------------------- the evidence */
@@ -228,6 +249,24 @@ export function enforceRetention(
     const outboxCutoff = daysBefore(now, policy.outboxDays);
     result.outboxDeleted = Number(
       db.prepare('DELETE FROM email_outbox WHERE created_at < ?').run(outboxCutoff).changes
+    );
+
+    /**
+     * Rate-limit attempts.
+     *
+     * The last table in the system holding a person's name with no clock on
+     * it, and it got here by having a `prune()` method that nothing called
+     * (OQ-28). It is listed under "operational" rather than with the
+     * evidence because these names were typed by the requester about
+     * themselves, not retrieved from a search about anybody.
+     *
+     * It is the one sweep here not keyed on an account, which is the same
+     * property that kept it out of the deletion path for so long: see
+     * `requesterIdFor`, and `deleteAccount` for how a deletion reaches it.
+     */
+    const attemptCutoff = daysBefore(now, policy.attemptDays);
+    result.attemptsDeleted = Number(
+      db.prepare('DELETE FROM audit_attempts WHERE attempted_at < ?').run(attemptCutoff).changes
     );
 
     return result;

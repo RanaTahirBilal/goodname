@@ -22,6 +22,7 @@ import type {
 import { PERMITTED_USE } from '@rep/domain';
 import { type Db, newId, toJson, fromJson, bool, transaction } from './db.ts';
 import { recordEvent } from './events.ts';
+import { requesterIdFor } from './attempts.ts';
 
 /** Proof that the caller has established which account it is acting for. */
 export interface AccountScope {
@@ -913,6 +914,29 @@ export class ScanRepository {
         .prepare('UPDATE review_access_log SET account_id = ? WHERE account_id = ?')
         .run(hashRef(scope.accountId), scope.accountId);
       counts.review_access_log_anonymised = Number(anonymised.changes);
+
+      /**
+       * Rate-limit attempts are deleted, not anonymised.
+       *
+       * They are not in `ACCOUNT_OWNED_TABLES` because they have no
+       * `account_id` to filter on — the table is keyed on a requester id so
+       * that it can answer a question spanning accounts. That is exactly why
+       * it was missed: the loop above cannot reach it, and nothing failed to
+       * say so (OQ-28).
+       *
+       * Deleted rather than kept, because the access log's argument does not
+       * transfer. That log is a record of what *staff* did to somebody else's
+       * data, and survives them. An attempt row is a counter against a
+       * requester who no longer exists — there is nobody left to rate-limit,
+       * and the name in it is the deleted customer's own.
+       *
+       * No hole opens up by clearing them: a new account gets a new id and a
+       * fresh count whether or not these rows are here.
+       */
+      const attempts = this.db
+        .prepare('DELETE FROM audit_attempts WHERE requester_id = ?')
+        .run(requesterIdFor(scope.accountId));
+      counts.audit_attempts = Number(attempts.changes);
 
       this.db.prepare('DELETE FROM accounts WHERE id = ?').run(scope.accountId);
       counts.accounts = 1;

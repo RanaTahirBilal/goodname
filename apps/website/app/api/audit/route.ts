@@ -23,6 +23,7 @@ import {
   type ProfessionalIdentity,
   type Profession,
 } from '@rep/domain';
+import { requesterIdFor } from '@rep/persistence';
 import { store } from '../../../src/server/db.ts';
 import { startWorker, type AuditJobPayload } from '../../../src/server/worker.ts';
 import { ensureScope } from '../../../src/server/session.ts';
@@ -49,8 +50,12 @@ const str = (v: unknown): string | undefined => {
  *
  * Keyed on the account rather than an IP now that one exists: an IP collides
  * for everyone in a shared office and is spoofable by anyone who cares.
+ *
+ * The derivation itself lives in persistence, beside the table, because
+ * `deleteAccount` has to remove these rows by the same string and the two
+ * disagreeing would leave a deleted customer's name behind in silence.
  */
-const requesterFor = (accountId: string) => `account:${accountId}`;
+const requesterFor = requesterIdFor;
 
 const websiteChecksFor = (identity: ProfessionalIdentity) =>
   identity.websiteUrl

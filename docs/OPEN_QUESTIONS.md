@@ -505,8 +505,8 @@ ask.
 
 ---
 
-### OQ-28 — `audit_attempts` holds names that no account owns — *opened 5 Nov 2026*
-**Blocks:** nothing today. Would block holding real data at any volume.
+### OQ-28 — `audit_attempts` held names that no account owned — *closed 5 Nov 2026*
+**Blocked:** nothing today. Would have blocked holding real data at any volume.
 
 Every other table carrying a person's details is scoped to an account, so
 a deletion request reaches all of it. `audit_attempts` is not. It is keyed
@@ -531,10 +531,45 @@ for: the capability exists, is tested, and nobody can exercise it.
 The row also stores the whole `purpose` blob as JSON, which carries the
 attestation text and timestamp.
 
-**Decide:** the retention period for `audit_attempts` and wire `prune`
-into the hourly sweep — the window that matters to the gate is 24 hours,
-but an abuse review wants longer; whether `subject_name` should be dropped
-in favour of the normalised `subject_key`, which is what the counting
-actually uses; and whether the row should be anonymised rather than
-deleted on account deletion, as the reviewer access log is. Reported to
-counsel in `COUNSEL_TECHNICAL_APPENDIX.md` §5 rather than settled here.
+**Closed, three ways.**
+
+*A period, in the file where every other period lives.* `attemptDays: 30`,
+swept by `enforceRetention` on the hourly clock. Not 1 day, which is all
+the gate looks back: an attempt row is also the only record of somebody
+working through a list, and that question — "has this requester been doing
+this all month" — gets asked after somebody notices, not during. Not the
+evidence tier either, because these names were typed by the requester
+about themselves and never searched for.
+
+*A deletion path.* `deleteAccount` now removes the rows by requester id.
+Deleted rather than anonymised: the access log survives because it records
+what staff did to somebody else's data, and that argument does not carry
+over to a counter against a requester who no longer exists. No hole opens
+— a new account gets a new id and a fresh count regardless.
+
+*One definition of the key.* `requesterIdFor` moved to persistence, beside
+the table, and the audit route imports it. The route wrote rows under one
+string and deletion removes them by another; if those ever drifted, the
+deletion would leave a deleted customer's name behind and nothing would
+fail. Two files agreeing by coincidence is not a guarantee.
+
+**Not done, and deliberately.** `subject_name` stays. The normalised
+`subject_key` is what the counting uses, so the typed name is redundant
+for the gate — but it is what an abuse review reads, and the key is a
+lowercased version of the same name, so dropping the column buys very
+little privacy for a real loss. It now expires at 30 days like the rest of
+the row.
+
+**The general lesson, which is the part worth keeping.** This was not a
+forgotten `DELETE`. It was a table reachable by neither the deletion loop
+(no `account_id`, so `ACCOUNT_OWNED_TABLES` could not see it) nor the
+retention sweep, with a `prune()` method that had a passing test and no
+caller — which reads from the outside exactly like a retention policy.
+`retention.test.ts` now asserts the general form: every table in the
+schema is covered by deletion or by retention, or is named in a list with
+the reason it holds no personal data. A new table fails that test until
+somebody answers the question.
+
+Still reported to counsel in `COUNSEL_TECHNICAL_APPENDIX.md` §5, as
+closed rather than open — a gap found and fixed in the same week is a more
+useful thing for them to see than a gap that was never there.
