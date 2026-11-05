@@ -197,3 +197,37 @@ test('the reversed cover is not reversed on paper', () => {
   assert.match(rule[0], /--ink:\s*#FFFFFF\s*!important/);
   assert.match(rule[0], /--on-ink:\s*#000000\s*!important/);
 });
+
+/**
+ * Whichever view the reader left on screen, paper gets the table.
+ *
+ * The evidence has two renderings: cards, which give one source room to
+ * be read, and a register, which puts identity, type, source and date in
+ * fixed columns so they can be compared. The cards are the better screen
+ * default and the worse printout — several pages of paper, and none of
+ * the column alignment that makes one result comparable with the next.
+ *
+ * The failure this guards is specific and silent: somebody reading in
+ * card view hits print, and the appendix is missing because the hidden
+ * class was written for the screen and nobody told the stylesheet.
+ */
+test('the evidence register prints even when the cards are on screen', () => {
+  assert.match(
+    print,
+    /\.evidence-register\.screen-hidden\s*\{[^}]*display:\s*block\s*!important/,
+    'the register stays hidden on paper when the reading view is selected'
+  );
+  assert.match(
+    print,
+    /\.evidence-cards\s*\{[^}]*display:\s*none\s*!important/,
+    'the cards print as well as the table, which is the same evidence twice'
+  );
+
+  const report = readFileSync(join(here, '..', 'app', 'components', 'Report.tsx'), 'utf8');
+
+  assert.match(
+    report,
+    /className="viewswitch no-print"/,
+    'the view switch prints, and a control nobody can operate is noise on paper'
+  );
+});

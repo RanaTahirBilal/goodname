@@ -749,6 +749,17 @@ input[type='radio'] {
     break-inside: avoid;
   }
 
+  /**
+   * The register prints, the cards do not.
+   *
+   * A page of cards is several pages of paper and loses the column
+   * alignment that makes one result comparable with the next, which is
+   * the only reason to have a table at all. So print ignores whichever
+   * view the reader happened to leave on screen.
+   */
+  .evidence-register.screen-hidden { display: block !important; }
+  .evidence-cards { display: none !important; }
+
   /* A panel on screen, a heading block on paper. */
   .cover {
     border: 0;
@@ -1049,3 +1060,40 @@ input[type='radio'] {
   color: var(--text-2);
   flex: 0 0 auto;
 }
+
+/* --------------------------------------------- the two evidence views
+ *
+ * One list, rendered twice. `screen-hidden` removes a view from the
+ * screen without removing it from the document, so the register prints
+ * whichever view the reader left on.
+ */
+.screen-hidden { display: none; }
+
+.viewswitch {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.viewswitch button {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  min-height: 36px;
+  padding: 0 var(--s-4);
+  border: 0;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.viewswitch button + button { border-left: 1px solid var(--border-strong); }
+.viewswitch button[aria-pressed='true'] { background: var(--primary); color: var(--on-primary); }
+
+.evidence-cards { padding: 0 var(--s-6) var(--s-6); }
+
+.ev-card { padding: var(--s-6) 0; border-top: 1px solid var(--border); }
+.ev-card:first-child { border-top: 0; }
+.ev-card p { max-width: 68ch; }

@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 /**
  * The audit report.
  *
@@ -100,10 +103,19 @@ const STATUS_WORD: Record<FindingStatus, string> = {
   unverified: 'Unverified',
 };
 
+/**
+ * The engine's attribution, in the reader's words.
+ *
+ * `confirmed` reads as "Matched" rather than "Confirmed" because this
+ * product uses confirmation for something else and more specific: the
+ * customer confirming a result is theirs. Two things called confirmed, one
+ * decided by a classifier and one by the person the report is about, is a
+ * distinction a reader has no way to recover from the label.
+ */
 const IDENTITY_WORD: Record<string, string> = {
-  confirmed: 'Confirmed',
-  probable: 'Probable',
-  uncertain: 'Uncertain',
+  confirmed: 'Matched',
+  probable: 'Probably you',
+  uncertain: 'Unresolved',
   rejected: 'Not you',
 };
 
@@ -660,28 +672,27 @@ function Dimensions({ presence }: { presence: PresenceScore }) {
     <section className="card stack" style={{ ['--gap' as string]: '18px' }}>
       <h2 style={{ fontSize: '1.25rem' }}>What makes up the score</h2>
 
+      {/**
+       * The explanations, without the numbers again.
+       *
+       * The ribbon on the cover already shows all five figures and their
+       * bars. Repeating them here made the report read as padded, and
+       * gave a reader two places to look for the same fact — which is
+       * worse than one, because they have to check that the two agree.
+       *
+       * What the ribbon cannot carry is the engine's sentence for each
+       * dimension, which is the thing somebody who scrolled this far came
+       * for. So this section keeps the words and gives up the figures.
+       */}
       {presence.dimensions.map((d) => (
         <div key={d.code}>
-          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{d.label}</span>
-            <span className="small" style={{ color: 'var(--text)', fontWeight: 600 }}>
-              {d.value === null ? 'Not applicable' : Math.round(d.value * 100)}
-            </span>
-          </div>
-
-          {d.value === null ? (
-            <div
-              className="meter"
-              style={{ background: 'repeating-linear-gradient(90deg, var(--surface-sunken) 0 6px, var(--surface) 6px 12px)' }}
-              aria-hidden
-            />
-          ) : (
-            <div className="meter">
-              <span style={{ width: `${d.value * 100}%` }} />
-            </div>
-          )}
-
-          <p className="small" style={{ marginTop: 6 }}>{d.explanation}</p>
+          <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>
+            {d.label}
+            {d.value === null && (
+              <span className="small" style={{ fontWeight: 400 }}> &mdash; not applicable</span>
+            )}
+          </p>
+          <p className="small" style={{ marginTop: 'var(--s-1)' }}>{d.explanation}</p>
         </div>
       ))}
 
@@ -907,13 +918,58 @@ function Confidence({
   );
 }
 
+/**
+ * Two views of one list, because they answer different questions.
+ *
+ * Reading a result and comparing results are not the same task. A card
+ * gives a single source room to be understood — the excerpt in the
+ * source's own words, the attribution, where it came from. A row puts
+ * identity, type, source and date in fixed columns so the eye can run
+ * down one of them, which is what somebody deciding what to do about a
+ * set of results actually needs.
+ *
+ * The register is also what prints. A page of cards is several pages of
+ * paper and loses the column alignment that makes one piece of evidence
+ * comparable with the next, so the print stylesheet shows the table
+ * whichever view is on screen.
+ *
+ * One list, two renderings. Nothing is filtered differently between them:
+ * a view that quietly showed fewer results than the other would be the
+ * worst thing on this page.
+ */
 function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
   const withheld = evidence.filter((e) => e.sensitivity?.withhold);
+  const [view, setView] = useState<'reading' | 'register'>('reading');
 
   return (
     <section className="card card-flush">
       <div style={{ padding: 'var(--s-6) var(--s-6) var(--s-4)' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--s-2)' }}>Evidence</h2>
+        <div
+          className="row"
+          style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--s-4)', flexWrap: 'wrap' }}
+        >
+          <h2 style={{ fontSize: '1.25rem', marginBottom: 'var(--s-2)' }}>
+            Supporting evidence
+          </h2>
+
+          <div className="viewswitch no-print" role="group" aria-label="Evidence view">
+            <button
+              type="button"
+              onClick={() => setView('reading')}
+              aria-pressed={view === 'reading'}
+            >
+              Reading
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('register')}
+              aria-pressed={view === 'register'}
+            >
+              Register
+            </button>
+          </div>
+        </div>
+
         <p className="small">
           Everything we looked at, including what we excluded and why. Excerpts are quoted
           as the source wrote them and are never paraphrased into a claim.
@@ -944,7 +1000,70 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
         )}
       </div>
 
-      <div className="scroll-x">
+      {/**
+       * The reading view: one source at a time, with room to be read.
+       *
+       * The same records as the register, in the same order, with nothing
+       * filtered out — including the withheld ones, which appear with
+       * their category rather than silently disappearing from the view
+       * that most people will actually look at.
+       */}
+      <div className={`evidence-cards${view === 'reading' ? '' : ' screen-hidden'}`}>
+        {evidence.map((e) => (
+          <article key={e.id} className="ev-card">
+            <div className="row" style={{ gap: 'var(--s-3)', flexWrap: 'wrap', marginBottom: 'var(--s-3)' }}>
+              <span className="pill pill-neutral">{IDENTITY_WORD[e.identityStatus]}</span>
+              <span className="small">
+                {e.sourceName} &middot; {e.sensitivity?.withhold ? 'not quoted' : e.classification}
+                {' \u00b7 '}
+                seen {when(e.retrievedAt)}
+              </span>
+            </div>
+
+            {e.sensitivity?.withhold ? (
+              <>
+                <p style={{ fontWeight: 600, fontSize: '1rem' }}>
+                  <a href={e.sourceUrl} target="_blank" rel="noreferrer nofollow noopener">
+                    A result we did not keep a copy of
+                  </a>
+                </p>
+                <p className="small" style={{ marginTop: 'var(--s-2)' }}>
+                  It appears to touch on {e.sensitivity.categories.map(categoryWord).join(', ').toLowerCase()} rather than
+                  professional matters. The link still works; we simply hold no copy of what it
+                  says, and it affects neither your score nor your risk level.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ fontWeight: 600, fontSize: '1rem', lineHeight: 1.35 }}>
+                  <a href={e.sourceUrl} target="_blank" rel="noreferrer nofollow noopener">
+                    {e.title}
+                  </a>
+                </p>
+                <p className="small" style={{ marginTop: 'var(--s-2)', fontSize: '0.9375rem' }}>
+                  {e.excerpt}
+                </p>
+                <p className="small" style={{ marginTop: 'var(--s-3)' }}>
+                  {e.classificationRationale}
+                </p>
+              </>
+            )}
+
+            <p className="small" style={{ marginTop: 'var(--s-3)', color: 'var(--text-2)' }}>
+              Identity match {e.identityConfidence.toFixed(2)} &middot; reliability{' '}
+              {e.sourceReliability}
+              {e.position !== undefined ? ` \u00b7 position ${e.position}` : ''}
+              {e.authorship.createdBy === 'us' ? ' \u00b7 placed by us' : ''}
+            </p>
+          </article>
+        ))}
+      </div>
+
+      {/* The register. `print-only` in the stylesheet keeps it on paper
+          even when the reading view is the one on screen. */}
+      <div
+        className={`scroll-x evidence-register${view === 'register' ? '' : ' screen-hidden'}`}
+      >
         <table className="table table-evidence">
           <thead>
             <tr>
