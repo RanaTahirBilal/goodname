@@ -437,3 +437,68 @@ for having a blog.
 **Assumed meanwhile:** the figure is reported as it stands, the fixture
 exists so the gap is reproducible rather than theoretical, and no keyword
 guesser has been added on the strength of one example.
+
+### OQ-26 — The US launch gates, and how few of them are engineering
+**Blocks:** taking money from a US customer.
+
+A go-to-market audit on 5 November produced a gate list for one US
+customer. Ten gates. **One is engineering.**
+
+| | Gate | Type |
+|---|---|---|
+| 1 | One customer state, profession, exact service scope | Decision |
+| 2 | Who legally sells it, entity, registration | Decision + lawyer |
+| 3 | FCRA, privacy, outreach and advertising review for that scope | Lawyer |
+| 4 | Service agreement, disclosures, refund terms, authorisation | Lawyer |
+| 5 | A lawful outreach process | Decision + lawyer |
+| 6 | Price, deposit terms, acceptance criteria | Decision |
+| 7 | A payment method | Purchase |
+| 8 | Authorisation, intake, data handling, retention | Decision + build |
+| 9 | Verified delivery automations and approval steps | Build |
+| 10 | The deliverables themselves | Operations |
+
+The audit platform, public hosting, transactional email and the mobile
+apps are **not** prerequisites for any of it.
+
+**The distinction that carries the most weight** is between three
+activities that are not equivalent risks: selling a service to somebody
+about their own assets; preparing an assessment about an identifiable
+person; and distributing a reusable report that others might use to make
+decisions about them. The first customer should be the first activity,
+with a narrow version of the second, and the third refused entirely.
+
+**What is for counsel, specifically.** Whether the first-customer
+workflow raises consumer-reporting-agency questions and what must stay
+excluded; which privacy laws apply given the entity, states and
+processing; what is required to publish material about a verified
+customer; outreach and lead-source restrictions; and the advertising
+rules of the customer's own profession, which are state bar and state
+board matters rather than federal ones.
+
+**Assumed meanwhile:** nothing is sold, the site stays `noindex`, and no
+report is prepared about anybody who has not asked for one.
+
+### OQ-27 — Scope limits are only real where they leave the screen — *partly closed 5 Nov 2026*
+**Blocks:** nothing. Reduces a real exposure.
+
+The product has always refused the regulated uses by not building them —
+no employment screening, no tenant screening, no credit or insurance
+eligibility feature exists anywhere in it. That absence is the genuine
+safeguard and it protects nobody once a report leaves the screen.
+
+A printed report is a document about an identifiable person with a number
+on it. A JSON export is the same thing, forwarded more easily. Whoever
+opens either one did not see the interface, agreed to nothing, and has no
+way to know what it was for.
+
+**Closed:** `PERMITTED_USE` is one sentence in the domain, rendered first
+in the report's limitations, carried as the first key of every data
+export, and held open on paper by the print stylesheet. Tests assert all
+three, and that it names the decisions rather than only the category —
+"not a background check" is arguable, "employment, credit, housing,
+tenancy, insurance" is not.
+
+**Still open:** this is a product boundary, not a legal opinion, and
+stating a limitation is not the same as the limitation holding. Whether
+it changes the analysis at all is part of what OQ-6 and OQ-26 have to
+ask.

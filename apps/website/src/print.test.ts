@@ -231,3 +231,34 @@ test('the evidence register prints even when the cards are on screen', () => {
     'the view switch prints, and a control nobody can operate is noise on paper'
   );
 });
+
+/**
+ * The limitation has to survive leaving the screen.
+ *
+ * A printed report is a document about an identifiable person with a
+ * number on it. Whoever reads it next did not see the interface, agreed
+ * to nothing, and has no way to know what it was for. The one sentence
+ * saying it must not be used for an eligibility decision is therefore the
+ * single most important thing on the paper, and the easiest to lose: it
+ * sits inside a `.notice`, and `.notice` is exactly the kind of thing a
+ * print stylesheet hides to save a page.
+ */
+test('the permitted-use statement is not hidden when printing', () => {
+  const report = readFileSync(join(here, '..', 'app', 'components', 'Report.tsx'), 'utf8');
+
+  assert.match(
+    report,
+    /\{PERMITTED_USE\}/,
+    'the report no longer renders the permitted-use statement'
+  );
+
+  // Nothing in the print block may hide the notice that carries it.
+  const hidden = /\.notice(?![-\w])[^{]*\{[^}]*display:\s*none/.exec(print);
+  assert.equal(hidden, null, 'the print stylesheet hides the notice that carries it');
+
+  assert.match(
+    print,
+    /\.notice\s*\{[^}]*border:/,
+    'notices lose their boundary on paper, so the statement reads as body text'
+  );
+});

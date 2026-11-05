@@ -443,3 +443,34 @@ export interface ConfidenceReport {
   needsHumanReview: string[];
   note: string;
 }
+
+/* ------------------------------------------------------- permitted use */
+
+/**
+ * What this report may not be used for, in one place.
+ *
+ * The product has always refused the regulated uses by not building them:
+ * there is no employment screening, no tenant screening, no credit or
+ * insurance eligibility feature anywhere in it. That absence is the real
+ * safeguard and it protects nobody once a report leaves the screen.
+ *
+ * A PDF handed to a hiring partner, or a JSON export attached to an email,
+ * is a document about an identifiable person with a number on it. Whoever
+ * reads it next did not see the interface, did not agree to anything, and
+ * has no way to know what it was for. So the limitation travels with the
+ * artifact rather than living on the page that produced it — the same
+ * reasoning as `isFixture`, which is a field on every record and not a
+ * banner, because a banner is lost the moment somebody screenshots.
+ *
+ * One constant, used by the report, the print stylesheet's visible output
+ * and the data export, so the three cannot drift into saying different
+ * things about the same document.
+ *
+ * This is a product boundary, not a legal opinion, and it is not a
+ * substitute for the review recorded in OQ-6.
+ */
+export const PERMITTED_USE =
+  'This report is produced for the person it describes, to understand their own ' +
+  'online presence. It must not be used to make decisions about anybody — including ' +
+  'employment, credit, housing, tenancy, insurance or any other eligibility decision ' +
+  '— and it is not a background check, a consumer report or a screening product.';

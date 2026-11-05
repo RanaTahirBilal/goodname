@@ -24,7 +24,7 @@ import type {
   RiskFinding,
   RiskLevel,
 } from '@rep/domain';
-import { DIMENSION_LABELS, splitFindings } from '@rep/domain';
+import { DIMENSION_LABELS, PERMITTED_USE, splitFindings } from '@rep/domain';
 
 type Scan = {
   provider: string;
@@ -1277,6 +1277,19 @@ function Limitations({ scan }: { scan: Scan }) {
     <section className="notice notice-info">
       <div>
         <strong>What this report is and is not</strong>
+
+        {/**
+         * First, and not in a list.
+         *
+         * The other four lines are about what the number means. This one is
+         * about what the document may be used for, which is a different
+         * kind of statement and the only one that matters to somebody who
+         * was handed the PDF rather than running the audit.
+         */}
+        <p className="small" style={{ marginTop: 8, color: 'var(--text)', fontWeight: 600 }}>
+          {PERMITTED_USE}
+        </p>
+
         <ul className="small stack" style={{ ['--gap' as string]: '6px', paddingLeft: 18, marginTop: 8 }}>
           <li>
             A snapshot of the top {scan.window} results for {scan.queries.length} queries on{' '}

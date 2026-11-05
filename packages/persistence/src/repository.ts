@@ -19,6 +19,7 @@ import type {
   RiskAssessment,
   SpecialCategory,
 } from '@rep/domain';
+import { PERMITTED_USE } from '@rep/domain';
 import { type Db, newId, toJson, fromJson, bool, transaction } from './db.ts';
 import { recordEvent } from './events.ts';
 
@@ -804,6 +805,16 @@ export class ScanRepository {
     ];
 
     const data: Record<string, unknown> = {
+      /**
+       * First key in the file, before anything about the person.
+       *
+       * An export is the version of this report most likely to be
+       * forwarded, and the least likely to arrive with any context. The
+       * limitation goes in the document rather than on the page that
+       * produced it, for the same reason `isFixture` is a field and not a
+       * banner.
+       */
+      permittedUse: PERMITTED_USE,
       exportedAt: new Date().toISOString(),
       account: this.db
         .prepare('SELECT id, email, created_at FROM accounts WHERE id = ?')
