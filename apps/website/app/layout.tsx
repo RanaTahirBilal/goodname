@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Newsreader, Inter } from 'next/font/google';
+import { INDEXABLE, ORIGIN } from '../src/seo.ts';
 import './globals.css';
 
 /**
@@ -29,21 +30,107 @@ const sans = Inter({
   variable: '--font-sans',
 });
 
+export const BRAND = 'Reputation Platform';
+
+const TITLE = 'Reputation Platform — see what they find when they search your name';
+const DESCRIPTION =
+  'An evidence-backed audit of your professional online presence. See what ranks for your name, what it is based on, and what is worth doing about it.';
+
 export const metadata: Metadata = {
   // Internal name only. Branding is a single value so the commercial name is
   // a one-line change. See docs/PRODUCT_DECISIONS.md PD-006.
-  title: 'Reputation Platform — see what they find when they search your name',
-  description:
-    'An evidence-backed audit of your professional online presence. See what ranks for your name, what it is based on, and what is worth doing about it.',
-  robots: { index: false, follow: false },
-};
+  title: TITLE,
+  description: DESCRIPTION,
 
-export const BRAND = 'Reputation Platform';
+  /**
+   * Canonicals, which need an origin to exist at all.
+   *
+   * Without `metadataBase` Next emits relative canonical hrefs, which is
+   * the same as having none. The origin comes from configuration because
+   * the site does not have a domain yet, and defaults to localhost so a
+   * development build produces something inspectable rather than nothing.
+   */
+  metadataBase: new URL(ORIGIN),
+  alternates: { canonical: '/' },
+
+  /**
+   * Indexing is a runtime condition, not a constant somebody must remember
+   * to flip. It defaults closed: see `src/seo.ts`.
+   */
+  robots: INDEXABLE
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
+
+  /**
+   * What a link to this looks like when somebody pastes it.
+   *
+   * No image is declared, deliberately. An OG card is a claim about the
+   * product, and the only honest image available today would be a
+   * screenshot of a report built from fixture data — which is precisely
+   * the thing that must never circulate looking like a real result.
+   */
+  openGraph: {
+    type: 'website',
+    siteName: BRAND,
+    title: TITLE,
+    description: DESCRIPTION,
+    url: '/',
+  },
+  twitter: { card: 'summary', title: TITLE, description: DESCRIPTION },
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${serif.variable} ${sans.variable}`}>
       <body>
+        {/**
+         * Structured data, kept to what is true.
+         *
+         * Two nodes and no more. There is no `address`, because there is no
+         * office; no `aggregateRating`, because nobody has rated anything;
+         * no `sameAs`, because the profiles it would point at do not exist;
+         * no `FAQPage`, which is the one people reach for and the one that
+         * breaks Google's rules the moment its questions are not also
+         * readable on the page.
+         *
+         * `WebSite` with a `SearchAction` is deliberately absent too: this
+         * site has no site-search, and declaring one is a request for a
+         * search box in the result that leads nowhere.
+         *
+         * Served whatever the launch flag says. It costs a few hundred
+         * bytes, it is inert when nothing is indexed, and the failure it
+         * prevents — shipping with the markup still missing — is the one
+         * that only shows up after launch.
+         */}
+        <script
+          type="application/ld+json"
+          // The content is a literal built here, not anything a customer
+          // supplied, so there is nothing to escape beyond JSON itself.
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@graph': [
+                {
+                  '@type': 'WebSite',
+                  '@id': `${ORIGIN}/#website`,
+                  url: `${ORIGIN}/`,
+                  name: BRAND,
+                  description: DESCRIPTION,
+                  inLanguage: 'en',
+                  publisher: { '@id': `${ORIGIN}/#organization` },
+                },
+                {
+                  '@type': 'Organization',
+                  '@id': `${ORIGIN}/#organization`,
+                  name: BRAND,
+                  url: `${ORIGIN}/`,
+                  description:
+                    'Audits a professional’s own online presence: what ranks for their name, what each result is based on, and how confident the assessment is that it is about them.',
+                },
+              ],
+            }),
+          }}
+        />
         {/**
          * Sticky, because the report is long.
          *
