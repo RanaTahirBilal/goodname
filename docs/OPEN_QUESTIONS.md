@@ -502,3 +502,39 @@ tenancy, insurance" is not.
 stating a limitation is not the same as the limitation holding. Whether
 it changes the analysis at all is part of what OQ-6 and OQ-26 have to
 ask.
+
+---
+
+### OQ-28 — `audit_attempts` holds names that no account owns — *opened 5 Nov 2026*
+**Blocks:** nothing today. Would block holding real data at any volume.
+
+Every other table carrying a person's details is scoped to an account, so
+a deletion request reaches all of it. `audit_attempts` is not. It is keyed
+on a requester id, because its job is to notice one requester working
+through a list of different names, and that question cannot be asked from
+inside a single account.
+
+Two things make it smaller than it first looks. A refused attempt is never
+recorded — `gate()` writes the row only after every check passes — so a
+request we turned down leaves no trace of the name. And the gate caps a
+requester at two distinct names, so the table holds at most two per
+requester, both of which that person attested were their own.
+
+What is still true, and the sharper half of it: `SqliteAttemptStore` has a
+`prune(olderThanIso)` method, with a test, **and no caller anywhere in the
+application.** `enforceRetention` does not touch the table. So the rows are
+not covered by `ACCOUNT_OWNED_TABLES`, nothing ages them out, and a
+customer who deletes their account leaves their name in this table
+indefinitely. This is the same shape as the defect rule 16af was written
+for: the capability exists, is tested, and nobody can exercise it.
+
+The row also stores the whole `purpose` blob as JSON, which carries the
+attestation text and timestamp.
+
+**Decide:** the retention period for `audit_attempts` and wire `prune`
+into the hourly sweep — the window that matters to the gate is 24 hours,
+but an abuse review wants longer; whether `subject_name` should be dropped
+in favour of the normalised `subject_key`, which is what the counting
+actually uses; and whether the row should be anonymised rather than
+deleted on account deletion, as the reviewer access log is. Reported to
+counsel in `COUNSEL_TECHNICAL_APPENDIX.md` §5 rather than settled here.

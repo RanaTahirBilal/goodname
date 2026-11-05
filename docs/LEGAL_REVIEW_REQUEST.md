@@ -140,7 +140,7 @@ Stated so you can tell us which of these do any work and which are theatre.
   and a third is refused outright with no route through — the escalation
   step that would unblock it is deliberately not implemented.
 - **A permitted-use statement travels with the artifact.** One sentence,
-  rendered in the report, forced visible when printing, and the first field
+  rendered in the report, printed with it, and the first field
   of every data export: that the report is for the person it describes,
   must not be used for employment, credit, housing, tenancy, insurance or
   any other eligibility decision, and is not a background check, consumer
@@ -201,6 +201,11 @@ than a legal one, please say so and we will take it elsewhere.
 
 ---
 
-**Attachments we can provide on request:** a sample report produced from
-fixture data, the written safeguards document, the list of unresolved
-product questions, and the source code.
+**Attached:** `COUNSEL_TECHNICAL_APPENDIX.md`, which describes the
+implementation behind sections 5 and 6 — every table and column, the access
+model, what leaves the system, the known limits of identity matching and
+provenance, and a data-flow diagram. It contains no legal conclusions.
+
+**Also available on request:** a sample report produced from fixture data, the
+written safeguards document, the list of unresolved product questions, and the
+source code.
