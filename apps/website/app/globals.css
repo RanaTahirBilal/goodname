@@ -57,6 +57,29 @@
   --success-bg: #E8F3EE;
   --info-bg: #ECF0F5;
 
+  /**
+   * The ink ground, for the two blocks that own the page rather than sit on
+   * it: the report's cover and its closing ask.
+   *
+   * A reversed panel is the one piece of visual weight this design uses, so
+   * it is a flat colour and not a gradient, and it appears at most twice in
+   * a document. `--on-ink-2` is the muted text on that ground and clears
+   * 8.1:1, which is well past the floor — a reversed panel is where contrast
+   * usually quietly fails, so it is set with room to spare.
+   *
+   * `--accent` is a terracotta used once per screen, on the label above a
+   * finding. It is not `--primary`: the green is the product's action colour
+   * and giving it a second job as an editorial mark would make every heading
+   * look faintly clickable.
+   */
+  --ink: #0E2B22;
+  --on-ink: #F2F7F4;
+  --on-ink-2: #A9C4B8;
+  /* A stated colour rather than white at 18%: the ground is known, so the
+     rule on it can be too, and nothing sits on a colour no token names. */
+  --on-ink-rule: #314740;
+  --accent: #A8492F;
+
   /* Spacing scale. Use these and nothing between them. */
   --s-1: 4px;
   --s-2: 8px;
@@ -127,6 +150,13 @@
     --success-bg: #15271F;
     --info-bg: #1A2029;
 
+    /* The ground deepens so the reversed panel still separates from --bg. */
+    --ink: #09201A;
+    --on-ink: #E8F2ED;
+    --on-ink-2: #93B5A7;
+    --on-ink-rule: #2A3C35;
+    --accent: #E8907A;
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }
@@ -156,6 +186,12 @@
   --danger-bg: #2E1A1A;
   --success-bg: #15271F;
   --info-bg: #1A2029;
+
+  --ink: #09201A;
+  --on-ink: #E8F2ED;
+  --on-ink-2: #93B5A7;
+  --on-ink-rule: #2A3C35;
+  --accent: #E8907A;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
@@ -651,6 +687,25 @@ input[type='radio'] {
     --success-bg: #FFFFFF !important;
     --info-bg: #FFFFFF !important;
     --shadow-sm: none !important;
+
+    /**
+     * The reversed cover un-reverses on paper.
+     *
+     * Browsers do not print background colours by default. Left alone, the
+     * cover would send near-white text to a white page and the reader would
+     * be handed a sheet with the subject's name missing from it — the single
+     * most important line in the document, invisible, with no error anywhere
+     * to say so. On a printer that *does* render backgrounds it is instead a
+     * solid block of ink across the top of page one.
+     *
+     * So the ink ground becomes paper and its text becomes ink. The cover
+     * keeps its rule and its structure; it simply stops being reversed.
+     */
+    --ink: #FFFFFF !important;
+    --on-ink: #000000 !important;
+    --on-ink-2: #333333 !important;
+    --on-ink-rule: #9AA39C !important;
+    --accent: #7A1F1F !important;
   }
 
   @page {
@@ -693,6 +748,22 @@ input[type='radio'] {
     padding: var(--s-4) 0 0;
     break-inside: avoid;
   }
+
+  /* A panel on screen, a heading block on paper. */
+  .cover {
+    border: 0;
+    border-bottom: 2px solid var(--border);
+    border-radius: 0;
+    padding: 0 0 var(--s-6);
+    break-after: avoid;
+  }
+
+  /* A 150px numeral is a quarter of an A4 page to no purpose. */
+  .figure-xl { font-size: 54pt; }
+  .figure-block { padding: var(--s-6) 0; }
+
+  /* Keep a finding's heading with what it says. */
+  .finding { break-inside: avoid; }
 
   .pill {
     border: 1px solid var(--border);
@@ -795,4 +866,186 @@ input[type='radio'] {
     print-color-adjust: exact;
   }
   .meter { border: 1px solid var(--border); }
+}
+
+/* ======================================================= the briefing
+ *
+ * The report's own composition. Added when direction C was chosen: a
+ * reversed cover, one figure alone, a ribbon of dimensions, and findings
+ * set as chapters rather than rows.
+ *
+ * None of it is decoration with a class name. Each piece exists because
+ * the report has a reading order — who this is about, how sure we are,
+ * what the number is, what it is made of, what we found — and the old
+ * layout gave all five the same visual weight.
+ */
+
+.cover {
+  background: var(--ink);
+  color: var(--on-ink);
+  border-radius: var(--radius-lg);
+  padding: var(--s-16) var(--s-8);
+}
+
+@media (min-width: 760px) {
+  .cover { padding: var(--s-24) var(--s-16); }
+}
+
+.cover .eyebrow { color: var(--on-ink-2); }
+.cover h1 { color: var(--on-ink); max-width: 15ch; }
+.cover a { color: var(--on-ink); }
+
+.cover-sub {
+  font-family: var(--serif);
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.25rem);
+  line-height: 1.5;
+  color: var(--on-ink-2);
+  max-width: 46ch;
+}
+
+/**
+ * The conditions the number holds under, on the cover with it.
+ *
+ * A score given without its coverage, its identity match and its date is
+ * a number presented as more settled than it is. These sit beside it
+ * rather than three sections below, which was the single clearest note in
+ * the design review.
+ */
+.cover-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
+  gap: var(--s-6);
+  padding-top: var(--s-8);
+  margin-top: var(--s-8);
+  border-top: 1px solid var(--on-ink-rule);
+}
+
+.cover-facts dt {
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--on-ink-2);
+}
+
+.cover-facts dd {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 500;
+  margin-top: var(--s-2);
+  color: var(--on-ink);
+}
+
+/* --------------------------------------------------------- the figure */
+
+.figure-block { padding: var(--s-16) 0 var(--s-12); }
+
+.figure-xl {
+  font-family: var(--serif);
+  font-size: clamp(6rem, 4rem + 11vw, 13rem);
+  font-weight: 300;
+  line-height: 0.78;
+  letter-spacing: -0.05em;
+  font-optical-sizing: auto;
+  font-variant-numeric: lining-nums tabular-nums;
+  display: block;
+}
+
+.figure-said {
+  font-family: var(--serif);
+  font-size: clamp(1.35rem, 1.1rem + 1.2vw, 2rem);
+  font-weight: 400;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+  margin-top: var(--s-8);
+  text-wrap: balance;
+}
+
+/* --------------------------------------------------------- the ribbon */
+
+.ribbon {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-top: var(--s-8);
+}
+
+.ribbon-cell { background: var(--surface); padding: var(--s-6) var(--s-4); }
+
+.ribbon-n {
+  font-family: var(--serif);
+  font-size: 2.25rem;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.ribbon-cell .lbl {
+  margin-top: var(--s-2);
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: var(--text-2);
+}
+
+.ribbon-track {
+  margin-top: var(--s-3);
+  height: 3px;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.ribbon-track > span { display: block; height: 100%; background: var(--primary); }
+
+/* ------------------------------------------------------- the findings */
+
+.finding { padding: var(--s-12) 0; border-top: 1px solid var(--border); }
+.finding .eyebrow { color: var(--accent); }
+
+.finding h3 {
+  font-family: var(--serif);
+  font-size: clamp(1.3rem, 1.1rem + 0.9vw, 1.85rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-top: var(--s-3);
+  max-width: 22ch;
+}
+
+/**
+ * What it means, boxed.
+ *
+ * Kept visually distinct from the sentence above it because they are
+ * different kinds of claim: the detail is the engine's line about this
+ * customer, and this is what that category of finding implies for anyone.
+ * Running them together would make the general sentence read as a
+ * personal one.
+ */
+.finding-means {
+  margin-top: var(--s-6);
+  padding: var(--s-4) var(--s-6);
+  background: var(--surface-sunken);
+  border-radius: var(--radius);
+  max-width: 62ch;
+}
+
+/* The ones beyond the first few: listed, not narrated. */
+.finding-row {
+  display: flex;
+  gap: var(--s-4);
+  align-items: baseline;
+  padding: var(--s-4) 0;
+  border-top: 1px solid var(--border);
+}
+
+.finding-row .n {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-2);
+  flex: 0 0 auto;
 }

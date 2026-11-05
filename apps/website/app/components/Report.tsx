@@ -11,6 +11,7 @@
  * on the page that matters most.
  */
 import type {
+  BriefingFinding,
   ConfidenceReport,
   EvidenceRecord,
   FindingStatus,
@@ -20,7 +21,7 @@ import type {
   RiskFinding,
   RiskLevel,
 } from '@rep/domain';
-import { DIMENSION_LABELS } from '@rep/domain';
+import { DIMENSION_LABELS, splitFindings } from '@rep/domain';
 
 type Scan = {
   provider: string;
@@ -43,6 +44,7 @@ export interface CompleteReport {
   risk: RiskAssessment;
   confidence: ConfidenceReport;
   recommendations: Recommendation[];
+  findings: BriefingFinding[];
 }
 
 /* ------------------------------------------------------------- helpers */
@@ -155,6 +157,205 @@ export function FixtureBanner() {
         standing in for a real search. Nothing here describes a real person.
       </div>
     </div>
+  );
+}
+
+/**
+ * The cover.
+ *
+ * Reading order, settled in the design review and implemented here:
+ * subject, then how sure we are it is them, then the number, then what
+ * the number was built from. The score used to lead, which made it the
+ * most authoritative thing on a page where its own conditions were three
+ * sections further down.
+ *
+ * The facts beside it are the conditions, not decoration. A score without
+ * its coverage, its identity match and its date is presented as more
+ * settled than it is, and this is the one place a reader is guaranteed to
+ * look.
+ */
+function Cover({
+  name,
+  scan,
+  presence,
+  confidence,
+}: {
+  name: string;
+  scan: Scan;
+  presence: PresenceScore;
+  confidence: ConfidenceReport;
+}) {
+  const seen = scan.resultsObserved;
+  const attributed = confidence.attributed;
+
+  return (
+    <header className="cover">
+      <div
+        className="row"
+        style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 'var(--s-4)', flexWrap: 'wrap' }}
+      >
+        <p className="eyebrow">Reputation briefing &middot; {when(scan.observedAt)}</p>
+        {/**
+         * Printing is the save button.
+         *
+         * Every browser's print dialogue offers "Save as PDF", so this is a
+         * document export without a PDF library, a server round trip or a
+         * second rendering that could drift from the first.
+         */}
+        <SaveButton />
+      </div>
+
+      <h1 style={{ marginTop: 'var(--s-6)' }}>{name}</h1>
+
+      <p className="cover-sub" style={{ marginTop: 'var(--s-4)' }}>
+        {seen === 0
+          ? 'The search returned nothing for this name.'
+          : `${seen} ${seen === 1 ? 'result' : 'results'} assessed, ${attributed} attributed.`}{' '}
+        {scan.isFixture
+          ? 'Built from fixture data: nothing here describes a real person.'
+          : 'Every figure below carries the evidence it came from.'}
+      </p>
+
+      <dl className="cover-facts">
+        <div>
+          <dt>Identity</dt>
+          <dd>
+            {seen === 0 ? '—' : `${attributed} of ${seen}`}
+          </dd>
+        </div>
+        <div>
+          <dt>Model coverage</dt>
+          <dd>{pct(confidence.evidenceCoverage)}</dd>
+        </div>
+        <div>
+          <dt>Assessed</dt>
+          <dd>{when(scan.observedAt)}</dd>
+        </div>
+        <div>
+          <dt>Methodology</dt>
+          <dd>
+            {presence.methodologyVersion}
+          </dd>
+        </div>
+      </dl>
+    </header>
+  );
+}
+
+/**
+ * The number, alone, and one sentence the engine wrote.
+ *
+ * The sentence is `presence.meaning` — which the engine has always
+ * produced and the report used to bury under the score as grey small
+ * print. It is the only line here, because the alternative is composing a
+ * better one in the interface, and a better one would be a conclusion
+ * nobody computed.
+ */
+function Headline({ presence }: { presence: PresenceScore }) {
+  if (presence.status !== 'scored') return null;
+
+  return (
+    <section className="figure-block">
+      <p className="eyebrow mark">Online presence</p>
+      <span className="figure-xl">{presence.score}</span>
+      <p className="figure-said">{presence.meaning}</p>
+      <p className="small" style={{ marginTop: 'var(--s-4)' }}>
+        Out of 100, with {pct(presence.coverage)} of the model evaluated.
+      </p>
+
+      <div className="ribbon">
+        {presence.dimensions.map((d) => (
+          <div key={d.code} className="ribbon-cell">
+            <div className="ribbon-n">
+              {d.value === null ? '—' : Math.round(d.value * 100)}
+            </div>
+            <div className="lbl">{d.label}</div>
+            <div className="ribbon-track">
+              <span style={{ width: `${(d.value ?? 0) * 100}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * The findings, however many there are.
+ *
+ * The mock had exactly three and looked composed. A real audit may produce
+ * none, or twelve: none must not be padded, and twelve must not become
+ * twelve full-page chapters nobody finishes. So the first three are
+ * narrated and the rest are listed, which `splitFindings` decides in the
+ * engine rather than the interface choosing which sounds most dramatic.
+ *
+ * Every sentence here came from `buildFindings`. Nothing is composed at
+ * render time.
+ */
+function BriefingFindings({ findings }: { findings: BriefingFinding[] }) {
+  if (findings.length === 0) {
+    return (
+      <section className="card">
+        <p className="eyebrow mark">Findings</p>
+        <h2 style={{ fontSize: '1.4rem', marginTop: 'var(--s-3)' }}>
+          Nothing here needs your attention first
+        </h2>
+        <p className="small" style={{ marginTop: 'var(--s-3)' }}>
+          The check completed and produced no finding worth raising above the rest of
+          the report. The score, the risk assessment and the evidence are all below.
+        </p>
+      </section>
+    );
+  }
+
+  const { narrative, remaining } = splitFindings(findings);
+
+  return (
+    <section>
+      {narrative.map((f, i) => (
+        <article key={f.id} className="finding">
+          <p className="eyebrow">
+            Finding {String(i + 1).padStart(2, '0')}
+            {f.severity === 'priority' ? ' · priority' : ''}
+          </p>
+          <h3>{f.headline}</h3>
+          <p className="small" style={{ marginTop: 'var(--s-4)', fontSize: '0.9375rem' }}>
+            {f.detail}
+          </p>
+
+          <div className="finding-means">
+            <p className="eyebrow">What that means</p>
+            <p className="small" style={{ marginTop: 'var(--s-2)', color: 'var(--text)' }}>
+              {f.meaning}
+            </p>
+          </div>
+
+          {f.evidenceIds.length > 0 && (
+            <p className="small" style={{ marginTop: 'var(--s-4)' }}>
+              From {f.evidenceIds.length} piece
+              {f.evidenceIds.length === 1 ? '' : 's'} of evidence, listed below.
+            </p>
+          )}
+        </article>
+      ))}
+
+      {remaining.length > 0 && (
+        <div style={{ marginTop: 'var(--s-12)' }}>
+          <p className="eyebrow mark">
+            {remaining.length} more finding{remaining.length === 1 ? '' : 's'}
+          </p>
+          {remaining.map((f, i) => (
+            <div key={f.id} className="finding-row">
+              <span className="n">{String(narrative.length + i + 1).padStart(2, '0')}</span>
+              <div>
+                <p style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{f.headline}</p>
+                <p className="small" style={{ marginTop: 'var(--s-1)' }}>{f.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1048,36 +1249,16 @@ export function Report({
     <div className="stack" style={{ ['--gap' as string]: '24px' }}>
       {report.scan.isFixture && <FixtureBanner />}
 
-      <div
-        className="row"
-        style={{
-          justifyContent: 'space-between',
-          alignItems: 'flex-end',
-          gap: 'var(--s-4)',
-          // `.row` does not wrap. A 48px-tall button beside a display-size
-          // name is wider than a phone, and an unwrapped row turns that into
-          // sideways scroll on the one page nobody should have to scroll.
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <p className="eyebrow mark">Audit report</p>
-          <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.5rem)' }}>{name}</h1>
-        </div>
+      <Cover
+        name={name}
+        scan={report.scan}
+        presence={report.presence}
+        confidence={report.confidence}
+      />
 
-        {/**
-         * Printing is the save button.
-         *
-         * Every browser's print dialogue offers "Save as PDF", so this is a
-         * document export without a PDF library, a server round trip or a
-         * second rendering of the report that could drift from the first.
-         * The print stylesheet does the work; `no-print` keeps the control
-         * itself off the paper.
-         */}
-        <SaveButton />
-      </div>
+      <Headline presence={report.presence} />
 
-      <IdentityHeader scan={report.scan} confidence={report.confidence} />
+      <BriefingFindings findings={report.findings} />
 
       <div className="cols cols-score">
         <PresenceCard presence={report.presence} />

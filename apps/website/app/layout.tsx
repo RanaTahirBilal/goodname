@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Newsreader, Inter } from 'next/font/google';
+import { Fraunces, Inter } from 'next/font/google';
 import { INDEXABLE, ORIGIN } from '../src/seo.ts';
 import './globals.css';
 
@@ -12,16 +12,25 @@ import './globals.css';
  * reader's machine happened to have, which is why the same page looked
  * considered on a Mac and ordinary everywhere else.
  *
- * Newsreader carries real optical sizing, so a 68px headline is drawn with a
- * finer cut than a 20px standfirst rather than being the same letterforms
- * scaled up. That difference is most of what "set" rather than "sized" means.
+ * Fraunces carries real optical sizing, so a 150px figure is drawn with a
+ * finer cut and tighter spacing than a 20px standfirst rather than being the
+ * same letterforms scaled up. That difference is most of what "set" rather
+ * than "sized" means, and on this product the single largest thing on the
+ * page is a two-digit number, which is the hardest case for a face that
+ * cannot do it.
+ *
+ * It replaced Newsreader when the briefing direction was chosen. Newsreader
+ * is the better reading face and Fraunces is the better display one; the
+ * report leads with a figure at 150px, so the display job won. There are
+ * still two faces, not three.
  */
-const serif = Newsreader({
+const serif = Fraunces({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-serif',
-  weight: ['400', '500', '600'],
-  style: ['normal', 'italic'],
+  // Variable weight, so the 150px figure can sit at 300 while a heading
+  // holds 500 without loading a second file for each.
+  weight: 'variable',
 });
 
 const sans = Inter({

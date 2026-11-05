@@ -169,3 +169,31 @@ test('the audit details print even though they are collapsed on screen', () => {
       'would be missing from every saved PDF'
   );
 });
+
+/**
+ * The cover is the one reversed block in the product, and paper is where
+ * reversed blocks go wrong.
+ *
+ * Browsers do not print background colours by default, so a cover left as
+ * `--on-ink` on `--ink` sends near-white text to a white page: the
+ * subject's name, the largest line in the document, missing from the
+ * printout with nothing anywhere to say so. The fix is to redefine the
+ * ground rather than to restyle the component, and this asserts it is
+ * still redefined.
+ */
+test('the reversed cover is not reversed on paper', () => {
+  const rule = /:root,\s*\n\s*:root\[data-theme='dark'\]\s*\{[^}]*\}/.exec(print);
+  assert.ok(rule, 'the print block no longer redefines the palette');
+
+  for (const token of ['ink', 'on-ink', 'on-ink-2']) {
+    assert.match(
+      rule[0],
+      new RegExp(`--${token}:[^;]+!important`),
+      `--${token} is not overridden for print, so the cover prints reversed`
+    );
+  }
+
+  // Specifically: the ground becomes paper and the text becomes ink.
+  assert.match(rule[0], /--ink:\s*#FFFFFF\s*!important/);
+  assert.match(rule[0], /--on-ink:\s*#000000\s*!important/);
+});

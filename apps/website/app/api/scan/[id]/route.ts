@@ -98,6 +98,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       risk: rebuilt.risk,
       confidence: rebuilt.confidence,
       recommendations: rebuilt.recommendations,
+      findings: rebuilt.findings,
     },
     { status: 200 }
   );
