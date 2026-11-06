@@ -1,7 +1,7 @@
 import SignInClient from './SignInClient';
 
 export const metadata = {
-  title: 'Sign in — Reputation Platform',
+  title: 'Sign in | Reputation Platform',
   /**
    * Never indexed, whatever the launch flag says.
    *

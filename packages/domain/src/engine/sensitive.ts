@@ -252,7 +252,7 @@ export function assessSensitivity(title: string, excerpt: string): SensitivityAs
 }
 
 /** What a withheld title and excerpt are replaced with, verbatim. */
-export const WITHHELD_TITLE = 'Withheld — see the source';
+export const WITHHELD_TITLE = 'Withheld: see the source';
 export const WITHHELD_EXCERPT =
   'This result appears to touch on personal information we do not store or repeat. ' +
   'It is still public at its source, and the link is above.';

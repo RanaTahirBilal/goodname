@@ -60,7 +60,7 @@ const NOTES: Record<string, string> = {
   confirmed_finding:
     'An established finding from an official record or several independent sources.',
   allegation:
-    'An unsettled claim. It has been asserted, not established — treat it as reported, not proven.',
+    'An unsettled claim. It has been asserted, not established. Treat it as reported, not proven.',
   disputed:
     'Another source we found contradicts this. It is shown so you can see the disagreement.',
   corrected: 'The source has published a correction. The original claim should not stand alone.',
@@ -392,7 +392,7 @@ export function riskHeadline(risk: RiskAssessment): RiskHeadline {
       support:
         `${pending} result${plural} contain${pending === 1 ? 's' : ''} a possible adverse ` +
         `reference. Its meaning has not been verified, so no adverse finding has been ` +
-        `established — and none has been ruled out either.` +
+        `established, and none has been ruled out either.` +
         unattributedNote(risk),
       settled: false,
     };

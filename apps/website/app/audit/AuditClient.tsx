@@ -253,7 +253,7 @@ export default function AuditClient() {
           provider: status.provider ?? 'unknown',
           reason: 'provider_error',
           message:
-            'This is taking much longer than it should. The scan is saved, so nothing is lost — try opening it again in a few minutes.',
+            'This is taking much longer than it should. The scan is saved, so nothing is lost. Try opening it again in a few minutes.',
         });
         setState('error');
         return;
@@ -386,7 +386,7 @@ export default function AuditClient() {
 
             <Field
               label="Credentials"
-              hint="Comma separated — JD, MD, bar admissions."
+              hint="Comma separated: JD, MD, bar admissions."
               value={form.credentials}
               onChange={set('credentials')}
             />
@@ -602,7 +602,7 @@ function Failure({
           <div>
             <strong>{response.message}</strong>
             This product is for auditing your own presence. We limit how many{' '}
-            <em>different</em> names one account can look up — re-running your own is never
+            <em>different</em> names one account can look up. Re-running your own is never
             restricted. It is the main thing stopping this being a people-search engine.
           </div>
         </div>

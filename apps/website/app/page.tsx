@@ -104,7 +104,7 @@ export default function Home() {
             </h2>
             <p className="small" style={{ fontSize: '0.9375rem' }}>
               We do not promise rankings, removals or a higher score. We do not treat
-              criticism as damage. We do not look up other people — this is a self-audit, and
+              criticism as damage. We do not look up other people. This is a self-audit, and
               it is limited to that on purpose.
             </p>
           </article>
@@ -131,7 +131,7 @@ function Steps() {
       n: '01',
       title: 'Tell us who you are',
       body:
-        'Name, profession, and whatever else distinguishes you — employer, city, credentials, your own site. Every detail is one more way to tell you apart from someone who shares your name.',
+        'Name, profession, and whatever else distinguishes you: employer, city, credentials, your own site. Every detail is one more way to tell you apart from someone who shares your name.',
     },
     {
       n: '02',
@@ -143,7 +143,7 @@ function Steps() {
       n: '03',
       title: 'You get the evidence, not just a number',
       body:
-        'A presence score, a separate read on negative material, and how confident we are in the identity match — each one traceable to the results it came from, which are listed in full.',
+        'A presence score, a separate read on negative material, and how confident we are in the identity match. Each one is traceable to the results it came from, which are listed in full.',
     },
   ];
 

@@ -70,14 +70,14 @@ if (report.status === 'not_permitted') {
 
 if (report.status === 'search_failed') {
   console.log(`  Search failed (${report.reason}): ${report.message}`);
-  console.log('  No report is produced — an empty one would imply we looked and found nothing.');
+  console.log('  No report is produced. An empty one would imply we looked and found nothing.');
   process.exit(0);
 }
 
 console.log(
   `  ${report.scan.resultsObserved} results observed, ${report.scan.resultsAttributed} attributed`
 );
-if (report.scan.isFixture) console.log('  ⚠ FIXTURE DATA — not live search results');
+if (report.scan.isFixture) console.log('  ⚠ FIXTURE DATA, not live search results');
 
 /* ----------------------------------------------- A. Online Presence Score */
 
@@ -85,7 +85,7 @@ console.log('\n  ── A. ONLINE PRESENCE ' + '─'.repeat(42));
 const p = report.presence;
 
 if (p.status === 'insufficient_evidence') {
-  console.log(`  No score. Coverage ${Math.round(p.coverage * 100)}% — below the 55% minimum.`);
+  console.log(`  No score. Coverage ${Math.round(p.coverage * 100)}%, below the 55% minimum.`);
   for (const h of p.whatWouldHelp) console.log(`    · ${h}`);
 } else {
   console.log(`  ${p.score}/100   coverage ${Math.round(p.coverage * 100)}%   (${p.methodologyVersion})`);
@@ -117,15 +117,15 @@ if (r.findings.length) {
 
 if (r.needsReview.length) {
   console.log('\n  Excluded from the level, shown for completeness:');
-  for (const f of r.needsReview) console.log(`    [${f.status}] ${f.headline} — ${f.note}`);
+  for (const f of r.needsReview) console.log(`    [${f.status}] ${f.headline}: ${f.note}`);
 }
 
 if (r.commentary.length) {
   console.log('\n  Commentary (not counted as harm):');
-  for (const f of r.commentary) console.log(`    ${f.headline} — ${f.sourceName}`);
+  for (const f of r.commentary) console.log(`    ${f.headline}: ${f.sourceName}`);
 }
 
-console.log(`\n  Privacy: ${r.privacy.level} — ${r.privacy.note}`);
+console.log(`\n  Privacy: ${r.privacy.level}: ${r.privacy.note}`);
 
 /* ------------------------------------------------------- C. Confidence */
 

@@ -1,7 +1,7 @@
 import ReviewClient from './ReviewClient';
 
 export const metadata = {
-  title: 'Review queue — Reputation Platform',
+  title: 'Review queue | Reputation Platform',
   /**
    * Never indexed, whatever the launch flag says.
    *

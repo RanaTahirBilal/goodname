@@ -296,6 +296,6 @@ export const staffSignInEmail = (
     `Your sign-in code is ${code}\n\n` +
     `It expires in ${minutes} minutes and can only be used once.\n\n` +
     `This code signs you in to the internal review queue, which contains ` +
-    `customers' evidence. If you did not ask to sign in, tell someone — a ` +
+    `customers' evidence. If you did not ask to sign in, tell someone: a ` +
     `code was requested against your staff account.`,
 });

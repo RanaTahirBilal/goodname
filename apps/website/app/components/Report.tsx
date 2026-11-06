@@ -105,7 +105,7 @@ const STATUS_PILL: Record<FindingStatus, string> = {
 const STATUS_WORD: Record<FindingStatus, string> = {
   confirmed_finding: 'Established finding',
   requires_review: 'Not yet read by a person',
-  allegation: 'Allegation — not established',
+  allegation: 'Allegation, not established',
   disputed: 'Disputed',
   corrected: 'Corrected by the source',
   retracted: 'Retracted by the source',
@@ -242,7 +242,7 @@ function Cover({
         <div>
           <dt>Identity</dt>
           <dd>
-            {seen === 0 ? '—' : `${attributed} of ${seen}`}
+            {seen === 0 ? 'None' : `${attributed} of ${seen}`}
           </dd>
         </div>
         <div>
@@ -289,7 +289,7 @@ function Headline({ presence }: { presence: PresenceScore }) {
         {presence.dimensions.map((d) => (
           <div key={d.code} className="ribbon-cell">
             <div className="ribbon-n">
-              {d.value === null ? '—' : Math.round(d.value * 100)}
+              {d.value === null ? 'n/a' : Math.round(d.value * 100)}
             </div>
             <div className="lbl">{d.label}</div>
             <div className="ribbon-track">
@@ -468,7 +468,7 @@ function IdentityHeader({
 
       {seen === 0 && (
         <p className="small" style={{ marginTop: 'var(--s-3)' }}>
-          That is a result in itself, and not the same as a search that failed — we looked
+          That is a result in itself, and not the same as a search that failed. We looked
           and the queries came back empty.
         </p>
       )}
@@ -507,7 +507,7 @@ function AuditDetails({ scan }: { scan: Scan }) {
       </div>
       {scan.partialCoverage && (
         <p className="small" style={{ marginTop: 12, color: 'var(--warning)' }}>
-          Coverage was incomplete — some queries did not return a full set of results.
+          Coverage was incomplete: some queries did not return a full set of results.
         </p>
       )}
       <p className="small" style={{ marginTop: 14 }}>
@@ -815,7 +815,7 @@ function Findings({ risk, evidence }: { risk: RiskAssessment; evidence: Evidence
         <div style={{ marginTop: 22 }}>
           <h3 style={{ marginBottom: 4 }}>Not counted towards the risk level</h3>
           <p className="small" style={{ marginBottom: 2 }}>
-            Corrected, retracted or unresolved. Listed so you can see they exist — and so the
+            Corrected, retracted or unresolved. Listed so you can see they exist, and so the
             correction is visible too.
           </p>
           {risk.needsReview.map((f) => (
@@ -1011,8 +1011,8 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                   ? 'One result is not quoted here'
                   : `${withheld.length} results are not quoted here`}
               </strong>
-              They appear to touch on personal matters — things like health, faith,
-              politics or immigration — rather than professional ones. We do not store or
+              They appear to touch on personal matters (things like health, faith,
+              politics or immigration) rather than professional ones. We do not store or
               repeat that material, and none of it affects your score or your risk level.
               Each one still links to its source, which is public and unchanged.
             </div>
@@ -1115,7 +1115,7 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                   </div>
                   {e.duplicateOf && (
                     <div className="small" style={{ marginTop: 4, color: 'var(--text-2)' }}>
-                      Reprint of another result — counted once.
+                      Reprint of another result, counted once.
                     </div>
                   )}
                   {e.correctionOf && (
@@ -1189,8 +1189,8 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
                     <div className="small" style={{ marginTop: 4, color: 'var(--warning)' }}>
                       Placed by us
                       {e.authorship.editorialIndependence === 'verified'
-                        ? ' — accepted by this publication'
-                        : ' — not counted as independent coverage'}
+                        ? ': accepted by this publication'
+                        : ': not counted as independent coverage'}
                     </div>
                   )}
                   <div className="small" style={{ marginTop: 4 }}>
@@ -1313,7 +1313,7 @@ function Limitations({ scan }: { scan: Scan }) {
         <ul className="small stack" style={{ ['--gap' as string]: '6px', paddingLeft: 18, marginTop: 8 }}>
           <li>
             A snapshot of the top {scan.window} results for {scan.queries.length} queries on{' '}
-            {when(scan.observedAt)} — not an inventory of everything about you.
+            {when(scan.observedAt)}, not an inventory of everything about you.
           </li>
           <li>
             A measure of observable online presence, not of character, honesty or competence.

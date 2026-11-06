@@ -41,7 +41,7 @@ const sans = Inter({
 
 export const BRAND = 'Reputation Platform';
 
-const TITLE = 'Reputation Platform — see what they find when they search your name';
+const TITLE = 'Reputation Platform: see what they find when they search your name';
 const DESCRIPTION =
   'An evidence-backed audit of your professional online presence. See what ranks for your name, what it is based on, and what is worth doing about it.';
 
@@ -216,7 +216,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/account" style={{ fontWeight: 600 }}>
                 Your data
               </a>{' '}
-              — download everything we hold, or have it deleted.
+              : download everything we hold, or have it deleted.
             </p>
           </div>
         </footer>

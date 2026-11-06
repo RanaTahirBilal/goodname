@@ -516,6 +516,6 @@ export interface ConfidenceReport {
  */
 export const PERMITTED_USE =
   'This report is produced for the person it describes, to understand their own ' +
-  'online presence. It must not be used to make decisions about anybody — including ' +
-  'employment, credit, housing, tenancy, insurance or any other eligibility decision ' +
-  '— and it is not a background check, a consumer report or a screening product.';
+  'online presence. It must not be used to make decisions about anybody, including ' +
+  'employment, credit, housing, tenancy, insurance or any other eligibility decision. ' +
+  'It is not a background check, a consumer report or a screening product.';

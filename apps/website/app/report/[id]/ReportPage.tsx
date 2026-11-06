@@ -126,7 +126,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
             <ul className="small stack" style={{ paddingLeft: 18, marginTop: 8 }}>
               {data.presenceHistory.map((h, i) => (
                 <li key={i}>
-                  {h.score ?? '—'} · {new Date(h.computedAt).toLocaleDateString()} · {h.reason}
+                  {h.score ?? 'Not scored'} · {new Date(h.computedAt).toLocaleDateString()} · {h.reason}
                 </li>
               ))}
             </ul>

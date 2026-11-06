@@ -245,10 +245,11 @@ export default function ReviewClient() {
       )}
 
       <p className="small" style={{ marginBottom: 'var(--s-8)' }}>
+        Read it before deciding:{' '}
         <a href={current.sourceUrl} target="_blank" rel="noreferrer nofollow noopener">
-          Open the source
-        </a>{' '}
-        — read it before deciding.
+          open the source
+        </a>
+        .
       </p>
 
       <hr className="divider" style={{ marginBottom: 'var(--s-6)' }} />

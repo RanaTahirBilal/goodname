@@ -277,7 +277,7 @@ export default function AccountClient() {
                 That is {daysUntil(pending.purgeAt)} days away. Until then nothing
                 has been destroyed and you can still download your data. On that
                 date every audit, every piece of evidence and this account itself
-                are deleted outright — not flagged, not archived.
+                are deleted outright: not flagged, not archived.
               </div>
             </div>
             <p className="small">

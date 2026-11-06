@@ -60,7 +60,7 @@ export class OutboxDeliverer implements EmailDeliverer {
 
     if (this.log) {
       console.log(
-        `\n[email:outbox] NOT SENT — no mail provider configured.\n` +
+        `\n[email:outbox] NOT SENT. No mail provider configured.\n` +
           `  to:      ${message.to}\n` +
           `  subject: ${message.subject}\n` +
           `  ${message.body.split('\n').join('\n  ')}\n`
@@ -99,6 +99,6 @@ export const signInEmail = (
   body:
     `Your sign-in code is ${code}\n\n` +
     `It expires in ${minutes} minutes and can only be used once.\n\n` +
-    `If you did not ask to sign in, you can ignore this — the code is useless ` +
+    `If you did not ask to sign in, you can ignore this: the code is useless ` +
     `without your email inbox, and nobody has been given access to anything.`,
 });

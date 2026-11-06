@@ -1,7 +1,7 @@
 import AccountClient from './AccountClient';
 
 export const metadata = {
-  title: 'Your data — Reputation Platform',
+  title: 'Your data | Reputation Platform',
   /**
    * Never indexed, whatever the launch flag says.
    *
