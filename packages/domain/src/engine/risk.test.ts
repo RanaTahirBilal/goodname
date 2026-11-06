@@ -302,6 +302,7 @@ const assessment = (over: Partial<RiskAssessment> = {}): RiskAssessment =>
     privacy: { level: 'none', exposedListings: 0, note: '' },
     needsReview: [],
     awaitingReview: 0,
+    unattributedAdverse: 0,
     recordsAssessed: 4,
     containsFixtureData: false,
     assessedAt: '2026-11-05T00:00:00.000Z',
@@ -357,4 +358,54 @@ test('the three cases never share a label', () => {
   ];
 
   assert.equal(new Set(labels).size, 3, `"${labels.join('", "')}" are not all distinct`);
+});
+
+/* ---------------------------------- candidates nobody could attribute */
+
+/**
+ * The third door into the reassuring headline.
+ *
+ * An adverse record we cannot attribute to anybody is dropped before the
+ * assessment begins, which is correct — an uncertain match must not
+ * contribute to somebody's risk. The defect was what the card said
+ * afterwards: "No confirmed adverse findings", with no hint that anything
+ * had been set aside.
+ *
+ * Excluded from scoring and irrelevant to interpreting the score are
+ * different things. The count is reported; which of them is *material*
+ * enough to change the headline is an attribution policy, not a rule the
+ * engine gets to invent. See `materiality.test.ts` and OQ-30.
+ */
+test('a set-aside adverse record is disclosed, not swallowed', () => {
+  const h = riskHeadline(assessment({ unattributedAdverse: 1 }));
+
+  assert.equal(h.label, 'No confirmed adverse findings', 'the headline was promoted by a rule');
+  assert.match(h.support, /could not be attributed to you/);
+  assert.match(h.support, /may belong to somebody else who shares your name/);
+});
+
+test('setting something aside withdraws the claim of completeness', () => {
+  // The point ChatGPT made and I had missed: whether the assessment is
+  // finished and whether it found anything are separate facts, and only one
+  // of them is answered by "no confirmed adverse findings".
+  const open = riskHeadline(assessment({ unattributedAdverse: 2 }));
+  const done = riskHeadline(assessment());
+
+  assert.equal(open.settled, false, 'an assessment with material set aside claims to be complete');
+  assert.equal(done.settled, true);
+  assert.equal(open.label, done.label, 'the two are being distinguished by the headline instead');
+});
+
+test('an established finding still outranks set-aside material', () => {
+  const h = riskHeadline(assessment({ level: 'high', levelRationale: '1 finding.', unattributedAdverse: 1 }));
+
+  assert.equal(h.label, 'High');
+  assert.equal(h.settled, false);
+  assert.match(h.support, /could not be attributed/);
+});
+
+test('nothing set aside says nothing about it', () => {
+  // The sentence has to be absent, not empty. A report that mentions
+  // unattributed material every time teaches the reader to skip the line.
+  assert.doesNotMatch(riskHeadline(assessment()).support, /attributed/);
 });

@@ -456,6 +456,18 @@ export interface RiskAssessment {
    * `none`, and only one of them is reassuring.
    */
   recordsAssessed: number;
+  /**
+   * Adverse candidates that could not be attributed to anybody.
+   *
+   * Kept distinguishable from `awaitingReview`, which counts records that
+   * *are* the customer's and have not been read. These are unresolved in
+   * two ways at once, and the difference matters: one is unfinished work on
+   * this person's report, the other may be a stranger's record that happens
+   * to share a name.
+   *
+   * It is reported, never used to choose the primary status. See OQ-30.
+   */
+  unattributedAdverse: number;
   containsFixtureData: boolean;
   assessedAt: string;
 }

@@ -233,6 +233,36 @@ export function assessRisk(input: RiskInput): RiskAssessment {
    */
   const unread = all.filter((f) => f.status === 'requires_review');
 
+  /**
+   * Adverse candidates we could not attribute to anybody.
+   *
+   * Counted from `allRecords` rather than `records`, because these are
+   * exactly the ones the attribution filter removed before the assessment
+   * started. They are unresolved in two ways at once: we do not know whose
+   * they are, and nobody has read what they say.
+   *
+   * Deliberately **not** used to choose the headline. Deciding which of
+   * these matter enough to make a whole assessment read as pending is an
+   * attribution policy, not an engineering judgement, and the two cases that
+   * would have to be told apart — the customer's own registry record, and a
+   * same-named stranger's suspension — come out of this engine identical on
+   * every field it holds. `materiality.test.ts` proves it and OQ-30 holds
+   * the decision. A rule invented here would either amplify one stranger's
+   * record into every namesake's report or do nothing at all.
+   *
+   * What it is for is the sentence underneath: saying how many there are
+   * states a fact, and leaves the judgement to the reader and the reviewer.
+   */
+  const unattributedAdverse = allRecords.filter(
+    (r) =>
+      r.identityStatus === 'uncertain' &&
+      r.classification === 'negative' &&
+      (r.findingStatus === 'requires_review' ||
+        r.findingStatus === 'allegation' ||
+        r.findingStatus === 'confirmed_finding') &&
+      !r.sensitivity?.withhold
+  ).length;
+
   const levels = live.map((f) => applyAgeRelief(levelForFinding(f), f));
   const privacy = assessPrivacy(primaries, input.brokerAssessmentRan ?? false);
 
@@ -243,6 +273,7 @@ export function assessRisk(input: RiskInput): RiskAssessment {
     level,
     levelRationale: rationaleFor(level, live, privacy, unread.length),
     awaitingReview: unread.length,
+    unattributedAdverse,
     recordsAssessed: primaries.length,
     findings: live.sort(
       (a, b) =>
@@ -346,11 +377,12 @@ export function riskHeadline(risk: RiskAssessment): RiskHeadline {
   if (risk.level !== 'none') {
     return {
       label: LEVEL_WORD[risk.level],
-      support: pending
-        ? `${risk.levelRationale} Separately, ${pending} further result${plural} ` +
-          `contain${pending === 1 ? 's' : ''} a possible adverse reference that has not been verified.`
-        : risk.levelRationale,
-      settled: pending === 0,
+      support:
+        (pending
+          ? `${risk.levelRationale} Separately, ${pending} further result${plural} ` +
+            `contain${pending === 1 ? 's' : ''} a possible adverse reference that has not been verified.`
+          : risk.levelRationale) + unattributedNote(risk),
+      settled: pending === 0 && risk.unattributedAdverse === 0,
     };
   }
 
@@ -360,7 +392,8 @@ export function riskHeadline(risk: RiskAssessment): RiskHeadline {
       support:
         `${pending} result${plural} contain${pending === 1 ? 's' : ''} a possible adverse ` +
         `reference. Its meaning has not been verified, so no adverse finding has been ` +
-        `established — and none has been ruled out either.`,
+        `established — and none has been ruled out either.` +
+        unattributedNote(risk),
       settled: false,
     };
   }
@@ -380,11 +413,47 @@ export function riskHeadline(risk: RiskAssessment): RiskHeadline {
     };
   }
 
+  /**
+   * The remaining case, and the one the correction was aimed at.
+   *
+   * "No confirmed adverse findings" is true here: nothing was established.
+   * What it must not be allowed to imply is that the looking is finished.
+   * So when adverse candidates were set aside as unattributable, the
+   * sentence says so and `settled` is false — the headline keeps its
+   * meaning, and the claim of completeness is withdrawn separately.
+   *
+   * Whether any of those candidates deserves to change the headline itself
+   * is the open policy in OQ-30. Until that is answered this is as far as
+   * the report can honestly go, and it is further than it went.
+   */
+  const note = unattributedNote(risk);
+
   return {
     label: 'No confirmed adverse findings',
-    support: risk.levelRationale,
-    settled: true,
+    support: risk.levelRationale + note,
+    settled: note === '',
   };
+}
+
+/**
+ * The sentence about records nobody could attribute.
+ *
+ * A count, not a judgement. It says what was set aside and why it is not in
+ * the figures, and leaves whether any of it is about the customer to the
+ * only two parties who can actually tell: a reviewer reading the source, and
+ * the customer being asked.
+ */
+function unattributedNote(risk: RiskAssessment): string {
+  const n = risk.unattributedAdverse;
+  if (!n) return '';
+
+  return (
+    ` Separately, ${n} result${n === 1 ? '' : 's'} carrying possible adverse language ` +
+    `could not be attributed to you${n === 1 ? '' : ''}. ` +
+    `${n === 1 ? 'It is' : 'They are'} excluded from this assessment, ` +
+    `${n === 1 ? 'has' : 'have'} not been reviewed, and may belong to somebody else who ` +
+    `shares your name.`
+  );
 }
 
 /** The level in words. Separate from the headline, which may not be a level. */

@@ -714,3 +714,73 @@ risk level until a person has read it. The same branch produced both
 outcomes and there is no version of it that is confident about the real
 one and careful about the misread one, so the trade is the owner's to
 revisit, not engineering's.
+
+---
+
+### OQ-30 — Which unresolved adverse records are *material*? — *opened 5 Nov 2026*
+**Blocks:** promoting an unattributed adverse record to the risk headline.
+Nothing else.
+
+**The invariant, which is settled and implemented.** The report must not
+imply that material adverse uncertainty has been resolved when it has not.
+Whether an assessment is *finished* and whether it *found anything* are
+separate facts, and "No confirmed adverse findings" was answering the
+second while being read as the first.
+
+**What is not settled, and is not engineering's to settle.** An uncertain
+identity match must not contribute to somebody's risk score — that rule
+stands. But a record excluded from scoring is not therefore irrelevant to
+reading the score, and deciding *which* excluded records should make a
+whole assessment read as pending is an attribution policy.
+
+**Why a rule cannot be written today.** `materiality.test.ts` constructs
+the two cases that any such rule must separate:
+
+| | Hers | A stranger's |
+|---|---|---|
+| Title | `Okonkwo, Amara — Board certified…` | `Okonkwo, Amara — Order of suspension` |
+| Source | American Board of Internal Medicine | Texas Medical Board |
+| Reliability | official | official |
+| Identity | uncertain · 0.35 | uncertain · 0.35 |
+| Classification | negative | negative |
+| Finding status | requires_review | requires_review |
+| Severity | 3 | 3 |
+
+Every field the evidence model holds is **identical**. A rule over this
+record shape must promote both — one stranger's suspension holding every
+namesake's assessment hostage, which is the product becoming an allegation
+amplifier — or neither, which is the reassuring headline the correction
+was meant to remove.
+
+The three fields that differ are not judgements the engine can make. The
+domain differs, but "abim.example is her board and tmb.example is not" is
+a claim about which registries govern a Massachusetts cardiologist, and we
+hold no such mapping. Rank differs, and rank is a fact about Google. The
+name form differs, and inverted-name registries are not more likely to
+concern the customer.
+
+**What would resolve it.** The missing datum is a licensing jurisdiction —
+the state and board a professional is actually registered with — which the
+intake form does not ask for and the evidence does not carry. With it, an
+order from a board the customer has never been licensed by is a different
+kind of record from a certificate issued by one they are. That is also
+exactly the data the `connected_account` verification tier (OQ-15) was
+meant to establish.
+
+**Decide:** whether to collect licensing jurisdiction at intake, and what
+materiality means once it exists. Until then the count is reported and
+never promoted.
+
+**Done in the meantime, and deliberately bounded.** `unattributedAdverse`
+is a deterministic count, kept distinguishable from `awaitingReview` in the
+data, and used only in the sentence under the headline: how many records
+carrying possible adverse language were set aside, that they are excluded
+and unreviewed, and that they may belong to somebody who shares the name.
+Stating a count is not a materiality judgement. `settled` goes false
+whenever anything was set aside, so the claim of completeness is withdrawn
+without the headline being promoted.
+
+**The tripwire.** `materiality.test.ts` asserts the two records are
+indistinguishable. If somebody adds the data that separates them, that
+test fails and says so — which is the signal that this question can be
+answered rather than deferred.
