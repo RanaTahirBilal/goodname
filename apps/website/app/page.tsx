@@ -17,11 +17,83 @@
  * evidence is too thin. A headline promises the thing; the line under it
  * says why this one is different.
  */
+import {
+  DIMENSION_LABELS,
+  FIXTURE_SUBJECTS,
+  FixtureSearchProvider,
+  SELF_AUDIT_ATTESTATION,
+  riskHeadline,
+  runAudit,
+  type AuditPurpose,
+  type ProfessionalIdentity,
+} from '@rep/domain';
 import { Icon, type IconName } from './components/Icon';
 import { ClaimLadder } from './components/ClaimLadder';
 import { RetentionTimeline } from './components/RetentionTimeline';
 
-export default function Home() {
+/**
+ * The hero preview, computed by the engine rather than written by hand.
+ *
+ * It used to be a static card claiming a score of 71, 88% coverage and
+ * three dimension values, over a risk level of Elevated. Every one of those
+ * numbers was invented by whoever built the card, and no combination of
+ * them is one the engine would ever produce. That is a small dishonesty on
+ * the one page whose argument is that this product does not round things
+ * up, and it is also a maintenance trap: change the scoring and the
+ * marketing page goes on quoting a report that no longer exists.
+ *
+ * So the landing page runs a real audit. The provider is the fixture, the
+ * subject is invented, the engine is the same one a customer's report comes
+ * out of, and `hero.test.ts` fails if the page ever shows a figure the
+ * engine does not produce.
+ *
+ * It costs nothing at runtime: the domain package does no I/O, this is a
+ * server component, and the page stays static.
+ *
+ * The `allegation` scenario, specifically. A clean report is a worse
+ * illustration of what this product is for than one with something
+ * unsettled in it, correctly labelled as unsettled, which is the whole
+ * distinction the claim ladder further down the page describes.
+ */
+async function example() {
+  const s = FIXTURE_SUBJECTS.adoni;
+
+  const identity: ProfessionalIdentity = {
+    fullName: s.fullName,
+    profession: s.profession as ProfessionalIdentity['profession'],
+    employer: s.employer,
+    city: s.city,
+    region: s.region,
+    credentials: s.credentials.split(', ').filter(Boolean),
+    websiteUrl: s.websiteUrl,
+  };
+
+  const purpose: AuditPurpose = {
+    kind: 'self_audit',
+    attestationText: SELF_AUDIT_ATTESTATION,
+    attestedAt: '2026-10-29T00:00:00.000Z',
+    verification: 'verified_email',
+  };
+
+  const report = await runAudit({
+    identity,
+    purpose,
+    provider: new FixtureSearchProvider('allegation'),
+  });
+
+  if (report.status !== 'complete' || report.presence.status !== 'scored') {
+    // The fixture is deterministic, so this cannot happen without somebody
+    // having changed the scenario. Failing the build is the right answer:
+    // the alternative is a hero with a hole in it.
+    throw new Error(`the landing page example did not produce a report: ${report.status}`);
+  }
+
+  return report;
+}
+
+export default async function Home() {
+  const report = await example();
+
   return (
     <>
       <section style={{ borderBottom: '1px solid var(--border)' }}>
@@ -84,7 +156,7 @@ export default function Home() {
               </ul>
             </div>
 
-            <HeroPreview />
+            <HeroPreview report={report} />
           </div>
         </div>
       </section>
@@ -297,16 +369,36 @@ function Closing() {
 }
 
 /**
- * A static impression of the report, not a live one. Labelled as an example so
- * nobody mistakes a marketing illustration for their own data.
+ * The real report's figures, in a hero-sized frame.
  *
- * The one glass surface on this page, and the safest possible place for it:
- * it sits over a plain background this design controls, it carries no
- * evidence anybody has to read closely, and it is the thing the page is
- * asking you to look at. Its contrast is measured over the darkest ground
- * in the product, not over the one it happens to sit on.
+ * Not a screenshot and not the `Report` component itself: that is a client
+ * component with a view toggle, and shipping the whole report's JavaScript
+ * to a marketing page to render four numbers is the wrong trade. What
+ * matters is that the numbers, the dimension labels and the risk sentence
+ * all come out of the engine, so the page cannot describe a report the
+ * product would not produce.
+ *
+ * Labelled as an example throughout, because rule 13 is not satisfied by
+ * the data being obviously fake to somebody who already knows.
  */
-function HeroPreview() {
+function HeroPreview({ report }: { report: Awaited<ReturnType<typeof example>> }) {
+  const { presence, risk } = report;
+  if (presence.status !== 'scored') return null;
+
+  const headline = riskHeadline(risk);
+
+  /**
+   * The three dimensions with a value, in the engine's own order.
+   *
+   * One of the five is `null` for this subject, because no website checks
+   * ran: inapplicable rather than zero, which is rule 6 and is the thing
+   * most competitors get wrong. It is left out of the preview rather than
+   * shown as a gap, because three bars is a hero and five with a hole in it
+   * is a conversation the hero does not have room for. The report itself
+   * shows all five and says which is inapplicable.
+   */
+  const shown = presence.dimensions.filter((d) => d.value !== null).slice(0, 3);
+
   return (
     <div className="card glass" aria-label="Example of an audit report">
       <div
@@ -314,7 +406,7 @@ function HeroPreview() {
         style={{ justifyContent: 'space-between', marginBottom: 'var(--s-6)' }}
       >
         <p className="eyebrow">Example report</p>
-        <span className="pill pill-neutral">Illustration</span>
+        <span className="pill pill-neutral">Invented person</span>
       </div>
 
       <div
@@ -322,12 +414,12 @@ function HeroPreview() {
         style={{ alignItems: 'baseline', gap: 'var(--s-3)', marginBottom: 'var(--s-2)' }}
       >
         <span className="hero-figure" style={{ fontSize: '3.75rem' }}>
-          71
+          {presence.score}
         </span>
         <span className="small">
           online presence
           <br />
-          88% coverage
+          {Math.round(presence.coverage * 100)}% coverage
         </span>
       </div>
 
@@ -335,20 +427,16 @@ function HeroPreview() {
         className="stack"
         style={{ ['--gap' as string]: 'var(--s-4)', marginTop: 'var(--s-6)' }}
       >
-        {[
-          ['Discoverability & ownership', 0.74],
-          ['Profile completeness', 0.63],
-          ['Source authority', 0.43],
-        ].map(([label, v]) => (
-          <div key={label as string} className="meter-row">
+        {shown.map((d) => (
+          <div key={d.code} className="meter-row">
             <div className="row">
               <span className="small" style={{ color: 'var(--text)' }}>
-                {label}
+                {DIMENSION_LABELS[d.code]}
               </span>
-              <span className="meter-value">{Math.round((v as number) * 100)}</span>
+              <span className="meter-value">{Math.round((d.value as number) * 100)}</span>
             </div>
             <div className="meter">
-              <span style={{ width: `${(v as number) * 100}%` }} />
+              <span style={{ width: `${(d.value as number) * 100}%` }} />
             </div>
           </div>
         ))}
@@ -366,12 +454,9 @@ function HeroPreview() {
           style={{ justifyContent: 'space-between', marginBottom: 'var(--s-3)' }}
         >
           <span className="eyebrow">Reputation risk</span>
-          <span className="pill pill-warning">Elevated</span>
+          <span className="pill pill-warning">{headline.label}</span>
         </div>
-        <p className="small">
-          One unsettled allegation, reported but not established. Shown separately so it
-          cannot disappear into an average.
-        </p>
+        <p className="small">{headline.support}</p>
       </div>
     </div>
   );

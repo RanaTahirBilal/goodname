@@ -260,11 +260,10 @@ Honest list, in the same order as the priorities above.
   customer we do not have: not a lie exactly, and close enough to one that it
   undercuts the argument every other page is making. If there is ever a real
   customer who consents to appear, that is a different question.
-- **No product screenshots.** The marketing page shows a hand-built example
-  card rather than the real report, which is safer (it cannot drift out of
-  date silently) and less convincing. The honest fix is to render the real
-  component from fixture data at build time, which is work rather than a
-  decision.
+- **The hero preview is computed by the engine**, not screenshotted and not
+  written by hand. See the addendum below. Still not a screenshot of the
+  report itself, which would need the report's own client JavaScript on a
+  marketing page to render four numbers.
 - **No icons on the audit form.** Deliberate: an icon beside a field label is
   decoration repeating the label, which is the rule the set is held to.
 - **`/review` is unchanged as an information architecture.** One record at a
@@ -318,3 +317,54 @@ file.** The print helper read the first `@media print` block and stopped.
 These components keep their print rules beside their own CSS, at the bottom,
 so the new rules were invisible to a test that reported it was checking the
 print stylesheet. It reads every block now.
+
+
+---
+
+## Addendum: the hero stops making numbers up
+
+The preview card claimed a score of 71, 88% coverage, three dimension values
+and a risk level of Elevated. Every figure was written by whoever built the
+card, and no combination of them is one the engine produces for any subject.
+
+A small dishonesty, on the one page whose argument is that this product does
+not round things up. Also a maintenance trap: change the scoring and the
+marketing page goes on quoting a report that no longer exists.
+
+The landing page runs a real audit now. The domain package does no I/O, the
+page is a server component, and the result is that `/` is still a static
+route: the engine runs once at build. What the card shows is what the engine
+returned.
+
+| | Before, by hand | Now, from the engine |
+|---|---|---|
+| Score | 71 | 50 |
+| Coverage | 88% | 86% |
+| Discoverability | 74 | 74 |
+| Profile completeness | 63 | 64 |
+| Source authority | 43 | 0 |
+| Risk | Elevated | Elevated |
+
+The score dropped by twenty-one points and the authority dimension turned out
+to be zero, because that fixture genuinely has no earned third-party
+coverage. Both are less flattering than the invention and both are what a
+real report would say, which is the entire point of the page they sit on.
+
+**The scenario is `allegation`, deliberately.** A clean report is a worse
+illustration of what this product is for than one with something unsettled
+in it, correctly labelled as unsettled, which is the distinction the claim
+ladder further down the page exists to explain. The risk sentence is
+`riskHeadline`, the same function the real report renders, so the
+advertisement and the thing advertised say the same words.
+
+**One dimension is left out of the preview.** For this subject, Digital Asset
+Health is `null`: inapplicable, because no website checks ran, which is rule
+6 and the thing most competitors get wrong by scoring it zero. Three bars is
+a hero; five with a hole in it is a conversation the hero does not have room
+for. The report itself shows all five and says which is inapplicable.
+
+`hero.test.ts` holds both halves: nothing that looks like a figure may be
+written into the preview, and the scenario must still produce an allegation
+rather than a clean report or a promoted finding. If the fixture ever stops
+illustrating the thing it was chosen for, the hero quietly becomes an
+argument for something else, and the test is what notices.
