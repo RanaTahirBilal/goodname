@@ -386,10 +386,13 @@ rehearsal was convened to check.
 - **No mail provider.** The customer's code is on screen under an honest
   notice; the reviewer's came out of the `email_outbox` table with a shell
   command. Every staff sign-in is still an operator with database access.
-- **The audit form still opens pre-filled with Jensen Adoni**, the demo
-  attorney, for a signed-in physician (F7). Unfixed: it was not in the
-  milestone, and it is the one screen where typing the wrong person's name
-  is the failure the product exists to prevent.
+- ~~**The audit form still opens pre-filled with Jensen Adoni**~~ (F7).
+  **Fixed 6 November 2026**, during the design pass rather than the
+  correctness milestone. The form arrives empty, the fixture subjects load
+  from a button that names who it is about to fill in, the scenario picker
+  no longer overwrites a name somebody typed, and the attestation carries
+  "You are about to audit <name>." beside the box being ticked.
+  `audit-form.test.ts` holds all four.
 - **"Answering moves this figure"** (F8) — unfixed, though less wrong
   than it was: confirming the board record did move identity from 3 of 4
   to 4 of 4 this time, because that record was `uncertain` rather than

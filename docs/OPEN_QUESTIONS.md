@@ -706,14 +706,22 @@ appeared once and vanished, because the page was rendering what the
 reconciler had just done rather than what was true of the report. A fact
 about the report is not a fact about the request that noticed it.
 
-**Still open, and deliberately.** The audit form opens pre-filled with the
-demo attorney's details for whoever is signed in; that is the one screen
-where typing the wrong person's name is the failure the product exists to
-prevent. And the cost of F2: a genuine disbarment no longer raises the
+**F7 closed 6 November 2026.** The audit form no longer opens pre-filled
+with the demo attorney's details for whoever is signed in. It arrives
+empty, the fixture subjects load from a button that names the subject, the
+scenario picker will not overwrite a typed name, and the attestation
+states whose name is about to be searched. Fixed during the design pass
+rather than the correctness milestone, which is why it was listed here as
+open for a day after it was not.
+
+**Still open.** The cost of F2: a genuine disbarment no longer raises the
 risk level until a person has read it. The same branch produced both
 outcomes and there is no version of it that is confident about the real
 one and careful about the misread one, so the trade is the owner's to
-revisit, not engineering's.
+revisit, not engineering's. F5 and F8 also stand: review decisions do not
+survive a re-run, so the same classifier error is re-queued on every
+re-audit, and Finding 01 can still promise that answering will move a
+figure that in some cases cannot move.
 
 ---
 
