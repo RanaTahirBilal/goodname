@@ -11,6 +11,7 @@
  */
 import { useState } from 'react';
 import { Report, type CompleteReport, type ScoreHistoryEntry } from '../components/Report';
+import { Icon } from '../components/Icon';
 import { FIXTURE_SUBJECTS, SCENARIO_SUBJECT } from '@rep/domain';
 
 const SELF_AUDIT_ATTESTATION =
@@ -545,10 +546,24 @@ function Running({
   attempt: number;
 }) {
   return (
-    <div className="card stack" style={{ ['--gap' as string]: '16px' }} role="status" aria-live="polite">
-      <h1 style={{ fontSize: '1.5rem' }} className="pulse">
-        Searching…
-      </h1>
+    <div className="card stack" style={{ ['--gap' as string]: 'var(--s-4)' }} role="status" aria-live="polite">
+      <div className="row" style={{ gap: 'var(--s-3)', color: 'var(--primary)' }}>
+        <Icon name="search" scale={1.4} />
+        <h1 style={{ fontSize: '1.5rem' }}>Searching…</h1>
+      </div>
+
+      {/*
+        An indeterminate bar, and the distinction matters more here than
+        anywhere else on the site.
+        A percentage would be invented: the job does not report which stage
+        it is in, so any number or filled proportion would be a guess
+        rendered as a fact, in a product whose argument is that it does not
+        do that. A bar with no end claims only that work is happening, which
+        is true and is the one thing worth saying.
+      */}
+      <div className="indeterminate" aria-hidden>
+        <span />
+      </div>
 
       <p className="small">
         Running {queries.length} quer{queries.length === 1 ? 'y' : 'ies'} against the{' '}
@@ -556,22 +571,28 @@ function Running({
         they are, and scoring.
       </p>
 
-      <ul className="small mono stack" style={{ ['--gap' as string]: '4px', listStyle: 'none' }}>
+      <ul className="stack" style={{ ['--gap' as string]: 'var(--s-2)', listStyle: 'none' }}>
         {queries.map((q) => (
-          <li key={q}>“{q}”</li>
+          <li key={q} className="row small mono" style={{ gap: 'var(--s-3)', alignItems: 'baseline' }}>
+            <span style={{ color: 'var(--text-2)' }}>
+              <Icon name="search" />
+            </span>
+            <span>“{q}”</span>
+          </li>
         ))}
       </ul>
 
       {attempt > 1 && (
-        <p className="small" style={{ color: 'var(--warning)' }}>
+        <p className="small row" style={{ color: 'var(--warning)', gap: 'var(--s-2)' }}>
+          <Icon name="alert" />
           The provider failed once and we are retrying. Attempt {attempt}.
         </p>
       )}
 
       <p className="small">
-        We show the provider, the queries and the attempt because those are known. We do not
-        show a step-by-step progress bar, because the real progress is not visible from here
-        and a fake one would be the first thing in this product that lied to you.
+        We show the provider, the queries and the attempt because those are known. The bar
+        above does not fill, because the real progress is not visible from here and a bar
+        that filled would be the first thing in this product that lied to you.
       </p>
     </div>
   );

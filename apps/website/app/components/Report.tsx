@@ -25,6 +25,7 @@ import type {
   RiskLevel,
 } from '@rep/domain';
 import { DIMENSION_LABELS, PERMITTED_USE, riskHeadline, splitFindings } from '@rep/domain';
+import { Icon, type IconName } from './Icon';
 
 type Scan = {
   provider: string;
@@ -164,7 +165,7 @@ function SaveButton() {
       onClick={() => window.print()}
       style={{ flex: '0 0 auto' }}
     >
-      Print or save as PDF
+      <Icon name="document" /> Print or save as PDF
     </button>
   );
 }
@@ -633,6 +634,20 @@ function PresenceCard({ presence }: { presence: PresenceScore }) {
   );
 }
 
+/**
+ * Which glyph belongs to which state.
+ *
+ * Four outcomes, three glyphs: an established finding and an assessment
+ * with nothing to assess are both `alert`, because both mean "do not read
+ * this as a clean result", and that is the distinction the icon is for.
+ * The words underneath say which of the two it is.
+ */
+const HEADLINE_ICON = (risk: RiskAssessment, settled: boolean): IconName => {
+  if (risk.level !== 'none') return 'alert';
+  if (risk.awaitingReview > 0 || risk.unattributedAdverse > 0) return 'eye';
+  return settled ? 'check' : 'alert';
+};
+
 function RiskCard({ risk }: { risk: RiskAssessment }) {
   const headline = riskHeadline(risk);
 
@@ -663,6 +678,18 @@ function RiskCard({ risk }: { risk: RiskAssessment }) {
           color: headline.settled ? RISK_INK[risk.level] : 'var(--text)',
         }}
       >
+        {/*
+          A third channel for the state.
+          The headline was a word and a colour. Colour alone never carried
+          it, but word-plus-colour still leaves one visual signal doing the
+          work for anyone who reads the big type and moves on. The glyph
+          says the same thing a third way: a tick for settled, an eye for
+          waiting to be read, an exclamation for something found or
+          something missing.
+        */}
+        <span style={{ marginRight: '0.5rem' }}>
+          <Icon name={HEADLINE_ICON(risk, headline.settled)} />
+        </span>
         {headline.label}
       </p>
 
@@ -779,8 +806,19 @@ function FindingRow({ finding, evidence }: { finding: RiskFinding; evidence: Evi
       </dl>
 
       <p className="small" style={{ marginTop: 8 }}>
-        <a href={finding.sourceUrl} target="_blank" rel="noreferrer nofollow noopener">
+        <a
+          href={finding.sourceUrl}
+          target="_blank"
+          rel="noreferrer nofollow noopener"
+          className="row"
+          style={{ gap: 'var(--s-2)', display: 'inline-flex' }}
+        >
           View the source
+          {/* Not on every linked title in the register: twenty identical
+              glyphs in a table is noise. Here, where it is a call to
+              action, it says the thing the words do not, which is that
+              you are about to leave for somebody else's page. */}
+          <Icon name="source" />
         </a>
       </p>
     </article>
@@ -1042,7 +1080,16 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
 
             {e.sensitivity?.withhold ? (
               <>
-                <p style={{ fontWeight: 600, fontSize: '1rem' }}>
+                <p
+                  className="row"
+                  style={{ fontWeight: 600, fontSize: '1rem', gap: 'var(--s-2)', alignItems: 'baseline' }}
+                >
+                  {/* The one case where the absence of text is the finding.
+                      A lock says we declined to hold this, which is a
+                      different statement from "nothing here". */}
+                  <span style={{ color: 'var(--text-2)' }}>
+                    <Icon name="lock" />
+                  </span>
                   <a href={e.sourceUrl} target="_blank" rel="noreferrer nofollow noopener">
                     A result we did not keep a copy of
                   </a>

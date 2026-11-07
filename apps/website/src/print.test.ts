@@ -262,3 +262,39 @@ test('the permitted-use statement is not hidden when printing', () => {
     'notices lose their boundary on paper, so the statement reads as body text'
   );
 });
+
+/* ------------------------------------------------- icons on paper */
+
+/**
+ * Icons have to survive the print stylesheet.
+ *
+ * They are stroked inline SVG taking `currentColor`, so they print as line
+ * art with the text around them, which is the reason to draw them that way
+ * rather than ship a font or a sprite. Two things could still break it, and
+ * both are the kind of rule somebody adds for a good reason on screen.
+ */
+test('nothing in the print block hides or blanks an icon', () => {
+  const printBlock = /@media print \{([\s\S]*)$/.exec(print)![1];
+
+  assert.ok(
+    !/\bsvg\b[^{]*\{[^}]*display:\s*none/.test(printBlock),
+    'the print stylesheet hides SVG, so every icon vanishes on paper'
+  );
+
+  assert.ok(
+    !/\bsvg\b[^{]*\{[^}]*(visibility:\s*hidden|opacity:\s*0)/.test(printBlock),
+    'the print stylesheet blanks SVG'
+  );
+});
+
+test('the glass surfaces become solid on paper', () => {
+  /**
+   * Browsers do not print background colours. A translucent panel prints as
+   * nothing at all and its border prints as a box drawn around air, which
+   * is worse than either extreme: it looks like a deliberate empty frame.
+   */
+  const printBlock = /@media print \{([\s\S]*)$/.exec(print)![1];
+
+  assert.match(printBlock, /\.glass[\s\S]{0,200}background:\s*#FFFFFF\s*!important/i);
+  assert.match(printBlock, /\.glass[\s\S]{0,200}backdrop-filter:\s*none\s*!important/i);
+});

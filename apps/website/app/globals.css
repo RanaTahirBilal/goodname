@@ -1336,3 +1336,55 @@ a > .card:hover,
     transform: translate(-50%, 50%) rotate(90deg);
   }
 }
+
+/* ------------------------------------------------------- indeterminate */
+
+/**
+ * A bar that shows work is happening and refuses to say how much is left.
+ *
+ * The job reports no stage, so a filled proportion would be invented. This
+ * is the one place in the product where a decorative animation is also the
+ * honest answer: a segment that travels says "running" and claims nothing
+ * about duration.
+ */
+.indeterminate {
+  position: relative;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.indeterminate > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 35%;
+  border-radius: inherit;
+  background: var(--primary);
+  animation: slide 1.4s var(--ease) infinite;
+}
+
+@keyframes slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(340%); }
+}
+
+/**
+ * Stopped rather than frozen mid-travel.
+ *
+ * The global reduced-motion rule sets every animation to 0.001ms, which
+ * would leave this segment parked wherever the first frame put it, reading
+ * as a progress bar stuck at 35%. That is the exact false claim the
+ * indeterminate bar exists to avoid, so under reduced motion it becomes a
+ * full-width muted track: present, clearly not measuring anything.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate > span {
+    position: static;
+    display: block;
+    width: 100%;
+    height: 100%;
+    animation: none !important;
+    background: var(--border-strong);
+  }
+}
