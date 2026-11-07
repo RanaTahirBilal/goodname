@@ -152,3 +152,115 @@ covered.
 
 A third test plants a dash and asserts the detector catches it, because a
 lint that silently matches nothing passes for ever.
+
+---
+
+# Implementation record
+
+The audit above was written before any work. This is what was built against
+it, in four commits, and what each one caught. Written after the fact so the
+list of priorities and the account of what happened to them are not the same
+paragraph edited twice.
+
+## What shipped
+
+| Priority | Status |
+|---|---|
+| 1. An icon system | Done. 12 glyphs, one family, used at 13 call sites |
+| 2. Imagery with a job | Partly. Evidence chain, two empty states. No photography, no further diagrams |
+| 3. Motion | Done. Two durations, one curve, one reduced-motion switch |
+| 4. Glass surfaces | Done, on two surfaces, with contrast composited and measured |
+| 5. The marketing page | Done |
+
+The stylesheet went from 1,099 lines and 37 tokens to 1,404 and 44. The
+website's own test count went from 35 to 63.
+
+## The four things the work caught that reading would not have
+
+Each of these passed every check that existed before it was looked at
+directly. They are the argument for verifying in the browser rather than at
+the end of a build log.
+
+**The glass had no blur for an hour, and nothing looked wrong.** The
+stylesheet declared `backdrop-filter` followed by a hand-written
+`-webkit-backdrop-filter`. Lightning CSS, which Next runs over this file,
+resolved that pair against its browser targets and dropped the property
+entirely. The served rule had no blur in it at all. It was invisible because
+the fallback is deliberately good: at 92% opacity the surface is the right
+colour and the right contrast with or without a blur. Only reading the
+computed style found it. There is a test now.
+
+**The glass failed an accessibility floor at the opacity that looked best.**
+At 82%, the muted text colour composited over the darkest ground in the
+product came to 4.10:1. The test said so before any of it shipped, which is
+the entire reason the measurement exists: a frosted surface fails a floor
+while looking correct in every screenshot. 92% is the number that passes,
+not the number that was chosen.
+
+**A hard-coded duration that reduced motion could never have switched off.**
+`transition: transform 120ms ease` on the disclosure chevron, written long
+before the motion tokens existed. Zeroing the tokens cannot reach a number
+that never asked for one. Found by a test asserting every duration reads a
+token, not by looking at the chevron.
+
+**A 4px optical misalignment, measured rather than nudged.** The notice glyph
+aligned to the top of its flex row rather than to the first line of text
+beside it: icon centre at 133px, first-line centre at 137px. Not enough to
+name and enough to look careless where a title wraps. Both now land on the
+same pixel.
+
+## Decisions worth keeping
+
+**The header is glass at 92%, not 10%.** The previous comment in `layout.tsx`
+argued against a frosted header because a blurred bar over an evidence table
+leaves the row beneath half-legible while somebody is reading it. That is
+true of a low-opacity wash and false at 92%, where the row is behind
+something rather than showing through it. The blur supplies depth, the
+opacity supplies contrast, and the worst-case and best-case backdrops produce
+nearly the same colour, which is asserted with its own test.
+
+**Glass is refused in two places**, enforced rather than remembered: the
+evidence register, which has to print and which browsers will not print
+backgrounds for, and anything a reviewer reads closely. A test fails if a
+backdrop filter is ever added to either.
+
+**The running audit has an indeterminate bar that will not fill.** A
+percentage would be invented: the job reports no stage, so a filled
+proportion is a guess rendered as a fact. A travelling segment claims only
+that work is happening. Under reduced motion it becomes a full-width muted
+track rather than freezing mid-travel, which would have read as a progress
+bar stuck at 35%, precisely the false claim the bar exists to avoid.
+
+**Icons are drawn here rather than installed.** An icon library is a supply
+chain, a bundle and a licence in exchange for 1,400 glyphs of which twelve
+are used. They are stroked SVG on `currentColor` sized in `em`, so an icon
+beside text is the colour and size of that text and inherits its contrast
+result, and so they print as line art with the words around them.
+
+**An icon is decoration or meaning, never both.** Without a `label` the SVG
+is `aria-hidden`; with one it is an image with a name. An icon repeating the
+word beside it makes a screen reader say the word twice, so the component
+makes the wrong choice hard rather than documenting the right one.
+
+**Notices come from one component.** Twelve hand-assembled divs carried their
+tone in colour alone wherever somebody had not remembered a glyph. The tone
+now reaches a reader three ways: colour, the word in the title, the shape.
+
+## What is still missing
+
+Honest list, in the same order as the priorities above.
+
+- **No photography and no illustration.** The evidence chain is the only
+  diagram. A product explaining what it does to a sceptical professional
+  could use two or three more, and none of them should be stock.
+- **No product screenshots.** The marketing page shows a hand-built example
+  card rather than the real report, which is safer (it cannot drift out of
+  date silently) and less convincing.
+- **No icons on the audit form.** Deliberate: an icon beside a field label is
+  decoration repeating the label, which is the rule the set is held to.
+- **`/review` is unchanged as an information architecture.** One record at a
+  time, four decisions, a written reason. It got an empty state and two
+  glyphs and nothing else, because its narrowness is the safeguard rather
+  than a gap: it is the only screen in the product that reads across
+  accounts.
+- **Nothing on the other three platforms**, which still do not exist.
