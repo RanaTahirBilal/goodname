@@ -1402,3 +1402,132 @@ a > .card:hover,
     background: var(--border-strong);
   }
 }
+
+/* -------------------------------------------------------------- ladder */
+
+/**
+ * Three tiers with the conditions for leaving each one written between
+ * them. A column at every width: the sequence is the content, and three
+ * tiers side by side read as three options to pick from rather than as a
+ * climb most things never finish.
+ */
+.ladder {
+  list-style: none;
+  display: grid;
+  gap: 0;
+  max-width: 62ch;
+}
+
+.ladder-tier {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  padding: var(--s-4);
+  background: var(--surface);
+}
+
+/* The left rule carries the tier, so it is the only thing that changes. */
+.ladder-neutral { border-left-color: var(--border-strong); }
+.ladder-warning { border-left-color: var(--warning); }
+.ladder-danger { border-left-color: var(--danger); }
+
+/**
+ * The gate sits in the gap between two tiers rather than inside either,
+ * because it belongs to neither: it is the cost of moving between them.
+ */
+.ladder-gate {
+  display: flex;
+  gap: var(--s-3);
+  align-items: baseline;
+  padding: var(--s-4) var(--s-4) var(--s-4) var(--s-6);
+  margin-left: var(--s-6);
+  border-left: 1px dashed var(--border-strong);
+}
+
+.ladder-gate-mark {
+  color: var(--text-2);
+  transform: rotate(90deg);
+  line-height: 0;
+}
+
+/* ----------------------------------------------------------- retention */
+
+.retention {
+  display: grid;
+  gap: var(--s-6);
+  max-width: 62ch;
+}
+
+.retention-row > dt {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  margin-bottom: var(--s-2);
+}
+
+.retention-length {
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.retention-row > dd { margin: 0; }
+
+.retention-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+  margin-bottom: var(--s-2);
+}
+
+.retention-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--border-strong);
+}
+
+/**
+ * The quotations bar. The one band that is personal data, so it is the one
+ * drawn in the accent colour rather than in the neutral grey: a chart where
+ * every bar looks the same makes the reader work out which one the page is
+ * about.
+ */
+.retention-bar-strong > span { background: var(--primary); }
+
+/**
+ * Kept indefinitely, drawn as a bar that runs out of the track rather than
+ * one that happens to be full. A full bar reads as "the longest of these
+ * four", which would be a smaller claim than the true one.
+ */
+.retention-bar-open > span {
+  background: linear-gradient(
+    to right,
+    var(--border-strong) 70%,
+    color-mix(in srgb, var(--border-strong) 25%, transparent)
+  );
+}
+
+@media print {
+  /**
+   * A bar chart made of background colours prints as four empty tracks,
+   * because browsers do not print backgrounds unless asked and the reader
+   * has to opt in. `print-color-adjust` asks; the reader may still decline.
+   *
+   * Which is why every bar has its number written beside it in text. The
+   * drawing makes the comparison quick and the words make it survive, and
+   * that order is the right way round: a diagram whose meaning is only in
+   * its ink is a diagram that fails silently on paper.
+   */
+  .retention-bar > span {
+    background: var(--text-2) !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .retention-bar { border: 1px solid var(--border); }
+  .ladder-tier,
+  .retention-row { break-inside: avoid; }
+}

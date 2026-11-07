@@ -250,12 +250,21 @@ now reaches a reader three ways: colour, the word in the title, the shape.
 
 Honest list, in the same order as the priorities above.
 
-- **No photography and no illustration.** The evidence chain is the only
-  diagram. A product explaining what it does to a sceptical professional
-  could use two or three more, and none of them should be stock.
+- **Three diagrams now**, not one: the evidence chain, the claim ladder, and
+  the retention timeline. Each was chosen because words alone were carrying
+  something a sceptical reader would not take on trust.
+- **No photography, and that is a decision rather than a gap.** Two reasons,
+  and the second is the real one. The brief rules out generic stock, which
+  removes the only photography available to a product with no customers. And
+  a photograph of a "physician" on this site is a stranger standing in for a
+  customer we do not have: not a lie exactly, and close enough to one that it
+  undercuts the argument every other page is making. If there is ever a real
+  customer who consents to appear, that is a different question.
 - **No product screenshots.** The marketing page shows a hand-built example
   card rather than the real report, which is safer (it cannot drift out of
-  date silently) and less convincing.
+  date silently) and less convincing. The honest fix is to render the real
+  component from fixture data at build time, which is work rather than a
+  decision.
 - **No icons on the audit form.** Deliberate: an icon beside a field label is
   decoration repeating the label, which is the rule the set is held to.
 - **`/review` is unchanged as an information architecture.** One record at a
@@ -264,3 +273,48 @@ Honest list, in the same order as the priorities above.
   than a gap: it is the only screen in the product that reads across
   accounts.
 - **Nothing on the other three platforms**, which still do not exist.
+
+
+---
+
+## Addendum: the two diagrams, and what they cost
+
+**The claim ladder** draws the distinction the product turns on. The landing
+page used to make it in a sentence, "allegations are labelled as allegations,
+never as findings", which every product in this category says and which a
+reader has no way to evaluate. What makes it true here is a specific set of
+conditions, and conditions are a shape: three tiers, with the cost of leaving
+each one written in the gap between them. Most negative material stops at the
+second tier for ever, which is the fact worth leaving somebody with.
+
+**The retention timeline** answers the question a professional actually has
+before typing their name into anything, and the answer is better than the
+prose made it sound. The bar holding quotations about a person is the short
+one, and the long one holds a number and a version string. That is the
+argument the policy has always made; drawn to scale it makes itself.
+
+Both are HTML and CSS rather than SVG, deliberately. A diagram whose content
+is words should be made of words: SVG text does not reflow, cannot be
+selected or searched, and at 320px either overflows or shrinks past reading.
+Everything in these two is a box, a rule, a bar and a label, so CSS does it
+better and a screen reader gets the real content rather than a `<desc>`
+somebody has to remember to update.
+
+**The retention numbers are asserted against the policy.** They are written
+out in the component rather than imported, because `DEFAULT_RETENTION` lives
+in a package that imports `node:sqlite` and pulling a database driver into a
+landing page to render four integers is the wrong trade. So
+`retention-diagram.test.ts` checks each one against the real constants: a
+page promising somebody their quotations are deleted after 180 days must not
+be able to go on saying it after the sweep changes.
+
+That test also forced a small structural improvement. Node runs TypeScript by
+stripping types, which does not extend to JSX, so nothing in a `.tsx` can be
+imported by a test. The band data moved to a `.ts` of its own, which is where
+data belonged anyway.
+
+**And it found a test that had been quietly checking the wrong half of a
+file.** The print helper read the first `@media print` block and stopped.
+These components keep their print rules beside their own CSS, at the bottom,
+so the new rules were invisible to a test that reported it was checking the
+print stylesheet. It reads every block now.

@@ -21,18 +21,34 @@ import { dirname, join } from 'node:path';
 const here = dirname(fileURLToPath(import.meta.url));
 const css = readFileSync(join(here, '..', 'app', 'globals.css'), 'utf8');
 
-/** The body of the `@media print` block. */
+/**
+ * Every `@media print` block, concatenated.
+ *
+ * This used to read the first one and stop. A stylesheet may legitimately
+ * have several, and components added later tend to keep their print rules
+ * beside their own CSS rather than scrolling up to a shared block. The
+ * consequence of reading only the first is the worst kind of test failure:
+ * the assertions still pass, and they are passing about the wrong half of
+ * the file. Found when a rule written at the bottom was invisible to a
+ * test that said it was checking the print stylesheet.
+ */
 function printBlock(): string {
-  const start = css.indexOf('@media print');
-  assert.notEqual(start, -1, 'there is no @media print block in globals.css');
+  const blocks: string[] = [];
 
-  // Walk the braces, because the block contains nested rules and @page.
-  let depth = 0;
-  for (let i = css.indexOf('{', start); i < css.length; i++) {
-    if (css[i] === '{') depth++;
-    else if (css[i] === '}' && --depth === 0) return css.slice(start, i + 1);
+  for (let start = css.indexOf('@media print'); start !== -1; start = css.indexOf('@media print', start + 1)) {
+    // Walk the braces, because a block contains nested rules and @page.
+    let depth = 0;
+    for (let i = css.indexOf('{', start); i < css.length; i++) {
+      if (css[i] === '{') depth++;
+      else if (css[i] === '}' && --depth === 0) {
+        blocks.push(css.slice(start, i + 1));
+        break;
+      }
+    }
   }
-  throw new Error('the @media print block is unterminated');
+
+  assert.notEqual(blocks.length, 0, 'there is no @media print block in globals.css');
+  return blocks.join('\n');
 }
 
 const print = printBlock();
@@ -297,4 +313,33 @@ test('the glass surfaces become solid on paper', () => {
 
   assert.match(printBlock, /\.glass[\s\S]{0,200}background:\s*#FFFFFF\s*!important/i);
   assert.match(printBlock, /\.glass[\s\S]{0,200}backdrop-filter:\s*none\s*!important/i);
+});
+
+test('the retention bars do not rely on ink to say anything', () => {
+  /**
+   * Browsers do not print background colours unless the reader opts in, so
+   * a bar chart drawn in backgrounds can print as four empty tracks. The
+   * stylesheet asks for them with `print-color-adjust`, and the reader may
+   * still decline, which is fine: every bar has its number written beside
+   * it in words.
+   *
+   * This asserts the belt rather than the braces. The braces are that the
+   * number is text, which is a property of the component and is tested in
+   * `retention-diagram.test.ts`.
+   */
+  const printBlock = /@media print \{([\s\S]*)$/.exec(print)![1];
+
+  assert.match(
+    printBlock,
+    /\.retention-bar > span \{[^}]*print-color-adjust: exact/,
+    'the bars will print blank wherever backgrounds are off, with nothing asking otherwise'
+  );
+});
+
+test('a diagram is not split across a page break', () => {
+  const printBlock = /@media print \{([\s\S]*)$/.exec(print)![1];
+
+  // A tier of the claim ladder or a retention row broken in half reads as
+  // two unrelated fragments, and the ladder's whole meaning is the sequence.
+  assert.match(printBlock, /\.ladder-tier,[\s\S]{0,60}break-inside: avoid/);
 });

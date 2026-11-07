@@ -18,6 +18,8 @@
  * says why this one is different.
  */
 import { Icon, type IconName } from './components/Icon';
+import { ClaimLadder } from './components/ClaimLadder';
+import { RetentionTimeline } from './components/RetentionTimeline';
 
 export default function Home() {
   return (
@@ -90,6 +92,10 @@ export default function Home() {
       <Steps />
 
       <EvidenceChain />
+
+      <ClaimLadder />
+
+      <RetentionTimeline />
 
       <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
         <div className="cols cols-2" style={{ gap: 'var(--s-12)' }}>
