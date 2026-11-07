@@ -137,7 +137,13 @@ export default function ReportPage({ scanId }: { scanId: string }) {
   }
 
   return (
-    <>
+    /**
+     * `rise` is used here and not on pages that load instantly. A report
+     * arrives after a wait, and a thing that appears with no transition
+     * after a wait reads as a page reloading rather than as work finishing.
+     * At `prefers-reduced-motion` it is an instant appearance, not a jump.
+     */
+    <div className="rise">
       {data.reassessed && <ReassessedNotice r={data.reassessed} />}
       <Report
         report={data}
@@ -146,7 +152,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
         pendingId={pendingId}
         history={data.presenceHistory ?? []}
       />
-    </>
+    </div>
   );
 }
 

@@ -143,18 +143,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/**
          * Sticky, because the report is long.
          *
-         * Solid rather than translucent: a blurred bar over scrolling text
-         * is the one decoration this product keeps turning down, and a
-         * backdrop filter over an evidence table makes the row underneath
-         * it unreadable at exactly the moment someone is reading it.
+         * Frosted, at 82% rather than the usual wash.
+         *
+         * This was solid, and the reasoning written here was that a blurred
+         * bar over an evidence table leaves the row beneath it half-legible
+         * at the moment somebody is reading it. That is true of a 10% tint.
+         * At 82% the row beneath is behind something rather than showing
+         * through it, the header's own words keep 10.9:1 over the darkest
+         * ground in the product, and `tokens.test.ts` measures that
+         * composite rather than taking its word for it.
          */}
         <header
+          className="glass-header"
           style={{
             position: 'sticky',
             top: 0,
             zIndex: 20,
-            borderBottom: '1px solid var(--border)',
-            background: 'var(--surface)',
           }}
         >
           <div

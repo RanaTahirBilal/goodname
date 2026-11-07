@@ -111,6 +111,47 @@
   --sans: var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 
+
+  /**
+   * Glass.
+   *
+   * One translucent surface, used where the backdrop is something this
+   * design controls: the header over the page it sits on. Not on the
+   * evidence register, which has to print, and not on the review queue,
+   * where a misread leads to a false allegation about somebody.
+   *
+   * The tint is a near-`--bg` white at 92% rather than the usual 10% wash.
+   * That is the whole trick: the blur does the depth and the opacity does
+   * the legibility, so text on glass keeps a measurable contrast instead of
+   * one that depends on what happens to scroll under it.
+   *
+   * 92 is not a round number chosen for looks. At 82 the muted text colour
+   * composited over the darkest ground in the product came to 4.10:1, which
+   * is under the floor, and the test said so before any of it shipped. That
+   * is the entire reason the measurement exists: a frosted surface fails an
+   * accessibility floor while looking right in every screenshot.
+   */
+  --glass: rgba(250, 249, 246, 0.92);
+  --glass-worst: #09201A;
+  --glass-border: rgba(27, 33, 29, 0.10);
+  --glass-blur: 14px;
+
+  /**
+   * Motion.
+   *
+   * Two durations and one curve, because a third of either is how a product
+   * ends up with six different speeds of the same gesture. The curve eases
+   * out only: things arriving should decelerate, and nothing here needs to
+   * accelerate away.
+   *
+   * Every animated property reads these. `prefers-reduced-motion` sets both
+   * to zero in one place at the bottom of this file, so honouring it is not
+   * something each component has to remember.
+   */
+  --motion-fast: 120ms;
+  --motion: 220ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
   --shadow-sm: 0 1px 2px rgba(27, 33, 29, 0.05);
 }
 
@@ -157,6 +198,10 @@
     --on-ink-rule: #2A3C35;
     --accent: #E8907A;
 
+    --glass: rgba(17, 21, 19, 0.92);
+    --glass-worst: #FAF9F6;
+    --glass-border: rgba(233, 236, 231, 0.12);
+
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }
@@ -192,6 +237,10 @@
   --on-ink-2: #93B5A7;
   --on-ink-rule: #2A3C35;
   --accent: #E8907A;
+
+  --glass: rgba(17, 21, 19, 0.92);
+  --glass-worst: #FAF9F6;
+  --glass-border: rgba(233, 236, 231, 0.12);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
@@ -335,7 +384,7 @@ a:hover { color: var(--primary-dark); }
   border-right: 2px solid var(--text-2);
   border-bottom: 2px solid var(--text-2);
   transform: rotate(-45deg);
-  transition: transform 120ms ease;
+  transition: transform var(--motion-fast) var(--ease);
   flex: 0 0 auto;
 }
 
@@ -599,6 +648,124 @@ input[type='radio'] {
 
 .notice strong { display: block; margin-bottom: var(--s-1); }
 
+/* --------------------------------------------------------------- glass */
+
+/**
+ * A frosted surface, used sparingly and never over something being read.
+ *
+ * The tint is 82% rather than the usual 10%, which is what makes this
+ * legible: the blur supplies the depth and the opacity supplies the
+ * contrast, so text on glass measures the same whatever scrolls beneath it.
+ * A 10% wash looks better in a screenshot and makes the header's own words
+ * depend on the paragraph passing under them.
+ *
+ * `backdrop-filter` is progressive. Without it the surface is simply a
+ * high-opacity panel, which is the same colour and the same contrast: the
+ * fallback is the design with less depth, not a broken one.
+ */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/**
+ * The header is the one place a backdrop filter earns its cost.
+ *
+ * It was solid, and the reasoning written here was that a blurred bar over
+ * an evidence table makes the row beneath it unreadable at the moment
+ * somebody is reading it. That reasoning was about a low-opacity wash. At
+ * 82% the row beneath is not half-legible and distracting, it is simply
+ * behind something, which is what a header is.
+ */
+.glass-header {
+  background: var(--glass);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* -------------------------------------------------------------- motion */
+
+/**
+ * Everything that moves, moves on the same two durations and one curve.
+ *
+ * Transitions rather than keyframes throughout: a transition is interrupted
+ * cleanly when somebody changes their mind mid-gesture, and it costs nothing
+ * when nothing is happening.
+ */
+.btn,
+.pill,
+.card,
+.input,
+.select,
+a {
+  transition:
+    background-color var(--motion-fast) var(--ease),
+    border-color var(--motion-fast) var(--ease),
+    color var(--motion-fast) var(--ease),
+    box-shadow var(--motion) var(--ease),
+    transform var(--motion-fast) var(--ease);
+}
+
+/**
+ * A press that moves. One pixel, which is below the threshold of looking
+ * like an animation and above the threshold of feeling like nothing.
+ */
+.btn:active { transform: translateY(1px); }
+
+/**
+ * Cards lift on hover only where they are a link to somewhere. A card that
+ * responds to the pointer and then does nothing when clicked is a promise
+ * the page does not keep.
+ */
+a > .card:hover,
+.card-link:hover {
+  box-shadow: 0 6px 20px rgba(27, 33, 29, 0.08);
+  transform: translateY(-2px);
+}
+
+/**
+ * Content arriving. Used on the report, which appears all at once after a
+ * wait, and nowhere that loads instantly.
+ */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rise { animation: rise var(--motion) var(--ease) both; }
+
+/**
+ * The switch, in one place.
+ *
+ * Honouring `prefers-reduced-motion` component by component is how a
+ * product ends up honouring it in nine places out of ten. Both duration
+ * tokens go to zero, every transition above collapses, and `.rise` becomes
+ * an instant appearance rather than a jump, because `both` with a zero
+ * duration still applies the end state.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .btn:active,
+  a > .card:hover,
+  .card-link:hover {
+    transform: none;
+  }
+}
+
 /* -------------------------------------------------------------- header */
 
 /**
@@ -716,6 +883,21 @@ input[type='radio'] {
     background: #FFFFFF;
     font-size: 10.5pt;
     line-height: 1.45;
+  }
+
+  /**
+   * Glass becomes paper.
+   *
+   * Browsers do not print backgrounds, so a translucent surface prints as
+   * nothing and its border prints as a box around air. Anything glass on
+   * screen prints as an ordinary ruled panel. The header is hidden anyway;
+   * this is for any glass surface inside the document itself.
+   */
+  .glass,
+  .glass-header {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    border-color: var(--border) !important;
   }
 
   /* The chrome around the document is not part of the document. */
@@ -1097,3 +1279,60 @@ input[type='radio'] {
 .ev-card { padding: var(--s-6) 0; border-top: 1px solid var(--border); }
 .ev-card:first-child { border-top: 0; }
 .ev-card p { max-width: 68ch; }
+
+/* --------------------------------------------------------------- chain */
+
+/**
+ * The evidence chain on the landing page.
+ *
+ * A row of four on a wide screen, a column on a phone, with the connector
+ * rotating a quarter turn rather than disappearing. A diagram that silently
+ * drops its arrows on mobile stops being a sequence and becomes four
+ * unrelated boxes, which is the opposite of what it is there to say.
+ */
+.chain {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s-8);
+}
+
+.chain-stop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.chain-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  color: var(--primary);
+  margin-bottom: var(--s-2);
+}
+
+/** The connector, sitting in the gap rather than inside either stop. */
+.chain-link {
+  position: absolute;
+  top: 1.375rem;
+  right: calc(var(--s-8) / -2);
+  transform: translate(50%, -50%);
+  color: var(--text-2);
+  line-height: 0;
+}
+
+@media (max-width: 760px) {
+  .chain { grid-template-columns: 1fr; gap: var(--s-6); }
+
+  .chain-link {
+    top: auto;
+    right: auto;
+    left: 1.375rem;
+    bottom: calc(var(--s-6) / -2);
+    transform: translate(-50%, 50%) rotate(90deg);
+  }
+}

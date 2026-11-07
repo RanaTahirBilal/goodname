@@ -15,6 +15,7 @@
  */
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Icon } from '../components/Icon';
 
 interface PendingDeletion {
   requestedAt: string;
@@ -200,6 +201,41 @@ export default function AccountClient() {
 
       {/* ------------------------------------------------------ reports */}
 
+      {account.reports && account.reports.length === 0 && (
+        /**
+         * The empty state.
+         *
+         * A page that says "Audits stored: 0" and then nothing is a dead
+         * end, and this is the most likely first visit: somebody who signed
+         * in before running anything. An empty state is a screen in its own
+         * right, so it says what would be here and offers the one action
+         * that fills it.
+         */
+        <section
+          className="card stack"
+          style={{
+            ['--gap' as string]: 'var(--s-3)',
+            alignItems: 'center',
+            textAlign: 'center',
+            padding: 'var(--s-12) var(--s-6)',
+          }}
+        >
+          <span style={{ color: 'var(--text-2)' }}>
+            <Icon name="document" scale={2.5} />
+          </span>
+          <h2 className="mark" style={{ fontSize: '1.25rem' }}>
+            No reports yet
+          </h2>
+          <p className="small" style={{ maxWidth: '42ch' }}>
+            When you run an audit it will be listed here, and will stay openable for as
+            long as we hold the evidence behind it.
+          </p>
+          <Link href="/audit" className="btn btn-primary" style={{ marginTop: 'var(--s-2)' }}>
+            Run your first audit
+          </Link>
+        </section>
+      )}
+
       {account.reports && account.reports.length > 0 && (
         <section className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
           <h2 className="mark" style={{ fontSize: '1.5rem' }}>
@@ -255,7 +291,7 @@ export default function AccountClient() {
         </p>
         <div>
           <a href="/api/account/export" className="btn btn-secondary" download>
-            Download my data
+            <Icon name="download" /> Download my data
           </a>
         </div>
       </section>
@@ -347,7 +383,7 @@ export default function AccountClient() {
                 onClick={scheduleDeletion}
                 disabled={busy || confirm !== 'DELETE'}
               >
-                Schedule deletion
+                <Icon name="trash" /> Schedule deletion
               </button>
             </div>
           </>

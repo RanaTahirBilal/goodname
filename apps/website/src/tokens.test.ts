@@ -105,11 +105,8 @@ const check = (label: string, fg: string, bg: string, min: number) => {
 };
 
 /**
- * `over()` stays even though nothing translucent ships today: the moment a
- * tinted overlay reappears, its real contrast has to be measurable rather
- * than guessed at.
+ * `over()` was kept against the day a tinted surface returned. It has.
  */
-void over;
 
 test('every token referenced by the tests exists in both themes', () => {
   for (const [theme, P] of themes) {
@@ -225,21 +222,62 @@ test('both dark declarations carry the same values', () => {
   );
 });
 
-test('there is no translucent surface to reason about', () => {
-  // The direction is editorial: depth comes from type and space, not blur.
-  // A translucent panel puts text on a colour no stylesheet states, so the
-  // absence is the thing worth asserting.
+/**
+ * This test used to assert that nothing translucent existed at all.
+ *
+ * That was the right rule while the answer to "can we measure it" was no.
+ * It is the wrong rule now: `over()` composites, the glass tokens are
+ * checked against the worst backdrop that can pass beneath them, and the
+ * 82% version of this surface was caught failing at 4.10:1 by that check
+ * rather than by somebody looking at it.
+ *
+ * So the rule becomes narrower and harder instead of disappearing: there is
+ * exactly one translucent surface family, it is declared in the root block
+ * where it can be found, and the places it may not go are named.
+ */
+test('translucency is one named surface, not a technique', () => {
   const root = /:root\s*\{([\s\S]*?)\n\}/.exec(css)![1];
-  assert.ok(!/backdrop-filter/.test(css), 'a backdrop-filter has reappeared');
 
-  // A shadow is allowed to be translucent; a surface a reader sits text on
-  // is not, which is why this looks at colour tokens rather than every rgba.
-  const translucentSurface = root
+  const translucent = root
     .split('\n')
     .filter((l) => !l.includes('shadow'))
-    .some((l) => /rgba\([^)]*,\s*0?\.\d+\s*\)/.test(l));
+    .filter((l) => /rgba\([^)]*,\s*0?\.\d+\s*\)/.test(l))
+    .map((l) => /--([\w-]+):/.exec(l)?.[1])
+    .filter(Boolean);
 
-  assert.ok(!translucentSurface, 'a translucent surface token has reappeared');
+  assert.deepEqual(
+    translucent.sort(),
+    ['glass', 'glass-border'],
+    'a translucent token appeared that nothing composites or checks'
+  );
+});
+
+test('glass does not go where a person is reading evidence', () => {
+  /**
+   * The two refusals from `docs/DESIGN_AUDIT.md`, enforced rather than
+   * remembered. The evidence register has to print, and browsers do not
+   * print backgrounds. The review queue is where a misread becomes a false
+   * allegation about somebody.
+   *
+   * Checked against the stylesheet because that is where a blur would be
+   * added: a rule naming either of these alongside a backdrop filter is the
+   * failure, whoever writes it.
+   */
+  const blurred = css
+    .split(/\n(?=[.#:@a-z])/)
+    .filter((rule) => /backdrop-filter/.test(rule))
+    .map((rule) => rule.split('{')[0]!.trim());
+
+  for (const selector of blurred) {
+    for (const forbidden of ['evidence-register', 'ev-card', 'table', 'queue']) {
+      assert.ok(
+        !selector.includes(forbidden),
+        `"${selector}" puts a backdrop filter on something people read closely`
+      );
+    }
+  }
+
+  assert.ok(blurred.length > 0, 'the glass surface has gone; this test is now vacuous');
 });
 
 test('every gap token comes from the spacing scale', () => {
@@ -264,3 +302,94 @@ test('every gap token comes from the spacing scale', () => {
  * carried by colour alone. Every pill, notice and finding in this interface
  * states its status in words.
  */
+
+/* ---------------------------------------------------------------- glass */
+
+/**
+ * The glass surface, measured rather than quoted.
+ *
+ * A frosted header is the one piece of this brief that can quietly fail an
+ * accessibility floor while looking correct in every screenshot: the tint
+ * passes against the page background it was designed over, and then
+ * something dark scrolls underneath and the composite is a different colour
+ * nobody checked.
+ *
+ * So the tint is composited over `--glass-worst`, the darkest ground that
+ * can pass beneath it, and the text is checked against *that*. Which is the
+ * whole argument for 82% opacity over the usual 10%: the blur supplies the
+ * depth and the opacity supplies the contrast, so the worst case and the
+ * best case are nearly the same colour.
+ */
+test('text on glass clears 4.5:1 over the worst thing that can scroll under it', () => {
+  for (const [theme, P] of themes) {
+    assert.ok(P.glass, `${theme}: missing token --glass`);
+    assert.ok(P['glass-worst'], `${theme}: missing token --glass-worst`);
+
+    const worst = over(P.glass, P['glass-worst']);
+    const best = over(P.glass, P.bg);
+
+    check(`${theme}: body text on glass over the darkest ground`, P.text, worst, 4.5);
+    check(`${theme}: body text on glass over the page`, P.text, best, 4.5);
+    check(`${theme}: muted text on glass over the darkest ground`, P['text-2'], worst, 4.5);
+
+    // The header's links are the primary colour at small size.
+    check(`${theme}: links on glass over the darkest ground`, P.primary, worst, 4.5);
+  }
+});
+
+test('glass stays legible whatever is behind it', () => {
+  /**
+   * The property that makes the surface safe, stated as a number. If the
+   * opacity is ever lowered for a prettier screenshot, the gap between the
+   * best and worst backdrop widens and this fails before anybody ships it.
+   */
+  for (const [theme, P] of themes) {
+    const worst = ratio(P.text, over(P.glass, P['glass-worst']));
+    const best = ratio(P.text, over(P.glass, P.bg));
+
+    const spread = Math.abs(best - worst);
+    assert.ok(
+      spread < 4,
+      `${theme}: text on glass swings ${spread.toFixed(1)} points depending on the backdrop ` +
+        `(${worst.toFixed(1)}:1 to ${best.toFixed(1)}:1). Raise --glass opacity.`
+    );
+  }
+});
+
+test('the glass border is a boundary, not a control outline', () => {
+  // `--glass-border` separates the header from the page. It is decorative
+  // by the same reasoning as `--border`: it identifies no control and no
+  // state, so it is not held to 3:1. Stated so nobody "fixes" it later.
+  for (const [, P] of themes) {
+    assert.ok(P['glass-border'], 'missing token --glass-border');
+  }
+});
+
+test('the blur survives the build', () => {
+  /**
+   * The glass shipped with no blur for an hour, and nothing looked wrong.
+   *
+   * The stylesheet declared `backdrop-filter` followed by a hand-written
+   * `-webkit-backdrop-filter`. Lightning CSS, which Next runs over this
+   * file, resolved that pair against its browser targets and dropped the
+   * property **entirely**. The served rule had no blur in it at all.
+   *
+   * It was invisible because the fallback is deliberately good: at 92%
+   * opacity the surface is the right colour and the right contrast with or
+   * without a blur, so the page looked finished. Only reading the computed
+   * style caught it.
+   *
+   * So: no hand-written vendor prefix on this property. The build adds what
+   * its targets need, and writing one by hand is how the thing it is for
+   * gets removed.
+   */
+  assert.ok(
+    /backdrop-filter:\s*blur\(var\(--glass-blur\)\)/.test(css),
+    'the glass surface no longer asks for a blur'
+  );
+
+  assert.ok(
+    !/-webkit-backdrop-filter/.test(css),
+    'a hand-written -webkit- prefix is back, which makes the build drop the blur'
+  );
+});

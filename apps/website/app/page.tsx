@@ -17,6 +17,8 @@
  * evidence is too thin. A headline promises the thing; the line under it
  * says why this one is different.
  */
+import { Icon, type IconName } from './components/Icon';
+
 export default function Home() {
   return (
     <>
@@ -56,21 +58,23 @@ export default function Home() {
                   paddingTop: 'var(--s-2)',
                 }}
               >
-                {[
-                  'Every finding links to its source and the date we saw it.',
-                  'Allegations are labelled as allegations, never as findings.',
-                  'We tell you when the evidence is too thin to score.',
-                ].map((line) => (
+                {([
+                  ['source', 'Every finding links to its source and the date we saw it.'],
+                  ['alert', 'Allegations are labelled as allegations, never as findings.'],
+                  ['eye', 'We tell you when the evidence is too thin to score.'],
+                ] as [IconName, string][]).map(([icon, line]) => (
                   <li
                     key={line}
                     className="row"
                     style={{ alignItems: 'flex-start', gap: 'var(--s-3)' }}
                   >
-                    <span
-                      aria-hidden
-                      style={{ color: 'var(--primary)', fontWeight: 700, lineHeight: 1.55 }}
-                    >
-                      ✓
+                    {/*
+                      A tick three times said only "this is a list". These
+                      say what kind of promise each line is: a citation, a
+                      distinction, a refusal.
+                    */}
+                    <span style={{ color: 'var(--primary)', lineHeight: 1.55 }}>
+                      <Icon name={icon} />
                     </span>
                     <span>{line}</span>
                   </li>
@@ -84,6 +88,8 @@ export default function Home() {
       </section>
 
       <Steps />
+
+      <EvidenceChain />
 
       <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
         <div className="cols cols-2" style={{ gap: 'var(--s-12)' }}>
@@ -126,21 +132,24 @@ export default function Home() {
  * compare instead of an order to read.
  */
 function Steps() {
-  const steps = [
+  const steps: { n: string; icon: IconName; title: string; body: string }[] = [
     {
       n: '01',
+      icon: 'identity',
       title: 'Tell us who you are',
       body:
         'Name, profession, and whatever else distinguishes you: employer, city, credentials, your own site. Every detail is one more way to tell you apart from someone who shares your name.',
     },
     {
       n: '02',
+      icon: 'search',
       title: 'We search and read the results',
       body:
         'We run the searches a person would, then work through what comes back: what each result is, who published it, whether it is settled or merely alleged, and whether it is about you at all.',
     },
     {
       n: '03',
+      icon: 'document',
       title: 'You get the evidence, not just a number',
       body:
         'A presence score, a separate read on negative material, and how confident we are in the identity match. Each one is traceable to the results it came from, which are listed in full.',
@@ -156,8 +165,14 @@ function Steps() {
       <ol className="steps">
         {steps.map((s) => (
           <li key={s.n} className="stack" style={{ ['--gap' as string]: 'var(--s-3)' }}>
-            <span className="step-number" aria-hidden>
-              {s.n}
+            <span
+              className="row"
+              style={{ gap: 'var(--s-3)', alignItems: 'baseline', color: 'var(--primary)' }}
+            >
+              <span className="step-number" aria-hidden>
+                {s.n}
+              </span>
+              <Icon name={s.icon} scale={1.15} />
             </span>
             <h3>{s.title}</h3>
             <p className="small" style={{ fontSize: '0.9375rem' }}>
@@ -166,6 +181,74 @@ function Steps() {
           </li>
         ))}
       </ol>
+    </section>
+  );
+}
+
+/**
+ * What happens to one search result.
+ *
+ * The argument this page makes is that a number is worthless without the
+ * chain behind it, and until now that argument was three paragraphs of
+ * type. A chain is a shape, so it should be drawn: four stops, two of which
+ * are exits, and the exits are the point. A result can leave the chain by
+ * not being you, and it can leave by being adverse but unestablished.
+ *
+ * Inline SVG rather than an image file. It takes its colours from
+ * `currentColor` and the CSS variables, so it is correct in both themes and
+ * when printed without anybody maintaining three copies. It carries a
+ * `<title>` and a `<desc>`, and the same sequence is written out in text
+ * below for anyone who cannot see it, because a diagram that is the only
+ * statement of something is not accessible by being tagged.
+ */
+function EvidenceChain() {
+  const stops: { icon: IconName; label: string; note: string }[] = [
+    { icon: 'search', label: 'A result', note: 'Found by searching your name.' },
+    { icon: 'identity', label: 'Is it you?', note: 'Unsure means we ask you, not guess.' },
+    { icon: 'source', label: 'What is it?', note: 'Source, date, and what it actually says.' },
+    { icon: 'document', label: 'In the report', note: 'With the excerpt it came from.' },
+  ];
+
+  return (
+    <section className="wrap" style={{ paddingTop: 'var(--s-16)' }}>
+      <h2 className="mark" style={{ fontSize: '1.5rem', marginBottom: 'var(--s-3)' }}>
+        What happens to one result
+      </h2>
+      <p className="small" style={{ fontSize: '0.9375rem', maxWidth: '58ch', marginBottom: 'var(--s-8)' }}>
+        Two of the four stops are exits. A result that is not about you leaves, and an
+        adverse claim nobody has established does not become a finding on the way through.
+      </p>
+
+      <ol
+        className="chain"
+        style={{ listStyle: 'none' }}
+      >
+        {stops.map((s, i) => (
+          <li key={s.label} className="chain-stop">
+            <span className="chain-mark" aria-hidden>
+              <Icon name={s.icon} scale={1.2} />
+            </span>
+            <h3 className="small" style={{ color: 'var(--text)', fontWeight: 650 }}>
+              {s.label}
+            </h3>
+            <p className="small">{s.note}</p>
+            {i < stops.length - 1 && (
+              <span className="chain-link" aria-hidden>
+                <Icon name="arrow-right" />
+              </span>
+            )}
+          </li>
+        ))}
+      </ol>
+
+      <p className="small" style={{ marginTop: 'var(--s-6)', maxWidth: '58ch' }}>
+        <span style={{ color: 'var(--primary)' }}>
+          <Icon name="alert" />
+        </span>{' '}
+        Anything adverse stops here and waits for a person to read the source. Until
+        somebody has, it is not counted for or against you, and the report says so rather
+        than reporting nothing.
+      </p>
     </section>
   );
 }
@@ -210,10 +293,16 @@ function Closing() {
 /**
  * A static impression of the report, not a live one. Labelled as an example so
  * nobody mistakes a marketing illustration for their own data.
+ *
+ * The one glass surface on this page, and the safest possible place for it:
+ * it sits over a plain background this design controls, it carries no
+ * evidence anybody has to read closely, and it is the thing the page is
+ * asking you to look at. Its contrast is measured over the darkest ground
+ * in the product, not over the one it happens to sit on.
  */
 function HeroPreview() {
   return (
-    <div className="card" aria-label="Example of an audit report">
+    <div className="card glass" aria-label="Example of an audit report">
       <div
         className="row"
         style={{ justifyContent: 'space-between', marginBottom: 'var(--s-6)' }}
