@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Icon } from '../components/Icon';
+import { Notice } from '../components/Notice';
 
 interface PendingDeletion {
   requestedAt: string;
@@ -305,17 +306,12 @@ export default function AccountClient() {
 
         {pending ? (
           <>
-            <div className="notice notice-warning">
-              <div>
-                <strong>
-                  Scheduled for {when(pending.purgeAt)}
-                </strong>
+            <Notice tone="warning" icon="clock" title={`Scheduled for ${when(pending.purgeAt)}`}>
                 That is {daysUntil(pending.purgeAt)} days away. Until then nothing
                 has been destroyed and you can still download your data. On that
                 date every audit, every piece of evidence and this account itself
                 are deleted outright: not flagged, not archived.
-              </div>
-            </div>
+            </Notice>
             <p className="small">
               Requested {when(pending.requestedAt)}. Audits will not run while a
               deletion is scheduled.

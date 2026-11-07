@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { Report, type CompleteReport, type ScoreHistoryEntry } from '../components/Report';
 import { Icon } from '../components/Icon';
 import { FIXTURE_SUBJECTS, SCENARIO_SUBJECT } from '@rep/domain';
+import { Notice } from '../components/Notice';
 
 const SELF_AUDIT_ATTESTATION =
   'I confirm this audit is about me, and that I am not using it to research another person.';
@@ -619,14 +620,11 @@ function Failure({
           </h1>
         </div>
 
-        <div className="notice notice-warning">
-          <div>
-            <strong>{response.message}</strong>
+        <Notice tone="warning" icon="lock" title={response.message}>
             This product is for auditing your own presence. We limit how many{' '}
             <em>different</em> names one account can look up. Re-running your own is never
             restricted. It is the main thing stopping this being a people-search engine.
-          </div>
-        </div>
+        </Notice>
 
         {!enumeration && (
           <div className="card stack" style={{ ['--gap' as string]: '12px' }}>

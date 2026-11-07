@@ -15,6 +15,8 @@
  * instead of pointing at an inbox that will stay empty.
  */
 import { useState } from 'react';
+import { Icon } from '../components/Icon';
+import { Notice } from '../components/Notice';
 
 type Stage = 'email' | 'code' | 'done';
 
@@ -97,8 +99,17 @@ export default function SignInClient() {
             <h1 style={{ fontSize: 'clamp(1.8rem, 1.4rem + 1.6vw, 2.4rem)' }}>
               Sign in with your email
             </h1>
-            <p className="lede" style={{ marginTop: 10 }}>
-              There is no password. We send a short code, and it works once.
+            <p className="lede row" style={{ marginTop: 10, gap: 'var(--s-3)', alignItems: 'baseline' }}>
+              {/*
+                A padlock beside "there is no password" is not decoration
+                repeating the words: the words say what is absent and the
+                lock says the absence is the security measure, which is the
+                part a reader doubts.
+              */}
+              <span style={{ color: 'var(--primary)' }}>
+                <Icon name="lock" />
+              </span>
+              <span>There is no password. We send a short code, and it works once.</span>
             </p>
           </div>
 
@@ -142,9 +153,7 @@ export default function SignInClient() {
           </div>
 
           {!delivered && (
-            <div className="notice notice-warning">
-              <div>
-                <strong>No email was sent</strong>
+            <Notice tone="warning" title="No email was sent">
                 No mail provider is configured, so nothing left the server. The code below was
                 written to the outbox table instead.
                 {devCode && (
@@ -152,8 +161,7 @@ export default function SignInClient() {
                     {devCode}
                   </p>
                 )}
-              </div>
-            </div>
+            </Notice>
           )}
 
           <div className="card stack" style={{ ['--gap' as string]: '16px' }}>
@@ -205,25 +213,19 @@ export default function SignInClient() {
           </div>
 
           {claimed && (
-            <div className="notice notice-info">
-              <div>
-                <strong>Your earlier audit came with you</strong>
-                The report you ran before signing in now belongs to this account.
-              </div>
-            </div>
+            <Notice tone="success" title="Your earlier audit came with you">
+              The report you ran before signing in now belongs to this account.
+            </Notice>
           )}
 
           {orphaned > 0 && (
-            <div className="notice notice-warning">
-              <div>
-                <strong>
-                  {orphaned} earlier {orphaned === 1 ? 'report is' : 'reports are'} not on this
-                  account
-                </strong>
-                This email already had an account, so we signed you into that one. Combining
-                two accounts cannot be undone, so we have not done it without asking.
-              </div>
-            </div>
+            <Notice
+              tone="warning"
+              title={`${orphaned} earlier ${orphaned === 1 ? 'report is' : 'reports are'} not on this account`}
+            >
+              This email already had an account, so we signed you into that one. Combining
+              two accounts cannot be undone, so we have not done it without asking.
+            </Notice>
           )}
 
           <p>

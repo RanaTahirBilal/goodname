@@ -642,6 +642,20 @@ input[type='radio'] {
   border-radius: 0;
   font-size: 0.9375rem;
 }
+
+/**
+ * The tone glyph, optically centred on the first line rather than on the
+ * flex box.
+ *
+ * As a flex child the icon aligns to the top of the row, which put its
+ * centre 4px above the centre of the title beside it: not enough to name
+ * and enough to look careless, especially where the title wraps to two
+ * lines and the gap stops reading as deliberate. The nudge is in `em` so it
+ * holds if the notice's type size changes.
+ */
+.notice > svg {
+  margin-top: 0.25em;
+}
 .notice-warning { background: var(--warning-bg); border-color: var(--warning); }
 .notice-danger  { background: var(--danger-bg);  border-color: var(--danger); }
 .notice-info    { background: var(--info-bg);    border-color: var(--primary); }

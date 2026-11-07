@@ -26,6 +26,7 @@ import type {
 } from '@rep/domain';
 import { DIMENSION_LABELS, PERMITTED_USE, riskHeadline, splitFindings } from '@rep/domain';
 import { Icon, type IconName } from './Icon';
+import { Notice } from './Notice';
 
 type Scan = {
   provider: string;
@@ -172,14 +173,17 @@ function SaveButton() {
 
 export function FixtureBanner() {
   return (
-    <div className="notice notice-warning" role="status">
-      <span aria-hidden style={{ fontWeight: 700 }}>!</span>
-      <div>
-        <strong>This report is built from fixture data.</strong>
-        No live search provider is connected yet, so every result below is test data
-        standing in for a real search. Nothing here describes a real person.
-      </div>
-    </div>
+    /*
+      The glyph here was a bold exclamation mark typed into the markup. A
+      character standing in for an icon is the thing the icon set exists to
+      stop: it sizes with the font in ways nothing controls, it renders
+      differently on every platform, and it is one of the places a reader
+      decides whether a product was made carefully.
+    */
+    <Notice tone="warning" role="status" title="This report is built from fixture data.">
+      No live search provider is connected yet, so every result below is test data
+      standing in for a real search. Nothing here describes a real person.
+    </Notice>
   );
 }
 
@@ -1042,19 +1046,21 @@ function Evidence({ evidence }: { evidence: EvidenceRecord[] }) {
          * reassuring if it is stated.
          */}
         {withheld.length > 0 && (
-          <div className="notice notice-info" style={{ marginTop: 'var(--s-4)' }}>
-            <div>
-              <strong>
-                {withheld.length === 1
-                  ? 'One result is not quoted here'
-                  : `${withheld.length} results are not quoted here`}
-              </strong>
-              They appear to touch on personal matters (things like health, faith,
-              politics or immigration) rather than professional ones. We do not store or
-              repeat that material, and none of it affects your score or your risk level.
-              Each one still links to its source, which is public and unchanged.
-            </div>
-          </div>
+          <Notice
+            tone="info"
+            icon="lock"
+            style={{ marginTop: 'var(--s-4)' }}
+            title={
+              withheld.length === 1
+                ? 'One result is not quoted here'
+                : `${withheld.length} results are not quoted here`
+            }
+          >
+            They appear to touch on personal matters (things like health, faith,
+            politics or immigration) rather than professional ones. We do not store or
+            repeat that material, and none of it affects your score or your risk level.
+            Each one still links to its source, which is public and unchanged.
+          </Notice>
         )}
       </div>
 
@@ -1341,9 +1347,7 @@ function Recommendations({ items }: { items: Recommendation[] }) {
 
 function Limitations({ scan }: { scan: Scan }) {
   return (
-    <section className="notice notice-info">
-      <div>
-        <strong>What this report is and is not</strong>
+    <Notice tone="info" title="What this report is and is not">
 
         {/**
          * First, and not in a list.
@@ -1374,8 +1378,7 @@ function Limitations({ scan }: { scan: Scan }) {
             score.
           </li>
         </ul>
-      </div>
-    </section>
+    </Notice>
   );
 }
 

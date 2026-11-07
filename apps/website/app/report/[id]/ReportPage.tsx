@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Report, type CompleteReport, type ScoreHistoryEntry } from '../../components/Report';
+import { Notice } from '../../components/Notice';
 
 interface Reassessment {
   from: string;
@@ -54,9 +55,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
 
   if (data.status === 'no_session') {
     return (
-      <section className="notice notice-info">
-        <div>
-          <strong>Sign in to open this report</strong>
+      <Notice tone="info" icon="lock" title="Sign in to open this report">
           <p className="small">
             A report is only ever shown to the account that ran it. The address bar is not
             enough, deliberately.
@@ -64,8 +63,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
           <p className="small">
             <a href="/signin">Sign in</a>
           </p>
-        </div>
-      </section>
+      </Notice>
     );
   }
 
@@ -78,29 +76,23 @@ export default function ReportPage({ scanId }: { scanId: string }) {
    */
   if (data.status === 'not_found') {
     return (
-      <section className="notice notice-info">
-        <div>
-          <strong>No report here</strong>
+      <Notice tone="info" title="No report here">
           <p className="small">
             Either this report does not exist or it belongs to another account. We do not say
             which.
           </p>
-        </div>
-      </section>
+      </Notice>
     );
   }
 
   if (data.status === 'search_failed') {
     return (
-      <section className="notice notice-warning">
-        <div>
-          <strong>This audit did not complete</strong>
+      <Notice tone="warning" title="This audit did not complete">
           <p className="small">
             The search provider failed, so there is nothing to report. That is different from
             finding nothing, and we will not show you one as the other.
           </p>
-        </div>
-      </section>
+      </Notice>
     );
   }
 
@@ -114,9 +106,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
    */
   if (data.status === 'evidence_expired') {
     return (
-      <section className="notice notice-info">
-        <div>
-          <strong>The evidence behind this report has been deleted</strong>
+      <Notice tone="info" icon="clock" title="The evidence behind this report has been deleted">
           <p className="small">
             This audit ran on {new Date(data.startedAt).toLocaleDateString()}. We keep the
             quotations for six months and then delete them, so the report cannot be rebuilt.
@@ -131,8 +121,7 @@ export default function ReportPage({ scanId }: { scanId: string }) {
               ))}
             </ul>
           )}
-        </div>
-      </section>
+      </Notice>
     );
   }
 
@@ -168,9 +157,12 @@ function ReassessedNotice({ r }: { r: Reassessment }) {
   const moved = r.previousScore !== null && r.currentScore !== null && r.previousScore !== r.currentScore;
 
   return (
-    <section className="notice notice-info no-print">
-      <div>
-        <strong>This report has been reassessed since you last saw it</strong>
+    <Notice
+      tone="info"
+      icon="clock"
+      className="no-print"
+      title="This report has been reassessed since you last saw it"
+    >
         <p className="small">
           {moved ? (
             <>
@@ -183,7 +175,6 @@ function ReassessedNotice({ r }: { r: Reassessment }) {
           No new evidence was gathered and nobody made a decision: {r.reason}. The earlier
           assessment is kept in the history below with its own date and version.
         </p>
-      </div>
-    </section>
+    </Notice>
   );
 }

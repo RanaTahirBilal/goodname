@@ -86,3 +86,61 @@ test('motion is defined once and switched off in one place', () => {
 
   assert.deepEqual(hardCoded, [], 'a duration that reduced motion cannot switch off');
 });
+
+/* --------------------------------------------------------------- notices */
+
+/**
+ * A notice's tone must reach a reader more than one way.
+ *
+ * There were twelve hand-assembled `.notice` divs and only some had a
+ * leading glyph, which left the rest carrying their tone in colour alone.
+ * That is the failure that costs nothing to avoid and is invisible to
+ * whoever introduces it, so it is asserted rather than remembered: notices
+ * come from one component, and that component supplies the glyph.
+ */
+test('notices are built from the component, not assembled by hand', () => {
+  const files = [
+    ['components/Report.tsx'],
+    ['audit/AuditClient.tsx'],
+    ['account/AccountClient.tsx'],
+    ['signin/SignInClient.tsx'],
+    ['review/ReviewClient.tsx'],
+    ['review/StaffSignIn.tsx'],
+    ['report/[id]/ReportPage.tsx'],
+  ].map(([f]) => f!);
+
+  const handMade: string[] = [];
+
+  for (const file of files) {
+    const src = readFileSync(join(here, '..', 'app', ...file.split('/')), 'utf8');
+    const lines = src.split('\n');
+
+    lines.forEach((line, i) => {
+      if (!/className=["'`]notice notice-/.test(line)) return;
+      // The component itself, and the fixture banner, build the class name
+      // directly. Everything else should be calling <Notice>.
+      const nearby = lines.slice(i, i + 4).join('\n');
+      if (/<Icon /.test(nearby)) return;
+      handMade.push(`${file}:${i + 1}`);
+    });
+  }
+
+  assert.deepEqual(handMade, [], 'use <Notice tone="…"> so the tone carries a glyph too');
+});
+
+test('the component picks the glyph from the tone', () => {
+  const notice = readFileSync(join(here, '..', 'app', 'components', 'Notice.tsx'), 'utf8');
+
+  assert.match(notice, /TONE_ICON: Record<Tone, IconName>/, 'the glyph is not derived from the tone');
+  assert.match(
+    notice,
+    /<Icon name=\{icon \?\? TONE_ICON\[tone\]\} /,
+    'a caller can pick any glyph, so two notices of the same kind can look different'
+  );
+
+  // Decoration beside a title that already says it: silent.
+  assert.ok(
+    !/aria-label/.test(notice),
+    'the notice icon is being named, so a screen reader says the tone twice'
+  );
+});

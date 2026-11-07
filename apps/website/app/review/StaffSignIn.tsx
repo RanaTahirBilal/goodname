@@ -12,6 +12,7 @@
  * There is no "create an account" link, because there is no such thing here.
  */
 import { useState } from 'react';
+import { Icon } from '../components/Icon';
 
 interface Props {
   onSignedIn: () => void;
@@ -81,6 +82,7 @@ export default function StaffSignIn({ onSignedIn }: Props) {
       </p>
 
       <div className="notice notice-warning" style={{ margin: 'var(--s-6) 0' }}>
+        <Icon name="eye" scale={1.1} />
         <div>
           <strong>Everything you open is recorded</strong>
           Every record you read is logged against your name, not only the ones you decide on.

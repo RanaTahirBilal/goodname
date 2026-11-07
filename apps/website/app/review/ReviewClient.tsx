@@ -10,6 +10,7 @@
  */
 import { useEffect, useState } from 'react';
 import StaffSignIn from './StaffSignIn';
+import { Icon } from '../components/Icon';
 
 type Outcome =
   | 'uphold'
@@ -189,10 +190,31 @@ export default function ReviewClient() {
       <div className="wrap-narrow" style={{ padding: 'var(--s-8) var(--s-6) var(--s-16)' }}>
         <Who email={me.email} onSignOut={signOut} />
         <p className="eyebrow">Review queue</p>
-        <h1>Nothing is waiting</h1>
-        <p className="lede" style={{ marginTop: 'var(--s-4)' }}>
-          Every flagged record has been looked at.
-        </p>
+
+        {/*
+          An empty queue is the good outcome and the screen should look like
+          it. It was three lines of unstyled text, which reads as a page
+          that failed to load rather than as work finished.
+        */}
+        <div
+          className="card stack"
+          style={{
+            ['--gap' as string]: 'var(--s-3)',
+            alignItems: 'center',
+            textAlign: 'center',
+            padding: 'var(--s-12) var(--s-6)',
+            marginTop: 'var(--s-4)',
+          }}
+        >
+          <span style={{ color: 'var(--success)' }}>
+            <Icon name="check" scale={2.5} />
+          </span>
+          <h1 style={{ fontSize: '1.5rem' }}>Nothing is waiting</h1>
+          <p className="small" style={{ maxWidth: '44ch' }}>
+            Every flagged record has been looked at. New ones arrive when an audit turns up
+            adverse language, or when we are not sure a result is about the customer.
+          </p>
+        </div>
       </div>
     );
   }
@@ -207,6 +229,7 @@ export default function ReviewClient() {
       </div>
 
       <div className="notice notice-warning" style={{ marginBottom: 'var(--s-6)' }}>
+        <Icon name="alert" scale={1.1} />
         <div>
           <strong>Why this is here</strong>
           {current.flaggedBecause}
@@ -336,9 +359,17 @@ function Who({ email, onSignOut }: { email: string; onSignOut: () => void }) {
         borderBottom: '1px solid var(--border)',
       }}
     >
-      <span>
-        Signed in as <strong>{email}</strong>. Everything you open is logged against this
-        address.
+      <span className="row" style={{ gap: 'var(--s-2)', alignItems: 'baseline' }}>
+        {/*
+          The one line on this screen a reviewer should not be able to stop
+          seeing. An eye, because what it is describing is being watched
+          reading, which is the deal for crossing the account boundary.
+        */}
+        <Icon name="eye" />
+        <span>
+          Signed in as <strong>{email}</strong>. Everything you open is logged against this
+          address.
+        </span>
       </span>
       <button
         type="button"
