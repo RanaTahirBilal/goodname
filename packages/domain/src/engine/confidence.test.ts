@@ -172,3 +172,67 @@ test('the counts still describe the same records the figure came from', () => {
   // match is both in the score and worth asking about.
   assert.ok(report.awaitingConfirmation >= 1);
 });
+
+/* ------------------------------------------- what answering actually does */
+
+/**
+ * The report told the customer that confirming a result would move a
+ * figure, next to a figure that in some cases cannot move.
+ *
+ * A `probable` match is already inside the attribution count. Confirming it
+ * raises how sure we are and leaves "3 of 4" at "3 of 4", so the customer
+ * answers, watches nothing happen, and has been given a small reason to
+ * doubt the arithmetic on the one screen asking them to trust it.
+ *
+ * Found by the first fulfillment rehearsal (F8) and left alone through two
+ * milestones because it is cosmetic. It is not: it is the report making a
+ * claim about itself that it does not keep.
+ */
+test('a probable result is not promised to move the count', () => {
+  // Confirmed plus two probables: everything waiting is already counted.
+  const records = [
+    evidence({ position: 1, confidence: 0.95 }),
+    evidence({ position: 2, confidence: 0.7 }),
+    evidence({ position: 3, confidence: 0.65 }),
+  ];
+
+  const note = buildConfidence(records, 1).note;
+
+  assert.doesNotMatch(note, /moves this figure/, 'it still promises a figure that cannot move');
+  assert.match(note, /will not change the count/);
+  assert.match(note, /how sure/, 'it does not say what answering is actually worth');
+});
+
+test('an uncertain result is promised to move it, because it does', () => {
+  // The third is uncertain, so it sits outside the count and answering
+  // about it genuinely moves the number.
+  const records = [
+    evidence({ position: 1, confidence: 0.95 }),
+    evidence({ position: 2, confidence: 0.7 }),
+    evidence({ position: 3, confidence: 0.4 }),
+  ];
+
+  const note = buildConfidence(records, 1).note;
+
+  assert.match(note, /moves this figure/, 'the true version of the claim has gone too');
+});
+
+test('the count in the sentence is the count on the screen', () => {
+  // Both cases quote `awaiting`, which is what the report prints as "Need
+  // confirming". A different number in the sentence directly above that
+  // figure reads as an arithmetic error, whichever number is right.
+  const records = [
+    evidence({ position: 1, confidence: 0.95 }),
+    evidence({ position: 2, confidence: 0.7 }),
+    evidence({ position: 3, confidence: 0.65 }),
+  ];
+
+  const built = buildConfidence(records, 1);
+  const note = built.note;
+
+  assert.match(
+    note,
+    new RegExp(`\\b${built.awaitingConfirmation}\\b`),
+    `the sentence does not quote ${built.awaitingConfirmation}, which is the printed figure`
+  );
+});

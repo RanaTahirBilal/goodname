@@ -69,6 +69,16 @@ export interface ReviewDecision {
   outcome: ReviewOutcome;
   rationale: string;
   decidedAt: string;
+  /**
+   * Set when this judgement was made on an earlier scan and is being
+   * applied to a later one, because the source and its text are unchanged.
+   *
+   * Carried rather than copied: there is still exactly one decision row,
+   * made once by a named person on a particular day, and this says which
+   * scan they were looking at. A report that presented it as a fresh
+   * judgement would be inventing a review that never happened.
+   */
+  carriedFromScanId?: string;
 }
 
 /** The review status an outcome leaves on the record. */
@@ -107,6 +117,32 @@ const ADVERSE = `('confirmed_finding','requires_review','allegation','disputed')
  * they claim it, because "yes that is me" is not a judgement about what the
  * source says.
  */
+/**
+ * The same source and the same words, judged on an earlier scan.
+ *
+ * Without this the re-run puts every already-decided record back in front
+ * of a person: the decision is keyed to a scan, and a re-audit makes a new
+ * one. The second rehearsal measured it at three records re-queued out of
+ * three, which is the entire queue doing work that was already done.
+ *
+ * Matched on url and excerpt together, within the account. If the page has
+ * been rewritten since, the earlier judgement was about text that is no
+ * longer there, so it comes back for review. That is the conservative
+ * direction, and the direction a reviewer would want.
+ */
+const ALREADY_JUDGED_ELSEWHERE = `
+  EXISTS (
+    SELECT 1
+      FROM review_decisions d
+      JOIN evidence theirs
+        ON theirs.scan_id = d.scan_id AND theirs.id = d.evidence_id
+     WHERE d.account_id = e.account_id
+       AND d.scan_id <> e.scan_id
+       AND theirs.source_url = e.source_url
+       AND theirs.excerpt    = e.excerpt
+  )
+`;
+
 const ONLY_IDENTITY_AND_CUSTOMER_ANSWERED = `
   EXISTS (
     SELECT 1 FROM identity_decisions c
@@ -194,6 +230,7 @@ export class ReviewRepository {
               SELECT 1 FROM review_decisions d
                WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
             )
+            AND NOT (${ALREADY_JUDGED_ELSEWHERE})
             AND NOT (${ONLY_IDENTITY_AND_CUSTOMER_ANSWERED})
           ORDER BY e.retrieved_at
           LIMIT ?`
@@ -242,6 +279,7 @@ export class ReviewRepository {
               SELECT 1 FROM review_decisions d
                WHERE d.scan_id = e.scan_id AND d.evidence_id = e.id
             )
+            AND NOT (${ALREADY_JUDGED_ELSEWHERE})
             AND NOT (${ONLY_IDENTITY_AND_CUSTOMER_ANSWERED})`
       )
       .get();
@@ -332,6 +370,67 @@ export class ReviewRepository {
           outcome: d.outcome as ReviewOutcome,
           rationale: d.rationale,
           decidedAt: d.decided_at,
+        };
+      });
+  }
+
+  /**
+   * Judgements made on an earlier scan that still apply to this one.
+   *
+   * The second fulfillment rehearsal found that re-running an audit
+   * re-queued every record a reviewer had already decided. Decisions are
+   * keyed on `(scan_id, evidence_id)`, which is right — a decision is about
+   * one record in one scan — but the consequence was that the same
+   * classifier error went back in front of a person on every re-audit, for
+   * ever, and the customer's report lost a judgement that had been made
+   * about them in writing.
+   *
+   * ## What makes two records the same record
+   *
+   * The source URL **and** the excerpt, within one account. The URL alone
+   * is not enough: a reviewer read a particular sentence and decided what
+   * it established, and if the page has since been rewritten then the
+   * judgement was about text that is no longer there. Requiring the excerpt
+   * to match means a changed source goes back to a human, which is the
+   * conservative direction and the only one worth defaulting to.
+   *
+   * ## What this is not
+   *
+   * Not a new decision, and not a copy of one. The row stays where it was,
+   * made once by a named person on a stated day; this maps it onto the
+   * later scan's evidence id and marks it as carried, so the report can say
+   * a prior judgement is being applied rather than implying somebody looked
+   * again this morning.
+   */
+  carriedDecisions(accountId: string, scanId: string): ReviewDecision[] {
+    return this.db
+      .prepare(
+        `SELECT d.id, d.scan_id, mine.id AS evidence_id, d.reviewer_id,
+                d.outcome, d.rationale, d.decided_at
+           FROM review_decisions d
+           JOIN evidence theirs
+             ON theirs.scan_id = d.scan_id AND theirs.id = d.evidence_id
+           JOIN evidence mine
+             ON mine.account_id = theirs.account_id
+            AND mine.source_url = theirs.source_url
+            AND mine.excerpt    = theirs.excerpt
+          WHERE d.account_id = ?
+            AND mine.scan_id = ?
+            AND d.scan_id <> ?
+          ORDER BY d.decided_at DESC, d.rowid DESC`
+      )
+      .all(accountId, scanId, scanId)
+      .map((raw) => {
+        const d = raw as Record<string, string>;
+        return {
+          id: d.id,
+          scanId,
+          evidenceId: d.evidence_id,
+          reviewerId: d.reviewer_id,
+          outcome: d.outcome as ReviewOutcome,
+          rationale: d.rationale,
+          decidedAt: d.decided_at,
+          carriedFromScanId: d.scan_id,
         };
       });
   }

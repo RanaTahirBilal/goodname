@@ -61,7 +61,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
   }
 
   const rebuilt = rebuildReport(scan, {
-    reviews: review.decisionsFor(scan.id),
+    /**
+     * This scan's own judgements first, then any made on an earlier scan of
+     * the same source and the same words. Direct decisions win: a reviewer
+     * looking at this scan has seen what is in front of them now.
+     */
+    reviews: [
+      ...review.decisionsFor(scan.id),
+      ...review.carriedDecisions(scope.accountId, scan.id),
+    ],
     websiteChecks: scan.identity.websiteUrl
       ? [
           { key: 'https', passed: true },

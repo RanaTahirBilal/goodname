@@ -450,3 +450,172 @@ test('the pending count agrees with the queue', async () => {
 
   assert.equal(review.pendingCount(), review.queue(rScope).length);
 });
+
+/* ------------------------------------------ a judgement that survives (F5) */
+
+/**
+ * Re-running an audit used to re-queue everything a reviewer had already
+ * decided, and the customer's report lost the judgement with it.
+ *
+ * The second fulfillment rehearsal measured three out of three records
+ * coming back. Decisions are keyed `(scan_id, evidence_id)`, which is right
+ * — a decision is about one record in one scan — and the consequence was
+ * that the same classifier error went in front of a person on every
+ * re-audit for ever.
+ */
+test('a re-run does not ask a reviewer the same question again', async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const first = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
+  review.decide(rScope, scanId, first.evidenceId, 'reject_not_harm', 'Read the source. It says the opposite.');
+
+  // The same audit again, as a customer re-running their own name.
+  const report = await runAudit({
+    identity: ADONI,
+    purpose: PURPOSE,
+    provider: new FixtureSearchProvider('official_finding'),
+  });
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  repo.saveScan(scope, {
+    identity: ADONI,
+    status: 'complete',
+    provider: 'fixture',
+    isFixture: true,
+    window: 10,
+    queries: report.scan.queries,
+    purpose: PURPOSE,
+    requesterId: 'test',
+    evidence: report.evidence,
+  });
+
+  const waiting = review.queue(rScope).map((q) => q.sourceName);
+  assert.ok(
+    !waiting.includes(first.sourceName),
+    `"${first.sourceName}" was decided and is back in the queue after a re-run`
+  );
+});
+
+test("the customer's new report still carries the judgement", async () => {
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const first = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
+  review.decide(rScope, scanId, first.evidenceId, 'reject_not_harm', 'Read the source. It says the opposite.');
+
+  const report = await runAudit({
+    identity: ADONI,
+    purpose: PURPOSE,
+    provider: new FixtureSearchProvider('official_finding'),
+  });
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  const second = repo.saveScan(scope, {
+    identity: ADONI,
+    status: 'complete',
+    provider: 'fixture',
+    isFixture: true,
+    window: 10,
+    queries: report.scan.queries,
+    purpose: PURPOSE,
+    requesterId: 'test',
+    evidence: report.evidence,
+  });
+
+  const carried = review.carriedDecisions(scope.accountId, second);
+  assert.equal(carried.length, 1, 'the earlier judgement did not reach the new scan');
+  assert.equal(carried[0]!.outcome, 'reject_not_harm');
+  assert.equal(
+    carried[0]!.carriedFromScanId,
+    scanId,
+    'a carried decision does not say which scan it was made on'
+  );
+
+  const rebuilt = rebuildReport(repo.getScan(scope, second)!, { reviews: carried });
+  const record = rebuilt.evidence.find((e) => e.sourceName === first.sourceName)!;
+  assert.equal(record.findingStatus, 'opinion', 'the new report lost the reviewer’s call');
+});
+
+test('a rewritten source goes back to a human', async () => {
+  /**
+   * The limit of the rule, and the reason it matches on the excerpt and not
+   * just the URL. A reviewer read a particular sentence and decided what it
+   * established. If the page has been rewritten, that judgement was about
+   * text which is no longer there, and carrying it forward would be
+   * attributing to a named person an opinion they never gave.
+   */
+  const { repo, review, rScope, scope, scanId } = await setup();
+
+  const first = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
+  review.decide(rScope, scanId, first.evidenceId, 'uphold', 'Official record, correct person.');
+
+  const report = await runAudit({
+    identity: ADONI,
+    purpose: PURPOSE,
+    provider: new FixtureSearchProvider('official_finding'),
+  });
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  // Same URL, different words: the source changed under us.
+  const edited = report.evidence.map((e) =>
+    e.sourceUrl === first.sourceUrl ? { ...e, excerpt: `${e.excerpt} The order was later vacated.` } : e
+  );
+
+  const second = repo.saveScan(scope, {
+    identity: ADONI,
+    status: 'complete',
+    provider: 'fixture',
+    isFixture: true,
+    window: 10,
+    queries: report.scan.queries,
+    purpose: PURPOSE,
+    requesterId: 'test',
+    evidence: edited,
+  });
+
+  assert.equal(
+    review.carriedDecisions(scope.accountId, second).length,
+    0,
+    'a judgement about different words was carried onto the new text'
+  );
+  assert.ok(
+    review.queue(rScope).some((q) => q.sourceUrl === first.sourceUrl),
+    'the rewritten source is not being re-reviewed'
+  );
+});
+
+test('one account’s judgement never reaches another account', async () => {
+  // The carry is a join across scans, which is the one place this could
+  // leak. It is scoped to the account on both sides.
+  const { repo, review, rScope, scanId } = await setup();
+
+  const first = review.queue(rScope).find((q) => q.findingStatus === 'requires_review')!;
+  review.decide(rScope, scanId, first.evidenceId, 'uphold', 'Official record, correct person.');
+
+  const other = repo.createAccount('somebody.else@example.test');
+  const otherScope: AccountScope = { accountId: other.id, actor: 'customer' };
+
+  const report = await runAudit({
+    identity: ADONI,
+    purpose: PURPOSE,
+    provider: new FixtureSearchProvider('official_finding'),
+  });
+  if (report.status !== 'complete') return assert.fail('expected a report');
+
+  const theirScan = repo.saveScan(otherScope, {
+    identity: ADONI,
+    status: 'complete',
+    provider: 'fixture',
+    isFixture: true,
+    window: 10,
+    queries: report.scan.queries,
+    purpose: PURPOSE,
+    requesterId: 'test',
+    evidence: report.evidence,
+  });
+
+  assert.equal(
+    review.carriedDecisions(other.id, theirScan).length,
+    0,
+    'a decision made about one customer was applied to another'
+  );
+});

@@ -162,10 +162,29 @@ export function buildConfidence(
      * prints as "Need confirming". Saying a different one in the sentence
      * directly above that figure would read as an arithmetic error.
      */
+    /**
+     * What answering actually does, which is not always what it said.
+     *
+     * The sentence was "answering moves this figure", and the figure
+     * printed beside it is the attribution count. A `probable` match is
+     * already inside that count, so confirming one cannot move it: the
+     * customer answers, nothing visibly changes, and the report has made a
+     * small promise it could not keep on the screen where it is asking
+     * them to trust its arithmetic.
+     *
+     * `uncertain` results are outside the count and do move it. So the two
+     * cases are told apart, and where only probables are waiting the
+     * sentence says the true and still useful thing: answering does not
+     * change who is counted, it changes how sure the count is.
+     */
+    const movable = awaiting.filter((r) => r.identityStatus === 'uncertain').length;
+
     notes.push(
-      awaiting.length > 0
-        ? `Most results are attributable to you. ${awaiting.length} still need your confirmation, and answering moves this figure.`
-        : 'Most results are attributable to you, but some need your confirmation.'
+      awaiting.length === 0
+        ? 'Most results are attributable to you, but some need your confirmation.'
+        : movable > 0
+          ? `Most results are attributable to you. ${awaiting.length} still need your confirmation, and answering moves this figure.`
+          : `Most results are attributable to you. ${awaiting.length} ${awaiting.length === 1 ? 'is' : 'are'} already counted here and still worth confirming: answering will not change the count, it will change how sure of it we are.`
     );
   } else {
     notes.push('The results are confidently attributable to you.');
