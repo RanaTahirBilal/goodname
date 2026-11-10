@@ -576,7 +576,7 @@ useful thing for them to see than a gap that was never there.
 
 ---
 
-### OQ-29 — What the first fulfillment rehearsal found — *F1–F4 closed 5 Nov 2026*
+### OQ-29 — What the first fulfillment rehearsal found — *closed 9 Nov 2026*
 **Blocks:** a first paid engagement. Not the search provider decision.
 
 `docs/FULFILLMENT_REHEARSAL.md` has the full run. Three of its eight
@@ -714,14 +714,29 @@ states whose name is about to be searched. Fixed during the design pass
 rather than the correctness milestone, which is why it was listed here as
 open for a day after it was not.
 
-**Still open.** The cost of F2: a genuine disbarment no longer raises the
-risk level until a person has read it. The same branch produced both
-outcomes and there is no version of it that is confident about the real
-one and careful about the misread one, so the trade is the owner's to
-revisit, not engineering's. F5 and F8 also stand: review decisions do not
-survive a re-run, so the same classifier error is re-queued on every
-re-audit, and Finding 01 can still promise that answering will move a
-figure that in some cases cannot move.
+**F5 and F8 closed 9 November 2026.**
+
+F5: a reviewer's judgement now carries onto a later scan when the source
+URL and the excerpt both match, within the account. The excerpt is the
+load-bearing half. A reviewer read a particular sentence and decided what
+it established, so if the page has been rewritten since, carrying the
+decision forward would attribute to a named person an opinion they never
+gave. A changed source goes back to a human. A carried decision records
+which scan it was made on, because it is still one row made once by one
+person, and presenting it as a fresh judgement would invent a review that
+never happened.
+
+F8: the two cases are told apart. Where the results awaiting an answer are
+`uncertain` they sit outside the attribution count and answering does move
+it, so the report says so. Where they are `probable` they are already
+counted, and the report now says the true thing instead: answering changes
+how sure we are of the count rather than the count.
+
+**Still open, and it is the owner's.** The cost of F2: a genuine
+disbarment no longer raises the risk level until a person has read it. The
+same branch produced both outcomes and there is no version of it that is
+confident about the real one and careful about the misread one, so the
+trade is the owner's to revisit, not engineering's.
 
 ---
 

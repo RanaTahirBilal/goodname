@@ -393,10 +393,11 @@ rehearsal was convened to check.
   no longer overwrites a name somebody typed, and the attestation carries
   "You are about to audit <name>." beside the box being ticked.
   `audit-form.test.ts` holds all four.
-- **"Answering moves this figure"** (F8) — unfixed, though less wrong
-  than it was: confirming the board record did move identity from 3 of 4
-  to 4 of 4 this time, because that record was `uncertain` rather than
-  `probable`.
+- ~~**"Answering moves this figure"**~~ (F8). **Fixed 9 November 2026.**
+  An `uncertain` result sits outside the attribution count and answering
+  does move it; a `probable` one is already counted and answering changes
+  only how sure we are. The report tells the two apart now rather than
+  promising the first and sometimes delivering the second.
 - **No backups. Single-process worker.** Both unchanged and both written
   down in `COUNSEL_TECHNICAL_APPENDIX.md`.
 
@@ -459,3 +460,31 @@ over a form you have not re-read confirms nothing.
 That closes every finding from rehearsal 01 except the ones that are
 purchases rather than code: no mail provider, no backups, and a worker
 that dies with the server.
+
+
+---
+
+# What a third rehearsal would be for
+
+Rehearsals 01 and 02 were run against defects. The next one is not: every
+finding from the first is now closed, and the questions left are about
+whether the service can be delivered rather than whether the software is
+wrong.
+
+So rehearsal 03 should wait for a real engagement, and measure the things
+`docs/OPEN_QUESTIONS.md` OQ-29 says are still unmeasured:
+
+- Records examined, records flagged, and **false-positive flags** — the
+  precision problem, which is the one thing the queue changes cannot fix.
+- **Median and total review minutes**, with the source actually read. Both
+  rehearsals measured decision entry by somebody who read nothing, which
+  is a floor and not an estimate.
+- **Records reviewed more than once.** Should now be zero across re-runs of
+  the same audit (F5), and that is worth confirming against a real
+  sequence rather than a fixture.
+- Unresolved records at delivery, and time from assessment start to an
+  approved report.
+
+Running it again against fixtures would confirm the fixes, which the tests
+already do. What it would not do is tell anybody whether one person can
+deliver this service, which is the only question left.
