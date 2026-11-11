@@ -11,7 +11,9 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "dev": "npm run dev --workspace @rep/website",
-    "build": "npm run build --workspace @rep/website"
+    "build": "npm run build --workspace @rep/website",
+    "start": "bash scripts/start.sh",
+    "staff": "npm run staff --workspace @rep/website --"
   },
   "engines": {
     "node": ">=24"

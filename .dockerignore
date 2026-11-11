@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+.next
+**/.next
+.data
+**/.data
+.git
+goodname-app
+*.log
+.env
+.env.*
+!.env.example

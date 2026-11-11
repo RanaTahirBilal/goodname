@@ -13,24 +13,53 @@ Corrections belong in [an issue](https://github.com/RanaTahirBilal/goodname/issu
 
 ## Run it
 
-In VS Code: **Cmd + Shift + B**, then open <http://localhost:4300>.
-
-Or from a terminal:
-
 ```bash
-npm run build --workspace @rep/website
-npm run start --workspace @rep/website
+npm start
 ```
 
-Other tasks live under **Cmd + Shift + P → Tasks: Run Task** — stop the app,
-reset the demo database, run the tests, or print a report in the terminal
-without a browser.
+Installs if needed, builds, and serves on <http://localhost:4300>. Needs
+Node 26 or newer, which it checks for and explains rather than failing
+strangely: the engine ships TypeScript and relies on type stripping to run,
+which is what lets it work with no build step.
+
+Without Node 26:
 
 ```bash
-npm test                     # 268 tests
+docker compose up
+```
+
+Same thing, on port 4300, with the database in a named volume.
+
+**It is healthy when `/api/health` says so.** That endpoint asks the two
+questions a port check cannot: does the database answer, and is the
+background worker running. A process whose worker is dead serves every page
+normally and finishes no audits.
+
+For the staff review queue:
+
+```bash
+npm run staff -- add you@example.com reviewer
+```
+
+Other things:
+
+```bash
+npm test                     # every workspace
 npm run typecheck
+npm run dev                  # with hot reload, same port
 cd packages/domain && node src/demo.ts official_finding
 ```
+
+### Making it search for real
+
+Every audit uses fixture data until two variables are set, and says so on
+every screen. Copy `.env.example` to `.env.local`, follow the two links in
+it for a free Google Programmable Search key and engine id (100 queries a
+day, no card), and restart.
+
+Both variables or neither. There is no half-configured state, and the scan
+row records which one produced it, so a report can never be labelled fixture
+while holding live results or the other way round.
 
 ---
 
@@ -38,11 +67,12 @@ cd packages/domain && node src/demo.ts official_finding
 
 | Path | What it is |
 |---|---|
-| `packages/domain` | The audit engine. Pure functions, no I/O, 104 tests. |
-| `packages/persistence` | SQLite storage, auth, review, retention, deletion. 143 tests. |
+| `packages/domain` | The audit engine. Pure functions, no I/O. |
+| `packages/persistence` | SQLite storage, auth, review, retention, deletion. |
 | `apps/website` | The site, the audit flow and the report. |
 | `docs/` | Scoring spec, evidence model, safeguards, open questions. |
-| `DEMO.md` | Five-minute run sheet for showing this to someone. |
+| `docs/SHOW_AND_TELL.md` | Ten-minute walkthrough for showing this to somebody. |
+| `docs/DECISION_MEMO.md` | The four decisions blocking a first customer. |
 | `CLAUDE.md` | Operating rules. Read before changing anything. |
 | `goodname-app/` | An earlier Expo app for a different audience. **Paused**, and not wired to this engine. |
 
@@ -70,8 +100,9 @@ say both, which is why there are three. See `docs/SCORING_SPEC.md`.
 
 ## State
 
-Everything runs against **fixture data**. No search provider is contracted, so
-no report describes a real person and every screen says so.
+**Live search is implemented and waiting for a key** (see above). Until one
+is set, everything runs against fixture data, no report describes a real
+person, and every screen says so.
 
 Not built: admin, billing, AI providers, a mail provider. Audits do run in
 background jobs, and evidence ages out on a retention timer.
@@ -84,12 +115,22 @@ or competence, and promises no rankings, removals or score increases.
 
 ---
 
-## It does not deploy to GitHub Pages
+## Deploying it
 
-Pages serves static files. This is a Next.js server with API routes, session
-cookies, a background worker and SQLite on local disk. A live URL needs a Node
-host and a hosted database; moving off local-disk SQLite is a real piece of
-work, not a configuration change. Written here so nobody tries.
+Any host that runs a container and gives it a persistent volume: the
+`Dockerfile` sets `REP_DB_PATH=/data/rep.db` and declares `/data` as a
+volume, because a SQLite file written into the container filesystem is
+deleted by the next deploy and the failure mode is every customer's audits
+quietly disappearing. There are no backups of that volume. That is written
+up as a gap in `docs/COUNSEL_TECHNICAL_APPENDIX.md`, not as a feature.
+
+**Not GitHub Pages.** Pages serves static files, and this is a server with
+API routes, session cookies, a background worker and a database. The page at
+<https://ranatahirbilal.github.io/goodname/> is a static snapshot of the
+landing page with a banner saying so; its buttons do nothing.
+
+The SQL avoids anything SQLite-specific, so moving to Postgres is a driver
+change rather than a rewrite. It has not been done.
 
 ## Licence
 

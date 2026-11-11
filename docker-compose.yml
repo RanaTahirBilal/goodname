@@ -1,0 +1,32 @@
+# docker compose up
+#
+# One service, because there is one. The database is a file in a named
+# volume rather than a Postgres container: that is honest about what this
+# currently is, and the SQL was written to be portable so the move is a
+# driver change rather than a rewrite.
+
+services:
+  web:
+    build: .
+    ports:
+      - "4300:4300"
+    volumes:
+      # Everything the product holds lives here. Deleting this volume
+      # deletes every account, audit and piece of evidence, and there are
+      # no backups, which is written up in the counsel appendix as a gap
+      # rather than a feature.
+      - goodname-data:/data
+    environment:
+      # Set both to run real searches. Set neither and every audit is
+      # fixture data that says so on every screen. There is no
+      # half-configured state; see apps/website/src/server/search.ts.
+      REP_SEARCH_API_KEY: "${REP_SEARCH_API_KEY:-}"
+      REP_SEARCH_ENGINE_ID: "${REP_SEARCH_ENGINE_ID:-}"
+      # The site stays out of search indexes unless this is exactly "true".
+      # A report about a named person has no business in an index, and the
+      # robots file is generated from this.
+      REP_INDEXABLE: "${REP_INDEXABLE:-false}"
+    restart: unless-stopped
+
+volumes:
+  goodname-data:

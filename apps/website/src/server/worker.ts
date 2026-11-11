@@ -39,7 +39,14 @@ const RETENTION_EVERY_MS = 60 * 60 * 1000;
 declare global {
   // eslint-disable-next-line no-var
   var __repWorker:
-    | { timer: NodeJS.Timeout; retention: NodeJS.Timeout; running: boolean }
+    | {
+        timer: NodeJS.Timeout;
+        retention: NodeJS.Timeout;
+        /** A job is being processed right now. Not the same as "started". */
+        running: boolean;
+        startedAt: string;
+        lastSweepAt: string | null;
+      }
     | undefined;
 }
 
@@ -242,10 +249,16 @@ export function startWorker(): void {
     timer: null as unknown as NodeJS.Timeout,
     retention: null as unknown as NodeJS.Timeout,
     running: false,
+    startedAt: new Date().toISOString(),
+    lastSweepAt: null as string | null,
   };
 
   sweep();
-  state.retention = setInterval(sweep, RETENTION_EVERY_MS);
+  state.lastSweepAt = new Date().toISOString();
+  state.retention = setInterval(() => {
+    sweep();
+    state.lastSweepAt = new Date().toISOString();
+  }, RETENTION_EVERY_MS);
   state.retention.unref?.();
 
   state.timer = setInterval(() => {
@@ -263,4 +276,34 @@ export function startWorker(): void {
   state.timer.unref?.();
 
   globalThis.__repWorker = state;
+}
+
+/**
+ * Whether this process is actually doing background work.
+ *
+ * Read by `/api/health`, and the distinction it reports is the one that
+ * matters: `started` means the timers exist, `running` means a job is in
+ * flight at this instant. A health check asking the second question would
+ * report an idle worker as broken and a broken one as fine for the
+ * fraction of a second it happened to be busy.
+ *
+ * If this says `started: false`, audits queue and never finish, evidence
+ * never ages out, and accounts past their grace period are never purged,
+ * while every page on the site still answers normally. That is the failure
+ * worth having an endpoint for.
+ */
+export function workerState(): {
+  started: boolean;
+  running: boolean;
+  startedAt: string | null;
+  lastSweepAt: string | null;
+} {
+  const w = globalThis.__repWorker;
+
+  return {
+    started: Boolean(w),
+    running: Boolean(w?.running),
+    startedAt: w?.startedAt ?? null,
+    lastSweepAt: w?.lastSweepAt ?? null,
+  };
 }
