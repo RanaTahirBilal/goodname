@@ -17,9 +17,17 @@ feature; these rules assume that context rather than repeating it.
 - Root `*.md` — earlier specs, still authoritative where `docs/` is silent.
 
 Not yet built: admin, billing, AI providers, a mail provider
-(OQ-14) and the `connected_account` verification tier (OQ-15). No credentials
-for any external service exist, so every audit runs against fixture data and
-no sign-in code can actually be delivered.
+(OQ-14) and the `connected_account` verification tier (OQ-15).
+
+**Live search is implemented and waiting for a key.**
+`apps/website/src/server/search.ts` talks to Google Programmable Search
+(100 queries a day free). Set `REP_SEARCH_API_KEY` and
+`REP_SEARCH_ENGINE_ID` and every audit is real; set neither and every audit
+is a fixture that says so on every screen. There is no half-configured
+state, and the scan row records which it was. See `.env.example`.
+
+No mail provider exists, so no sign-in code can be delivered and the code is
+printed on screen instead.
 
 ## Running things
 
