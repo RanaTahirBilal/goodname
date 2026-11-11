@@ -21,6 +21,7 @@
 import { runAudit, FixtureSearchProvider, type AuditPurpose, type FixtureScenario, type ProfessionalIdentity } from '@rep/domain';
 import { enforceRetention, purgeDueAccounts, type JobRecord } from '@rep/persistence';
 import { store } from './db.ts';
+import { WebSearchProvider, webSearchFromEnv } from './search.ts';
 
 const POLL_MS = 400;
 const STALLED_AFTER_SECONDS = 600;
@@ -52,6 +53,25 @@ export interface AuditJobPayload {
   websiteChecks?: { key: string; passed: boolean }[];
 }
 
+/**
+ * The live provider when one is configured, the fixture when not.
+ *
+ * Decided per job rather than once at startup, so adding the key and
+ * restarting is the whole deployment procedure and there is no cached
+ * decision to reason about.
+ *
+ * The important property is that this cannot half-work. Either both
+ * `REP_SEARCH_API_KEY` and `REP_SEARCH_ENGINE_ID` are present and every
+ * audit is real, or neither is and every audit is a fixture that says so on
+ * every screen and carries `isFixture` into the report payload. There is no
+ * configuration where a customer gets a real-looking report built from
+ * invented data, which is the failure rule 13 exists to prevent.
+ */
+function searchProvider(scenario: FixtureScenario) {
+  const config = webSearchFromEnv();
+  return config ? new WebSearchProvider(config) : new FixtureSearchProvider(scenario);
+}
+
 async function runAuditJob(job: JobRecord): Promise<void> {
   const { repo, queue } = store();
   const p = job.payload as unknown as AuditJobPayload;
@@ -60,7 +80,7 @@ async function runAuditJob(job: JobRecord): Promise<void> {
   const report = await runAudit({
     identity: p.identity,
     purpose: p.purpose,
-    provider: new FixtureSearchProvider(p.scenario),
+    provider: searchProvider(p.scenario),
     websiteChecks: p.websiteChecks,
     // The gate already ran in the request, before the job was created. A
     // blocked audit never becomes a job, so re-running the gate here would

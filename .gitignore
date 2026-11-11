@@ -22,6 +22,8 @@ build/
 # Secrets. There are none in the tree today and this is here so there never are.
 .env
 .env.*
+# The template is the documentation for the keys, and holds none of them.
+!.env.example
 !.env.example
 *.pem
 *.key

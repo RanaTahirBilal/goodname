@@ -25,6 +25,7 @@ import {
 } from '@rep/domain';
 import { requesterIdFor } from '@rep/persistence';
 import { store } from '../../../src/server/db.ts';
+import { activeProvider } from '../../../src/server/search.ts';
 import { startWorker, type AuditJobPayload } from '../../../src/server/worker.ts';
 import { ensureScope } from '../../../src/server/session.ts';
 
@@ -179,11 +180,20 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  /**
+   * What this scan is actually built from, decided once, here.
+   *
+   * Written at creation because the row exists before the job runs, and
+   * read from the same place the worker reads it, so a report can never be
+   * labelled fixture while holding live results or the other way round.
+   */
+  const provider = activeProvider();
+
   const scanId = repo.saveScan(scope, {
     identity,
     status: 'pending',
-    provider: 'fixture',
-    isFixture: true,
+    provider: provider.name,
+    isFixture: provider.isFixture,
     window: 10,
     queries: buildQueries(identity),
     purpose,
