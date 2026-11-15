@@ -38,7 +38,6 @@ ENV PORT=4300
 # into the container filesystem is deleted by the next deploy, and the
 # failure mode is every customer's audits quietly disappearing.
 ENV REP_DB_PATH=/data/rep.db
-VOLUME /data
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/packages ./packages
@@ -49,7 +48,19 @@ RUN npm ci --omit=dev --ignore-scripts
 # Not root. The process writes to /data and nothing else, and a container
 # that can rewrite its own application is a larger blast radius than this
 # needs.
+#
+# The order of the next three lines is load-bearing and was wrong first
+# time. Anything a RUN writes under a path already declared as VOLUME is
+# discarded, so `mkdir /data` after `VOLUME /data` creates a directory that
+# does not survive into the image. A fresh volume then mounts empty and
+# root-owned, the process runs as `node`, and the first write fails with a
+# permission error that reads as a bug in the application.
+#
+# So: create and chown it, then declare it, then drop privileges.
 RUN mkdir -p /data && chown -R node:node /data /app
+
+VOLUME /data
+
 USER node
 
 EXPOSE 4300
