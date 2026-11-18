@@ -210,14 +210,37 @@ function sourceAuthority(records: EvidenceRecord[]): DimensionResult {
 
   const total = independent.reduce((s, r) => s + r.authority * decayOf(r), 0);
 
+  /**
+   * Counted, not vouched for.
+   *
+   * This used to read "3 independent pieces of earned coverage", and the
+   * word independent was doing work the engine cannot do. Independence is
+   * established for exactly two shapes of record: one we declared as ours
+   * and had accepted on merit, and one excluded because a placement said
+   * so. Everything else arrives undeclared, and undeclared is the default
+   * every record starts at.
+   *
+   * So a guest column the customer wrote, a podcast they appeared on and a
+   * funding story a reporter chased are indistinguishable here: all three
+   * sit on a third-party domain, all three classify as `earned`, and
+   * calling all three independent asserts a fact about authorship from the
+   * absence of information about authorship. Same shape of error as the
+   * identity filter in OQ-24, which could not fall because a rejection
+   * scored zero.
+   *
+   * The count is honest and the number is unchanged. What is gone is the
+   * claim attached to it. The limitation that this dimension cannot tell
+   * somebody's own words from somebody else's regard is stated in the
+   * report, once, rather than contradicted here on every audit. See OQ-25.
+   */
   const explanation =
     independent.length === 0
       ? ours > 0
-        ? `No independent coverage. ${ours} result${ours > 1 ? 's were' : ' was'} placed on your behalf and ${ours > 1 ? 'are' : 'is'} not counted here.`
-        : 'No earned third-party coverage was found.'
+        ? `No third-party coverage. ${ours} result${ours > 1 ? 's were' : ' was'} placed on your behalf and ${ours > 1 ? 'are' : 'is'} not counted here.`
+        : 'No third-party coverage was found.'
       : ours > 0
-        ? `${independent.length} independent piece${independent.length > 1 ? 's' : ''} of earned coverage. ${ours} placed on your behalf and not counted here.`
-        : `${independent.length} independent piece${independent.length > 1 ? 's' : ''} of earned coverage.`;
+        ? `${independent.length} piece${independent.length > 1 ? 's' : ''} of third-party coverage. ${ours} placed on your behalf and not counted here.`
+        : `${independent.length} piece${independent.length > 1 ? 's' : ''} of third-party coverage.`;
 
   // Caps at roughly three solid, recent mentions. Not scaling past that is
   // deliberate: this must not reward press-release spam.

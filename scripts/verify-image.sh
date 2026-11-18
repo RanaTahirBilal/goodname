@@ -101,9 +101,15 @@ scan=$(curl -fsS -b "$jar" -X POST "http://localhost:$PORT/api/audit" \
   -d '{"fullName":"Jensen Adoni","profession":"attorney","employer":"Adoni Law","city":"Chicago","region":"Illinois","credentials":"JD","websiteUrl":"https://adoni-law.example","attested":true,"scenario":"official_finding"}' \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["scanId"])')
 
+# The key is `scanStatus`, not `status`. This asked for `status`, got nothing,
+# and nothing is not "pending" — so the loop broke on its first pass and the
+# check below failed every time with an empty status. A polling loop that
+# cannot wait is worse than no loop: it reported the audit as never having
+# completed on an image where the audit completes. Found by running the same
+# calls against a dev server, which is the only reason it was found at all.
 for _ in $(seq 1 40); do
   status=$(curl -fsS -b "$jar" "http://localhost:$PORT/api/scan/$scan/status" \
-    | python3 -c 'import sys,json; print(json.load(sys.stdin).get("status",""))')
+    | python3 -c 'import sys,json; d=json.load(sys.stdin); print(d["scanStatus"])')
   [ "$status" != "pending" ] && break
   sleep 3
 done

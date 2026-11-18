@@ -1,28 +1,71 @@
 /**
  * Prints an audit report for one fixture scenario.
  *
- *   node src/demo.ts [strong|official_finding|allegation|syndicated|
- *                     corroborated|retracted|employer_collision|ambiguous|
- *                     sparse|empty|provider_error|rate_limited]
+ *   node src/demo.ts <scenario>
+ *
+ * Run it with no argument, or an unknown one, and it lists the scenarios
+ * rather than guessing. The list used to be copied into this comment and
+ * had fallen four scenarios behind the provider.
  *
  * Exists so the pipeline can be inspected by a person, not only by the test
  * runner. Everything it prints is fixture data, and it says so.
  */
 import { runAudit } from './audit.ts';
-import { FixtureSearchProvider, type FixtureScenario } from './providers/fixture.ts';
+import {
+  FIXTURE_SCENARIOS,
+  FIXTURE_SUBJECTS,
+  FixtureSearchProvider,
+  SCENARIO_SUBJECT,
+  type FixtureScenario,
+} from './providers/fixture.ts';
 import { SELF_AUDIT_ATTESTATION } from './safeguards.ts';
 import type { AuditPurpose, ProfessionalIdentity, RiskLevel } from './contracts/types.ts';
 
-const scenario = (process.argv[2] ?? 'strong') as FixtureScenario;
+const requested = process.argv[2] ?? 'strong';
+
+/**
+ * Validated rather than cast.
+ *
+ * A typo used to become a `FixtureScenario` by assertion and reach the
+ * provider, which has no row for it. Printing the list is more useful than
+ * whatever the provider does with a name it does not know.
+ */
+if (!(FIXTURE_SCENARIOS as readonly string[]).includes(requested)) {
+  console.error(`\n  Unknown scenario: ${requested}\n`);
+  console.error('  Try one of:\n');
+  for (const s of FIXTURE_SCENARIOS) console.error(`    ${s}`);
+  console.error('');
+  process.exit(2);
+}
+
+const scenario = requested as FixtureScenario;
+
+/**
+ * Whose name we search for, taken from the scenario.
+ *
+ * This was one hardcoded identity, Jensen Adoni, for every scenario. The
+ * fixtures are not all about him: the two founder scenarios and the two
+ * physician ones describe different people, and running them searched for
+ * an attorney against a founder's results. The report was not an error, it
+ * was worse than one. Seven results observed, nought attributed, no score,
+ * identity confidence 0.00 — a perfectly well-formed account of a person
+ * nobody had looked for.
+ *
+ * `SCENARIO_SUBJECT` existed the whole time and said exactly this. Only the
+ * website was reading it, which is why nothing caught it: the screens were
+ * right and the developer tool was wrong, and the developer tool is the one
+ * used to decide whether the engine is behaving.
+ */
+const subject = FIXTURE_SUBJECTS[SCENARIO_SUBJECT[scenario]];
 
 const identity: ProfessionalIdentity = {
-  fullName: 'Jensen Adoni',
-  profession: 'attorney',
-  employer: 'Adoni Law',
-  city: 'Chicago',
-  region: 'Illinois',
-  credentials: ['JD'],
-  websiteUrl: 'https://adoni-law.example',
+  fullName: subject.fullName,
+  profession: subject.profession,
+  employer: subject.employer,
+  city: subject.city,
+  region: subject.region,
+  credentials: subject.credentials ? subject.credentials.split(',').map((c) => c.trim()) : [],
+  websiteUrl: subject.websiteUrl,
 };
 
 const purpose: AuditPurpose = {
@@ -55,7 +98,8 @@ const report = await runAudit({
   ],
 });
 
-console.log(`\n  Scenario: ${scenario}\n`);
+console.log(`\n  Scenario: ${scenario}`);
+console.log(`  Subject:  ${identity.fullName}, ${identity.profession}\n`);
 
 if (report.status === 'invalid_input') {
   console.log('  Invalid input:');

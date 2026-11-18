@@ -1369,6 +1369,30 @@ function Limitations({ scan }: { scan: Scan }) {
           <li>
             A measure of observable online presence, not of character, honesty or competence.
           </li>
+
+          {/**
+           * The gap OQ-25 found, stated where it costs something to state.
+           *
+           * Source Authority is meant to measure other people choosing to
+           * write about you. It cannot see who wrote the words: a guest
+           * column, a podcast appearance and a reporter's story all sit on
+           * somebody else's domain and all classify the same way. So the
+           * dimension reads high for anybody who publishes a lot, which is
+           * founders rather than the attorneys and physicians this was
+           * designed around.
+           *
+           * Saying so costs the most credible number on the page some of
+           * its credibility, which is the reason it is here rather than in
+           * a document nobody opens. The alternative on offer was a keyword
+           * guesser that would delete real coverage from somebody's score
+           * on the strength of the phrase "joins the show".
+           */}
+          <li>
+            Coverage you wrote or placed yourself, such as a guest column, a podcast
+            appearance or a profile you filled in, looks the same to us as coverage
+            somebody chose to give you. Source Authority counts both, so it reads
+            higher than it should for anybody who publishes widely.
+          </li>
           <li>
             Scoring is provisional and has not been empirically validated. Treat the number
             as a structured reading, not a measurement.

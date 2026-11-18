@@ -438,6 +438,52 @@ for having a blog.
 exists so the gap is reproducible rather than theoretical, and no keyword
 guesser has been added on the strength of one example.
 
+**The overclaim is closed, 18 November 2026. The gap is not.**
+
+The number has not moved and is not supposed to. What has gone is the
+sentence under it, which read "3 independent pieces of earned coverage"
+and asserted independence from the absence of any information about
+authorship. Undeclared is the state every record starts in, so the word
+was reporting a default as a finding, which is the same shape of error as
+the identity filter in OQ-24.
+
+It now reads "3 pieces of third-party coverage": a count, which is what
+the engine can actually establish. The exclusion sentence for material we
+placed is untouched, because that one was declared and is a real claim.
+
+The limitation itself is now stated on the report rather than only here:
+that a guest column, a podcast appearance or a profile somebody filled in
+looks the same to us as coverage somebody chose to give, and that Source
+Authority therefore reads **higher than it should** for anybody who
+publishes widely. Naming the direction matters more than naming the
+uncertainty: a reader who is told a number is uncertain assumes it is
+uncertain in their favour.
+
+**Still open, and still a decision:** ask, detect, or weight by source.
+Nothing above chooses between them. It stops the product claiming
+something it cannot know while the choice is unmade, which was always
+available and had nothing to do with which option wins.
+
+**Found while verifying this:** `demo.ts` ran every scenario against one
+hardcoded identity, Jensen Adoni. `SCENARIO_SUBJECT` has said since the
+fixtures were written that the founder scenarios describe Devon Marsh and
+the physician ones Amara Okonkwo, and only the website was reading it. The
+effect was not a crash. It was a well-formed report: seven results
+observed, nought attributed, no score, identity confidence 0.00, for a
+person nobody had searched for. The screens were right and the tool used
+to decide whether the engine is behaving was wrong, which is the worse way
+round. It now takes the subject from the scenario and refuses an unknown
+scenario name instead of casting it.
+
+**And a second:** `scripts/verify-image.sh` polled the scan status
+endpoint for a key named `status`. The key is `scanStatus`. The poll
+therefore read nothing, nothing is not `pending`, the wait loop broke on
+its first pass, and the check that followed failed every time with an
+empty status. The container job in CI would have reported that the audit
+never completed, on an image where the audit completes. It had never run
+anywhere, because the machine has no container runtime; it was caught by
+making the same calls against a dev server.
+
 ### OQ-26 — The US launch gates, and how few of them are engineering
 **Blocks:** taking money from a US customer.
 

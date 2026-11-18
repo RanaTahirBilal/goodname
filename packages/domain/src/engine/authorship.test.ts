@@ -134,7 +134,54 @@ test('the report says we declined to credit ourselves', () => {
     /placed on your behalf/i,
     'the customer is not told that some results were excluded as ours'
   );
-  assert.match(explanation, /1 independent piece/);
+  assert.match(explanation, /1 piece of third-party coverage/);
+});
+
+/**
+ * The claim the count is not allowed to make.
+ *
+ * `THEIRS` here is the default every record starts at: nothing was
+ * declared, so the engine assumed third party and editorial. Reporting
+ * that as independent turns the absence of information about authorship
+ * into a fact about authorship, and the person it misreads is the founder
+ * whose guest column and podcast appearance look exactly like this.
+ *
+ * The number is unaffected and is meant to be. What is asserted about it
+ * is the whole of the change. See OQ-25.
+ */
+test('undeclared coverage is counted, not called independent', () => {
+  const undeclared = [
+    evidence({ classification: 'earned', authority: 0.8, authorship: THEIRS }),
+    evidence({ classification: 'earned', authority: 0.8, authorship: THEIRS }),
+  ];
+
+  const dimension = authorityOf(undeclared);
+  const explanation = dimension?.explanation ?? '';
+
+  assert.ok((dimension?.value ?? 0) > 0, 'third-party coverage should still score');
+
+  assert.doesNotMatch(
+    explanation,
+    /independent/i,
+    'independence was asserted for records whose authorship was never established'
+  );
+  assert.match(explanation, /2 pieces of third-party coverage/);
+});
+
+/**
+ * The opposite failure, which is why this is a wording change and not a
+ * retreat: the exclusion of our own work is established, was declared, and
+ * still has to be said out loud on the customer's own report.
+ */
+test('an excluded placement is still named in the explanation', () => {
+  const explanation =
+    authorityOf([
+      evidence({ classification: 'earned', authority: 0.8, authorship: OURS }),
+      evidence({ classification: 'earned', authority: 0.8, authorship: OURS }),
+    ])?.explanation ?? '';
+
+  assert.match(explanation, /No third-party coverage/);
+  assert.match(explanation, /2 results were placed on your behalf/);
 });
 
 /* -------------------------------------------------------- the defaults */
