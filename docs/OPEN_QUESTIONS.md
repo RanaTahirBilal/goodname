@@ -459,10 +459,50 @@ publishes widely. Naming the direction matters more than naming the
 uncertainty: a reader who is told a number is uncertain assumes it is
 uncertain in their favour.
 
-**Still open, and still a decision:** ask, detect, or weight by source.
-Nothing above chooses between them. It stops the product claiming
-something it cannot know while the choice is unmade, which was always
-available and had nothing to do with which option wins.
+**Decided 19 November 2026: ask.** Not detect, and not weight by source.
+
+Detection was the cheap one and is the one that can be wrong without
+anybody noticing. A lexical guesser on "joins the show" or "guest post"
+deletes real coverage from somebody's score on the strength of a phrase,
+and the person it misreads never sees the phrase that did it. Weighting
+podcast and column domains down is cruder still: it is wrong for a genuine
+interview, which is the single most valuable thing a founder can have.
+
+Asking is the same shape as "is this you?", which is already there, works,
+and rests on the same principle as rule 11: the customer knows, we are
+guessing, so ask rather than guess.
+
+**What it costs, which is the part worth seeing before it is built.**
+
+Answering honestly lowers your own score. A founder who confirms that the
+guest column and the podcast were theirs watches Source Authority fall,
+and the only way to keep the higher number is to say nothing or to lie.
+That is a product asking somebody to pay for a worse result about
+themselves.
+
+It is still right, for the reason rule 9 exists: a number that only moves
+in the flattering direction is not a measurement. But it has three
+consequences that have to be built in rather than discovered.
+
+  - **The question cannot be phrased as a favour.** "Help us improve your
+    score" would be false. It says plainly that confirming authorship will
+    usually lower this figure and why that makes it worth more.
+  - **Unanswered is not the same as no.** A record nobody has answered
+    stays counted and stays undeclared, exactly as now. Silence must not
+    be read as a denial of authorship, or the ask becomes a way to keep
+    the higher number by ignoring it.
+  - **It is append-only, like every other customer decision.** A rescore
+    writes a new snapshot with its reason, so a score that fell because
+    somebody told the truth carries the record of why. Otherwise the drop
+    is indistinguishable from a methodology change.
+
+**Shape of the implementation.** The engine needs nothing: `isIndependent`
+already excludes `createdBy: 'customer'`, and the storage already persists
+authorship so a rescore cannot quietly re-credit it. What is missing is
+every way of getting the answer in. A decision table scoped to the
+account, a route, the question on the record beside the identity one, and
+the rescore. Per rule 16af, those land in one change or the right does not
+exist.
 
 **Found while verifying this:** `demo.ts` ran every scenario against one
 hardcoded identity, Jensen Adoni. `SCENARIO_SUBJECT` has said since the
